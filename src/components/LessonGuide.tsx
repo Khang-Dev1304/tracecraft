@@ -6,6 +6,7 @@ import {
   Code2 
 } from 'lucide-react';
 import type { ThemeMode, AlgorithmPreset } from '../types';
+import { MathFormula } from './MathFormula';
 
 interface LessonGuideProps {
   theme: ThemeMode;
@@ -92,11 +93,11 @@ export const LessonGuide: React.FC<LessonGuideProps> = ({
                 : 'bg-slate-950/80 border-cyan-900/60 text-cyan-300'
             }`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] uppercase font-bold tracking-wider opacity-60">
                 Formula:
               </span>
-              <span className="font-bold">{preset.formula}</span>
+              <MathFormula math={preset.formula} className="text-sm font-semibold" />
             </div>
             <span className="text-[11px] opacity-60 hidden sm:inline">
               Complexity: {preset.timeComplexity}
@@ -135,16 +136,15 @@ export const LessonGuide: React.FC<LessonGuideProps> = ({
 
             {section.formula && (
               <div
-                className={`p-2.5 rounded-lg font-mono text-xs mb-3 border ${
+                className={`p-3 rounded-xl overflow-x-auto my-2 border ${
                   isSketch
                     ? 'bg-[#f6f2e9] border-[#3c3836]/20 text-[#282828]'
-                    : 'bg-slate-950/60 border-slate-800 text-indigo-300'
+                    : 'bg-slate-950/80 border-cyan-900/40 text-cyan-200'
                 }`}
               >
-                {section.formula}
+                <MathFormula math={section.formula} block={true} />
               </div>
             )}
-
             {section.keyTakeaway && (
               <div
                 className={`p-3 rounded-xl flex items-start gap-2.5 text-xs font-medium ${

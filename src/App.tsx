@@ -384,6 +384,10 @@ export const App: React.FC = () => {
                 theme={theme}
                 step={currentStep}
                 category={selectedPreset.category}
+                onChangeInput={(val) => {
+                  setInputStr(val);
+                  setCurrentStepIndex(0);
+                }}
               />
             </div>
 

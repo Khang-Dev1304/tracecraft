@@ -72,15 +72,20 @@ def linear_regression(X, y, lr=0.06, epochs=8):
         w -= lr * grad_w  # Update weight
         b -= lr * grad_b  # Update bias
     return w, b`,
-    generateTraces: (): TraceStep[] => {
-      // Default sample 2D data points
-      const points = [
+    generateTraces: (inputStr?: string): TraceStep[] => {
+      let points = [
         { x: 1, y: 2.2 },
         { x: 2, y: 2.8 },
         { x: 3, y: 4.5 },
         { x: 4, y: 4.9 },
         { x: 5, y: 6.2 },
       ];
+      if (inputStr) {
+        const matches = [...inputStr.matchAll(/\(?\s*([0-9.]+)\s*[,:]\s*([0-9.]+)\s*\)?/g)];
+        if (matches.length >= 2) {
+          points = matches.map((m) => ({ x: Number(m[1]), y: Number(m[2]) }));
+        }
+      }
       const n = points.length;
       const lr = 0.06;
       let w = 0.2;

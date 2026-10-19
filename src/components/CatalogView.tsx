@@ -17,7 +17,7 @@ import type {
   DifficultyLevel 
 } from '../types';
 import { ALGORITHM_PRESETS } from '../algorithms/presets';
-
+import { MathFormula } from './MathFormula';
 interface CatalogViewProps {
   theme: ThemeMode;
   onSelectAlgorithm: (preset: AlgorithmPreset) => void;
@@ -317,15 +317,16 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                         </p>
 
                         {/* Formula snippet */}
+                        {/* Formula snippet rendered via KaTeX */}
                         {preset.formula && (
                           <div
-                            className={`mt-2.5 p-1.5 rounded font-mono text-[11px] truncate ${
+                            className={`mt-2.5 p-2 rounded overflow-x-auto ${
                               isSketch
                                 ? 'bg-[#ebdbb2]/50 text-[#282828] border border-[#3c3836]/20'
                                 : 'bg-slate-900/80 text-cyan-300 border border-slate-800'
                             }`}
                           >
-                            {preset.formula}
+                            <MathFormula math={preset.formula} className="text-xs" />
                           </div>
                         )}
                       </div>

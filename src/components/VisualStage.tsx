@@ -1,26 +1,89 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import rough from 'roughjs';
+import { 
+  ZoomIn, 
+  ZoomOut, 
+  Maximize2, 
+  Minimize2, 
+  Database,
+  RotateCcw
+} from 'lucide-react';
 import type { ThemeMode, TraceStep } from '../types';
+import { MathFormula } from './MathFormula';
 
 interface VisualStageProps {
   theme: ThemeMode;
   step: TraceStep;
   category: string;
+  onChangeInput?: (newInput: string) => void;
 }
+
+// Ultra-smooth 60fps ease-out cubic interpolation hook for Clean Studio mode
+function useSmoothValue(target: number, durationMs = 360): number {
+  const [val, setVal] = useState(target);
+  const startRef = useRef(target);
+  const targetRef = useRef(target);
+  const startTimeRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    startRef.current = val;
+    targetRef.current = target;
+    startTimeRef.current = null;
+    let frameId: number;
+
+    const animate = (timestamp: number) => {
+      if (!startTimeRef.current) startTimeRef.current = timestamp;
+      const progress = Math.min(1, (timestamp - startTimeRef.current) / durationMs);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setVal(startRef.current + (targetRef.current - startRef.current) * ease);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(animate);
+      }
+    };
+
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, [target, durationMs]);
+
+  return val;
+}
+
+const DATA_PRESETS = [
+  { label: 'Standard', value: '(1, 2.2), (2, 2.8), (3, 4.5), (4, 4.9), (5, 6.2)' },
+  { label: 'Noisy', value: '(1, 1.4), (2, 3.8), (3, 3.1), (4, 5.9), (5, 5.2)' },
+  { label: 'Outlier', value: '(1, 2.0), (2, 2.5), (3, 3.0), (4, 3.5), (5, 8.5)' },
+  { label: 'Steep', value: '(1, 0.5), (2, 2.4), (3, 4.2), (4, 6.1), (5, 8.0)' },
+];
 
 export const VisualStage: React.FC<VisualStageProps> = ({
   theme,
   step,
   category,
+  onChangeInput,
 }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const isSketch = theme === 'sketch';
+
+  // Graph sizing & zoom state
+  const [zoom, setZoom] = useState<number>(1);
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
   const arr = step.state.arr;
   const points = step.state.points;
   const layers = step.state.layers;
   const tokens = step.state.tokens;
   const probabilities = step.state.probabilities;
+
+  // Raw values from trace
+  const rawW = step.state.weight !== undefined ? Number(step.state.weight) : 0;
+  const rawB = step.state.bias !== undefined ? Number(step.state.bias) : 0;
+  const rawLoss = step.state.loss !== undefined ? Number(step.state.loss) : 0;
+
+  // Smooth interpolated values for fluid motion in Clean mode
+  const smoothW = useSmoothValue(rawW, 360);
+  const smoothB = useSmoothValue(rawB, 360);
+  const smoothLoss = useSmoothValue(rawLoss, 360);
 
   // Rough.js dynamic sketching for Sketch Mode
   useEffect(() => {
@@ -57,8 +120,8 @@ export const VisualStage: React.FC<VisualStageProps> = ({
       svg.appendChild(yAxis);
 
       // Regression Line y = w*x + b
-      const w = step.state.weight !== undefined ? Number(step.state.weight) : 0;
-      const b = step.state.bias !== undefined ? Number(step.state.bias) : 0;
+      const w = rawW;
+      const b = rawB;
 
       const xStart = 0.5;
       const xEnd = 5.5;
@@ -150,18 +213,20 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         svg.appendChild(rect);
       });
     }
-  }, [isSketch, points, arr, step]);
+  }, [isSketch, points, arr, step, rawW, rawB]);
 
   return (
     <div
-      className={`relative w-full h-full min-h-[380px] flex flex-col justify-between p-4 overflow-hidden select-none transition-colors ${
+      className={`relative w-full h-full flex flex-col justify-between p-4 overflow-hidden select-none transition-all duration-300 ${
+        isExpanded ? 'min-h-[520px]' : 'min-h-[380px]'
+      } ${
         isSketch
           ? 'bg-sketch-dots text-[#282828]'
           : 'bg-studio-dots text-white'
       }`}
     >
-      {/* Stage Header Info */}
-      <div className="flex items-center justify-between z-10 shrink-0">
+      {/* Stage Header Info & Flexible Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-2 z-10 shrink-0">
         <div className="flex items-center gap-2">
           <span
             className={`text-xs uppercase font-mono tracking-wider px-2 py-0.5 rounded font-semibold ${
@@ -177,37 +242,117 @@ export const VisualStage: React.FC<VisualStageProps> = ({
           </span>
         </div>
 
-        {/* Dynamic Metric Badges */}
-        <div className="flex items-center gap-2 text-xs font-mono">
-          {step.state.loss !== undefined && (
-            <span
-              className={`px-2 py-0.5 rounded font-bold ${
-                isSketch
-                  ? 'bg-[#cc241d]/20 text-[#cc241d] border border-[#cc241d]/40'
-                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
-              }`}
-            >
-              Loss (MSE): {step.state.loss}
-            </span>
+        {/* Data Controls & Graph Zoom Toolbar */}
+        <div className="flex items-center gap-2">
+          {/* Data Presets Selector (if Regression) */}
+          {points && onChangeInput && (
+            <div className="hidden sm:flex items-center gap-1">
+              <Database className="w-3.5 h-3.5 opacity-60" />
+              <div
+                className={`flex items-center p-0.5 rounded-md border text-[11px] font-mono ${
+                  isSketch
+                    ? 'bg-[#ebdbb2] border-[#3c3836]/30'
+                    : 'bg-[#151c2d] border-[#222f46]'
+                }`}
+              >
+                {DATA_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={() => onChangeInput(preset.value)}
+                    className={`px-1.5 py-0.5 rounded transition-colors ${
+                      isSketch
+                        ? 'hover:bg-[#d5c4a1] text-[#282828]'
+                        : 'hover:bg-slate-700 text-slate-300'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
-          {step.state.weight !== undefined && (
-            <span
-              className={`px-2 py-0.5 rounded font-bold ${
-                isSketch
-                  ? 'bg-[#ebdbb2] text-[#3c3836]'
-                  : 'bg-cyan-950 text-cyan-300 border border-cyan-800'
-              }`}
+
+          {/* Zoom & Size Controls */}
+          <div
+            className={`flex items-center p-0.5 rounded-lg border text-xs ${
+              isSketch
+                ? 'bg-[#ebdbb2] border-[#3c3836]/30'
+                : 'bg-[#151c2d] border-[#222f46]'
+            }`}
+          >
+            <button
+              onClick={() => setZoom((z) => Math.max(0.75, Number((z - 0.15).toFixed(2))))}
+              title="Zoom Out Graph"
+              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10"
             >
-              w: {step.state.weight} | b: {step.state.bias}
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <span className="px-1.5 text-[10px] font-mono font-bold opacity-75">
+              {Math.round(zoom * 100)}%
             </span>
-          )}
+            <button
+              onClick={() => setZoom((z) => Math.min(1.4, Number((z + 0.15).toFixed(2))))}
+              title="Zoom In Graph"
+              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setZoom(1)}
+              title="Reset Zoom"
+              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 opacity-60 hover:opacity-100"
+            >
+              <RotateCcw className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => setIsExpanded((e) => !e)}
+              title={isExpanded ? 'Collapse Height' : 'Expand Height'}
+              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 ml-0.5"
+            >
+              {isExpanded ? (
+                <Minimize2 className="w-3.5 h-3.5 text-cyan-400" />
+              ) : (
+                <Maximize2 className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
+
+          {/* Dynamic Metric Badges */}
+          <div className="flex items-center gap-1.5 text-xs font-mono">
+            {step.state.loss !== undefined && (
+              <span
+                className={`px-2 py-0.5 rounded font-bold transition-all ${
+                  isSketch
+                    ? 'bg-[#cc241d]/20 text-[#cc241d] border border-[#cc241d]/40'
+                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
+                }`}
+              >
+                Loss: {isSketch ? rawLoss : smoothLoss.toFixed(3)}
+              </span>
+            )}
+            {step.state.weight !== undefined && (
+              <span
+                className={`px-2 py-0.5 rounded font-bold transition-all ${
+                  isSketch
+                    ? 'bg-[#ebdbb2] text-[#3c3836]'
+                    : 'bg-cyan-950 text-cyan-300 border border-cyan-800'
+                }`}
+              >
+                w: {isSketch ? rawW : smoothW.toFixed(2)} | b:{' '}
+                {isSketch ? rawB : smoothB.toFixed(2)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Main Stage Visual Content */}
-      <div className="relative flex-1 w-full flex items-center justify-center my-2 overflow-hidden">
+      {/* Main Stage Visual Content with Dynamic Zoom */}
+      <div
+        style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
+        className="relative flex-1 w-full flex items-center justify-center my-2 overflow-hidden transition-transform duration-200"
+      >
         {/* ========================================================= */}
-        {/* 1. REGRESSION PLOT VISUALIZER (Linear & Logistic Regression) */}
+        {/* 1. REGRESSION PLOT VISUALIZER (Ultra-Smooth in Clean Mode) */}
         {/* ========================================================= */}
         {points && points.length > 0 && (
           <div className="w-full h-full relative flex items-center justify-center">
@@ -219,7 +364,6 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                 preserveAspectRatio="xMidYMid meet"
                 className="w-full h-full max-h-[340px]"
               >
-                {/* Labels and values rendered via SVG text */}
                 {points.map((p, idx) => {
                   const originX = 70;
                   const originY = 300;
@@ -239,7 +383,6 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                     </text>
                   );
                 })}
-                {/* Axis Labels */}
                 <text x="640" y="320" className="font-sketch font-bold text-base fill-[#3c3836]">
                   Feature X
                 </text>
@@ -248,18 +391,21 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                 </text>
               </svg>
             ) : (
-              // Clean Pro Studio Mode: Neon Glowing Scatter & Dynamic Fit Line
-              <div className="w-full h-full relative max-w-2xl max-h-[320px]">
+              // Clean Pro Studio Mode: Ultra-smooth SVG path morphing with 60fps interpolation
+              <div className="w-full h-full relative max-w-2xl max-h-[330px]">
                 <svg
                   viewBox="0 0 700 360"
                   preserveAspectRatio="xMidYMid meet"
                   className="w-full h-full"
                 >
                   <defs>
-                    <linearGradient id="regGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <linearGradient id="regGradSmooth" x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" stopColor="#06b6d4" />
                       <stop offset="100%" stopColor="#6366f1" />
                     </linearGradient>
+                    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#06b6d4" floodOpacity="0.8" />
+                    </filter>
                   </defs>
 
                   {/* Subtle Grid Lines */}
@@ -298,34 +444,29 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                     Target y
                   </text>
 
-                  {/* Regression Fit Line */}
+                  {/* Ultra-Smooth Animated Regression Line using continuous smoothW and smoothB */}
                   {(() => {
                     const originX = 70;
                     const originY = 300;
                     const scaleX = 100;
                     const scaleY = 36;
-                    const w = step.state.weight !== undefined ? Number(step.state.weight) : 0;
-                    const b = step.state.bias !== undefined ? Number(step.state.bias) : 0;
                     const p1X = originX + 0.5 * scaleX;
-                    const p1Y = originY - (w * 0.5 + b) * scaleY;
+                    const p1Y = originY - (smoothW * 0.5 + smoothB) * scaleY;
                     const p2X = originX + 5.5 * scaleX;
-                    const p2Y = originY - (w * 5.5 + b) * scaleY;
+                    const p2Y = originY - (smoothW * 5.5 + smoothB) * scaleY;
 
                     return (
-                      <line
-                        x1={p1X}
-                        y1={p1Y}
-                        x2={p2X}
-                        y2={p2Y}
-                        stroke="url(#regGrad)"
+                      <path
+                        d={`M ${p1X} ${p1Y} L ${p2X} ${p2Y}`}
+                        stroke="url(#regGradSmooth)"
                         strokeWidth="3.5"
                         strokeLinecap="round"
-                        className="transition-all duration-300 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]"
+                        filter="url(#neonGlow)"
                       />
                     );
                   })()}
 
-                  {/* Data Points and Error Residuals */}
+                  {/* Data Points and Fluid Residual Stems */}
                   {points.map((p, idx) => {
                     const originX = 70;
                     const originY = 300;
@@ -333,13 +474,11 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                     const scaleY = 36;
                     const px = originX + p.x * scaleX;
                     const py = originY - p.y * scaleY;
-                    const w = step.state.weight !== undefined ? Number(step.state.weight) : 0;
-                    const b = step.state.bias !== undefined ? Number(step.state.bias) : 0;
-                    const pyPred = originY - (p.yPred ?? (w * p.x + b)) * scaleY;
+                    const pyPred = originY - (smoothW * p.x + smoothB) * scaleY;
 
                     return (
                       <g key={idx}>
-                        {/* Red Residual Error dashed line */}
+                        {/* Red Residual Error dashed line with fluid vertical connection */}
                         <line
                           x1={px}
                           y1={py}
@@ -348,16 +487,17 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                           stroke="#ef4444"
                           strokeWidth="2"
                           strokeDasharray="4 3"
+                          opacity="0.85"
                         />
-                        {/* Target Data Point */}
+                        {/* Target Data Point with neon hover effect */}
                         <circle
                           cx={px}
                           cy={py}
-                          r="7"
+                          r="7.5"
                           fill="#f59e0b"
                           stroke="#fbbf24"
                           strokeWidth="2"
-                          className="drop-shadow-[0_0_6px_rgba(245,158,11,0.6)]"
+                          className="cursor-pointer transition-transform hover:scale-125 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]"
                         />
                         <text
                           x={px}
@@ -423,7 +563,6 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         {/* ========================================================= */}
         {tokens && tokens.length > 0 && (
           <div className="w-full max-w-2xl flex flex-col items-center gap-6 py-2">
-            {/* Context Token Window */}
             <div className="w-full">
               <div className="text-xs font-mono opacity-60 mb-2 flex items-center justify-between">
                 <span>Causal Context Window (Q & K Tokens)</span>
@@ -464,7 +603,6 @@ export const VisualStage: React.FC<VisualStageProps> = ({
               </div>
             </div>
 
-            {/* Next-Token Probability Distribution Softmax Output */}
             {probabilities && probabilities.length > 0 && (
               <div
                 className={`w-full p-4 rounded-xl transition-colors ${
@@ -540,7 +678,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* 4. CLASSICAL ARRAYS (for legacy reference)               */}
+        {/* 4. CLASSICAL ARRAYS                                      */}
         {/* ========================================================= */}
         {arr && arr.length > 0 && (
           <div className="w-full h-full relative flex items-end justify-center pb-6">
@@ -588,15 +726,23 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         )}
       </div>
 
-      {/* Stage Footer Status */}
+      {/* Stage Footer Status with Live Formula */}
       <div
         className={`pt-2 border-t text-xs font-mono flex items-center justify-between shrink-0 ${
           isSketch ? 'border-[#3c3836]/20 text-[#7c6f64]' : 'border-slate-800 text-slate-400'
         }`}
       >
         <span className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          Interactive AI Execution Trace Active
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Active Equation:</span>
+          {points ? (
+            <MathFormula
+              math={`y = ${isSketch ? rawW : smoothW.toFixed(2)}x + ${isSketch ? rawB : smoothB.toFixed(2)}`}
+              className="ml-1 font-bold text-cyan-300"
+            />
+          ) : (
+            <span>Interactive Lockstep Engine</span>
+          )}
         </span>
         <span>Action: {step.action.toUpperCase()}</span>
       </div>
