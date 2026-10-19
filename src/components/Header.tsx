@@ -7,10 +7,12 @@ import {
   Monitor, 
   RotateCcw,
   Cpu,
-  ArrowLeft
+  ArrowLeft,
+  BookOpen,
+  PanelLeft,
+  PanelRight
 } from 'lucide-react';
 import type { ThemeMode, ViewMode, AlgorithmPreset } from '../types';
-import { ALGORITHM_PRESETS } from '../algorithms/presets';
 
 interface HeaderProps {
   theme: ThemeMode;
@@ -18,11 +20,15 @@ interface HeaderProps {
   viewMode: ViewMode;
   onToggleViewMode: () => void;
   selectedPreset: AlgorithmPreset;
-  onSelectPreset: (preset: AlgorithmPreset) => void;
   inputStr: string;
   onChangeInput: (newInput: string) => void;
   onReset: () => void;
   onBackToCatalog: () => void;
+  onToggleSidebar: () => void;
+  showCodePane: boolean;
+  onToggleCodePane: () => void;
+  showDiagnosticsPane: boolean;
+  onToggleDiagnosticsPane: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,11 +37,15 @@ export const Header: React.FC<HeaderProps> = ({
   viewMode,
   onToggleViewMode,
   selectedPreset,
-  onSelectPreset,
   inputStr,
   onChangeInput,
   onReset,
   onBackToCatalog,
+  onToggleSidebar,
+  showCodePane,
+  onToggleCodePane,
+  showDiagnosticsPane,
+  onToggleDiagnosticsPane,
 }) => {
   const isSketch = theme === 'sketch';
 
@@ -48,10 +58,10 @@ export const Header: React.FC<HeaderProps> = ({
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
-        {/* Brand */}
-        <div className="flex items-center gap-3">
+        {/* Brand & Navigation */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <div
-            className={`flex items-center justify-center w-9 h-9 rounded-lg font-bold text-lg ${
+            className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg font-bold text-lg shrink-0 ${
               isSketch
                 ? 'bg-[#d65d0e] text-white sketch-border-subtle font-sketch text-xl'
                 : 'bg-gradient-to-br from-indigo-500 to-cyan-400 text-white shadow-lg shadow-indigo-500/20'
@@ -59,77 +69,71 @@ export const Header: React.FC<HeaderProps> = ({
           >
             {isSketch ? '✍' : <Cpu className="w-5 h-5" />}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span
-                className={`font-extrabold tracking-tight text-lg ${
-                  isSketch ? 'font-sketch text-2xl tracking-normal text-[#282828]' : 'text-white'
-                }`}
-              >
-                TraceCraft
-              </span>
-              <span
-                className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider ${
-                  isSketch
-                    ? 'bg-[#ebdbb2] text-[#3c3836] border border-[#3c3836]/20'
-                    : 'bg-indigo-950/80 text-cyan-400 border border-cyan-800/40'
-                }`}
-              >
-                Next-Gen Viz
-              </span>
-            </div>
-            <p className="text-xs opacity-60 hidden sm:block">
-              Interactive Execution Tracing for Algorithms & Modern AI
-            </p>
+
+          <div className="hidden sm:block">
+            <span
+              className={`font-extrabold tracking-tight text-lg ${
+                isSketch ? 'font-sketch text-2xl tracking-normal text-[#282828]' : 'text-white'
+              }`}
+            >
+              TraceCraft
+            </span>
           </div>
 
-          {/* Back to Catalog Button */}
+          {/* Back to Catalog */}
           <button
             onClick={onBackToCatalog}
-            title="Back to Topics Catalog"
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ml-1 ${
+            title="Return to Catalog Homepage"
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
               isSketch
                 ? 'bg-[#ebdbb2] border border-[#3c3836]/40 hover:bg-[#d5c4a1] text-[#282828] font-sketch text-sm'
                 : 'bg-[#151c2d] border border-[#2a3752] text-slate-200 hover:text-cyan-400 hover:border-cyan-500/50'
             }`}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Catalog</span>
+          </button>
+
+          {/* Dynamic Curriculum Sidebar Trigger */}
+          <button
+            onClick={onToggleSidebar}
+            title="Open Dynamic Curriculum Sidebar (Ctrl+B)"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm ${
+              isSketch
+                ? 'bg-[#d65d0e] text-white border-2 border-[#3c3836] font-sketch text-sm'
+                : 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-cyan-500/20 hover:opacity-95'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
             <span>Topics</span>
           </button>
         </div>
 
-        {/* Algorithm Picker & Input */}
+        {/* Current Active Topic Display & Input Tweaker */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <label
-              htmlFor="preset-select"
-              className="text-xs font-medium opacity-70 hidden md:inline"
-            >
-              Topic:
-            </label>
-            <select
-              id="preset-select"
-              value={selectedPreset.id}
-              onChange={(e) => {
-                const found = ALGORITHM_PRESETS.find((p) => p.id === e.target.value);
-                if (found) onSelectPreset(found);
-              }}
-              className={`text-xs sm:text-sm font-medium px-3 py-1.5 rounded-md cursor-pointer transition-colors outline-none ${
-                isSketch
-                  ? 'bg-[#fbf7ee] border-2 border-[#3c3836] text-[#282828] font-sketch text-base'
-                  : 'bg-[#151c2d] border border-[#2a3752] text-slate-200 hover:border-indigo-500/50 focus:border-indigo-500'
+          {/* Active Topic Chip */}
+          <button
+            onClick={onToggleSidebar}
+            title="Click to switch topic"
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-medium border transition-colors ${
+              isSketch
+                ? 'bg-[#fbf7ee] border-2 border-[#3c3836] text-[#282828]'
+                : 'bg-[#131b2d] border-[#222f46] text-slate-200 hover:border-cyan-500/50'
+            }`}
+          >
+            <span className="opacity-60 hidden lg:inline">[{selectedPreset.category}]</span>
+            <span className="font-bold">{selectedPreset.title}</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
+                isSketch ? 'bg-[#ebdbb2] text-[#3c3836]' : 'bg-cyan-950 text-cyan-300'
               }`}
             >
-              {ALGORITHM_PRESETS.map((preset) => (
-                <option key={preset.id} value={preset.id}>
-                  [{preset.category}] {preset.title}
-                </option>
-              ))}
-            </select>
-          </div>
+              {selectedPreset.badge}
+            </span>
+          </button>
 
           {/* Quick Input Tweaker */}
-          <div className="hidden lg:flex items-center gap-1.5">
+          <div className="hidden xl:flex items-center gap-1.5">
             <Sliders className="w-3.5 h-3.5 opacity-60" />
             <input
               type="text"
@@ -146,8 +150,44 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        {/* Dynamic Panel Toggles & View Controls */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Panel Visibility Toggles (Desktop only) */}
+          {viewMode === 'desktop-3pane' && (
+            <div
+              className={`hidden md:flex items-center p-0.5 rounded-lg border ${
+                isSketch ? 'bg-[#ebdbb2] border-[#3c3836]/30' : 'bg-[#121929] border-[#222f46]'
+              }`}
+            >
+              <button
+                onClick={onToggleCodePane}
+                title={showCodePane ? 'Hide Code Panel' : 'Show Code Panel'}
+                className={`p-1.5 rounded text-xs transition-colors ${
+                  showCodePane
+                    ? isSketch
+                      ? 'bg-[#fbf7ee] text-[#d65d0e] font-bold shadow-sm'
+                      : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                    : 'opacity-50 hover:opacity-100'
+                }`}
+              >
+                <PanelLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={onToggleDiagnosticsPane}
+                title={showDiagnosticsPane ? 'Hide Diagnostics Panel' : 'Show Diagnostics Panel'}
+                className={`p-1.5 rounded text-xs transition-colors ${
+                  showDiagnosticsPane
+                    ? isSketch
+                      ? 'bg-[#fbf7ee] text-[#d65d0e] font-bold shadow-sm'
+                      : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                    : 'opacity-50 hover:opacity-100'
+                }`}
+              >
+                <PanelRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {/* Mobile Story vs 3-Pane Desktop switch */}
           <button
             onClick={onToggleViewMode}
@@ -169,21 +209,21 @@ export const Header: React.FC<HeaderProps> = ({
             {viewMode === 'mobile-story' ? (
               <>
                 <Smartphone className="w-3.5 h-3.5 text-amber-300" />
-                <span className="hidden sm:inline">Story Mode (Mobile)</span>
+                <span className="hidden sm:inline">Story Mode</span>
               </>
             ) : (
               <>
                 <Monitor className="w-3.5 h-3.5 opacity-70" />
-                <span className="hidden sm:inline">3-Pane Studio</span>
+                <span className="hidden sm:inline">3-Pane</span>
               </>
             )}
           </button>
 
-          {/* Theme Mode Toggle (Sketch Hand-Drawn vs Clean Pro Studio) */}
+          {/* Theme Mode Toggle */}
           <button
             onClick={onToggleTheme}
             title={`Switch to ${isSketch ? 'Clean Pro Studio' : 'Hand-Drawn Sketch'} theme`}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
               isSketch
                 ? 'bg-[#ebdbb2] border-2 border-[#3c3836] text-[#282828] hover:bg-[#d5c4a1] font-sketch text-sm'
                 : 'bg-[#151c2d] border border-[#2a3752] text-slate-200 hover:border-cyan-500/50 hover:bg-[#1a233a]'
@@ -192,12 +232,12 @@ export const Header: React.FC<HeaderProps> = ({
             {isSketch ? (
               <>
                 <Paintbrush className="w-3.5 h-3.5 text-[#d65d0e]" />
-                <span>Sketch Mode</span>
+                <span className="hidden sm:inline">Sketch</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Clean Studio</span>
+                <span className="hidden sm:inline">Clean</span>
               </>
             )}
           </button>

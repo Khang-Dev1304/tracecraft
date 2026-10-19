@@ -8,6 +8,7 @@ import { CodePane } from './components/CodePane';
 import { DiagnosticsPane } from './components/DiagnosticsPane';
 import { MobileStoryMode } from './components/MobileStoryMode';
 import { CatalogView } from './components/CatalogView';
+import { CurriculumSidebar } from './components/CurriculumSidebar';
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeMode>('sketch');
@@ -34,6 +35,11 @@ export const App: React.FC = () => {
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
+
+  // Dynamic layout panel states
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [showCodePane, setShowCodePane] = useState<boolean>(true);
+  const [showDiagnosticsPane, setShowDiagnosticsPane] = useState<boolean>(true);
 
   // Sync hash changes (browser back/forward button)
   useEffect(() => {
@@ -157,6 +163,7 @@ export const App: React.FC = () => {
 
   const handleBackToCatalog = useCallback(() => {
     setIsPlaying(false);
+    setSidebarOpen(false);
     setAppRoute('catalog');
     window.location.hash = '#catalog';
   }, []);
@@ -191,6 +198,18 @@ export const App: React.FC = () => {
         return;
       }
 
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        setSidebarOpen((prev) => !prev);
+        return;
+      }
+
+      if (e.key === 'Escape' && sidebarOpen) {
+        e.preventDefault();
+        setSidebarOpen(false);
+        return;
+      }
+
       if (e.code === 'Space') {
         e.preventDefault();
         handleTogglePlay();
@@ -213,9 +232,41 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [appRoute, handleTogglePlay, handleNext, handlePrev, handleFirst, handleLast, handleReset]);
+  }, [appRoute, sidebarOpen, handleTogglePlay, handleNext, handlePrev, handleFirst, handleLast, handleReset]);
 
   const isSketch = theme === 'sketch';
+
+  // Compute dynamic column grid allocations
+  const getGridConfig = () => {
+    if (showCodePane && showDiagnosticsPane) {
+      return {
+        codeClass: 'hidden lg:block lg:col-span-4',
+        stageClass: 'col-span-1 lg:col-span-5',
+        diagClass: 'hidden md:block col-span-1 lg:col-span-3',
+      };
+    }
+    if (showCodePane && !showDiagnosticsPane) {
+      return {
+        codeClass: 'hidden lg:block lg:col-span-5',
+        stageClass: 'col-span-1 lg:col-span-7',
+        diagClass: 'hidden',
+      };
+    }
+    if (!showCodePane && showDiagnosticsPane) {
+      return {
+        codeClass: 'hidden',
+        stageClass: 'col-span-1 lg:col-span-8',
+        diagClass: 'hidden md:block col-span-1 lg:col-span-4',
+      };
+    }
+    return {
+      codeClass: 'hidden',
+      stageClass: 'col-span-12',
+      diagClass: 'hidden',
+    };
+  };
+
+  const grid = getGridConfig();
 
   // If on Catalog Route, render the rich categorized Curriculum / Catalog View
   if (appRoute === 'catalog') {
@@ -248,7 +299,6 @@ export const App: React.FC = () => {
           )
         }
         selectedPreset={selectedPreset}
-        onSelectPreset={handleSelectPreset}
         inputStr={inputStr}
         onChangeInput={(val) => {
           setInputStr(val);
@@ -256,7 +306,30 @@ export const App: React.FC = () => {
         }}
         onReset={handleReset}
         onBackToCatalog={handleBackToCatalog}
+        onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
+        showCodePane={showCodePane}
+        onToggleCodePane={() => setShowCodePane((prev) => !prev)}
+        showDiagnosticsPane={showDiagnosticsPane}
+        onToggleDiagnosticsPane={() => setShowDiagnosticsPane((prev) => !prev)}
       />
+
+      {/* Dynamic Slide-out Curriculum Sidebar Drawer */}
+      <CurriculumSidebar
+        theme={theme}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        selectedPreset={selectedPreset}
+        onSelectPreset={handleSelectPreset}
+        onViewFullCatalog={handleBackToCatalog}
+      />
+
+      {/* Backdrop overlay when sidebar is open */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 transition-opacity"
+        />
+      )}
 
       {/* Main Workspace Body */}
       <main className="flex-1 flex overflow-hidden">
@@ -277,20 +350,23 @@ export const App: React.FC = () => {
             />
           </div>
         ) : (
-          // Synchronized 3-Pane Desktop Studio Layout
+          // Dynamic Synchronized Grid Layout
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
-            {/* Left Column: Code Pane (4 cols) */}
-            <div className="hidden lg:block lg:col-span-4 h-full overflow-hidden">
-              <CodePane
-                theme={theme}
-                code={selectedPreset.code}
-                activeLine={currentStep.line}
-                step={currentStep}
-              />
-            </div>
+            {/* Left Column: Code Pane */}
+            {showCodePane && (
+              <div className={`${grid.codeClass} h-full overflow-hidden`}>
+                <CodePane
+                  theme={theme}
+                  code={selectedPreset.code}
+                  activeLine={currentStep.line}
+                  step={currentStep}
+                  onToggleCollapse={() => setShowCodePane(false)}
+                />
+              </div>
+            )}
 
-            {/* Center Column: Visual Stage (5 cols) */}
-            <div className="col-span-1 lg:col-span-5 h-full overflow-hidden flex flex-col">
+            {/* Center Column: Visual Stage */}
+            <div className={`${grid.stageClass} h-full overflow-hidden flex flex-col`}>
               <VisualStage
                 theme={theme}
                 step={currentStep}
@@ -298,14 +374,17 @@ export const App: React.FC = () => {
               />
             </div>
 
-            {/* Right Column: Diagnostics & Invariants (3 cols) */}
-            <div className="hidden md:block col-span-1 lg:col-span-3 h-full overflow-hidden">
-              <DiagnosticsPane
-                theme={theme}
-                step={currentStep}
-                algorithmTitle={selectedPreset.title}
-              />
-            </div>
+            {/* Right Column: Diagnostics & Invariants */}
+            {showDiagnosticsPane && (
+              <div className={`${grid.diagClass} h-full overflow-hidden`}>
+                <DiagnosticsPane
+                  theme={theme}
+                  step={currentStep}
+                  algorithmTitle={selectedPreset.title}
+                  onToggleCollapse={() => setShowDiagnosticsPane(false)}
+                />
+              </div>
+            )}
           </div>
         )}
       </main>

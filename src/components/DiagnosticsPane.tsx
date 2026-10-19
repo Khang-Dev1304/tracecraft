@@ -5,7 +5,8 @@ import {
   ChevronUp, 
   AlertCircle, 
   BrainCircuit,
-  Binary
+  Binary,
+  ChevronRight
 } from 'lucide-react';
 import type { ThemeMode, TraceStep, StepAction } from '../types';
 
@@ -13,11 +14,13 @@ interface DiagnosticsPaneProps {
   theme: ThemeMode;
   step: TraceStep;
   algorithmTitle: string;
+  onToggleCollapse?: () => void;
 }
 export const DiagnosticsPane: React.FC<DiagnosticsPaneProps> = ({
   theme,
   step,
   algorithmTitle,
+  onToggleCollapse,
 }) => {
   const isSketch = theme === 'sketch';
   const [socraticOpen, setSocraticOpen] = useState(false);
@@ -119,7 +122,7 @@ export const DiagnosticsPane: React.FC<DiagnosticsPaneProps> = ({
           <Activity className="w-3.5 h-3.5 opacity-70 shrink-0" />
           <span className="truncate">{algorithmTitle} Diagnostics</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span
             className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold uppercase ${getActionBadgeColor(
               step.action
@@ -127,6 +130,19 @@ export const DiagnosticsPane: React.FC<DiagnosticsPaneProps> = ({
           >
             {step.action}
           </span>
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              title="Collapse Diagnostics"
+              className={`p-1 rounded transition-colors ml-1 ${
+                isSketch
+                  ? 'hover:bg-[#ebdbb2] text-[#3c3836]'
+                  : 'hover:bg-[#1a233a] text-slate-400 hover:text-white'
+              }`}
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
