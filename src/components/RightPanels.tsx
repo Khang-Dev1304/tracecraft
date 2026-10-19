@@ -56,7 +56,7 @@ export const RightPanels: React.FC<RightPanelsProps> = ({
   };
 
   return (
-    <div className="w-80 lg:w-96 shrink-0 h-full overflow-y-auto p-3 space-y-3 flex flex-col select-none border-l border-inherit">
+    <div className="w-80 lg:w-96 max-w-full shrink-0 h-full overflow-y-auto p-3 space-y-3 flex flex-col select-none border-l border-inherit">
       {/* ========================================= */}
       {/* CARD 1: CODE PANE                        */}
       {/* ========================================= */}

@@ -20,8 +20,9 @@ interface VisualStageProps {
   category: string;
   onChangeInput?: (newInput: string) => void;
   language?: Language;
+  isMaximized?: boolean;
+  onToggleMaximize?: () => void;
 }
-
 // Ultra-smooth 60fps ease-out cubic interpolation hook
 function useSmoothValue(target: number, durationMs = 500): number {
   const [val, setVal] = useState(target);
@@ -71,6 +72,8 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   category,
   onChangeInput,
   language = 'en',
+  isMaximized,
+  onToggleMaximize,
 }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const isDark = theme === 'studio';
@@ -79,9 +82,9 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   const [zoom, setZoom] = useState<number>(1);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState<boolean>(false);
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [internalExpanded, setInternalExpanded] = useState<boolean>(false);
+  const isExpanded = isMaximized ?? internalExpanded;
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
-
   const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const hasMovedRef = useRef<boolean>(false);
 
@@ -203,8 +206,6 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   return (
     <div
       className={`relative w-full h-full flex flex-col justify-between p-4 overflow-hidden select-none transition-all duration-300 ${
-        isExpanded ? 'min-h-[540px]' : 'min-h-[380px]'
-      } ${
         isDark
           ? 'bg-viz-dots-dark text-white'
           : 'bg-viz-dots text-slate-800'
@@ -225,6 +226,12 @@ export const VisualStage: React.FC<VisualStageProps> = ({
           <span className="text-xs opacity-60 font-mono">
             Step {step.step} / {step.totalSteps}
           </span>
+          {isExpanded && (
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-cyan-400 rounded-full text-[11px] font-semibold animate-pulse">
+              <span>✦ {language === 'vi' ? 'Ưu tiên Visualization' : 'Focus Mode'}</span>
+              <span className="opacity-60 text-[10px]">({language === 'vi' ? 'Esc để thu nhỏ' : 'Esc to exit'})</span>
+            </div>
+          )}
         </div>
 
         {/* Data Controls & Graph Zoom Toolbar */}
@@ -295,12 +302,26 @@ export const VisualStage: React.FC<VisualStageProps> = ({
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => setIsExpanded((e) => !e)}
-              title={isExpanded ? 'Collapse Height' : 'Expand Height'}
-              className="p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-0.5"
+              onClick={() => {
+                if (onToggleMaximize) {
+                  onToggleMaximize();
+                } else {
+                  setInternalExpanded((e) => !e);
+                }
+              }}
+              title={
+                isExpanded
+                  ? (language === 'vi' ? 'Thu nhỏ về 3 cột (Esc)' : 'Exit Focus Mode (Esc)')
+                  : (language === 'vi' ? 'Phóng to tối đa Visualization (Ưu tiên hình ảnh)' : 'Maximize Visualization (Focus Mode)')
+              }
+              className={`p-1 rounded-xl transition-all ml-0.5 ${
+                isExpanded
+                  ? 'bg-blue-500/20 text-blue-600 dark:text-cyan-400 border border-blue-500/40 shadow-xs'
+                  : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
             >
               {isExpanded ? (
-                <Minimize2 className="w-3.5 h-3.5 text-cyan-400" />
+                <Minimize2 className="w-3.5 h-3.5 text-blue-500 dark:text-cyan-400" />
               ) : (
                 <Maximize2 className="w-3.5 h-3.5" />
               )}
@@ -410,7 +431,9 @@ export const VisualStage: React.FC<VisualStageProps> = ({
               viewBox={`0 0 ${SVG_W} ${SVG_H}`}
               preserveAspectRatio="xMidYMid meet"
               onClick={handleSvgClick}
-              className="w-full h-full max-h-[350px] cursor-crosshair select-none"
+              className={`w-full h-full cursor-crosshair select-none transition-all duration-300 ${
+                isExpanded ? 'max-h-[580px]' : 'max-h-[350px]'
+              }`}
             >
               <defs>
                 <linearGradient id="regGradSmooth" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -609,7 +632,9 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         {/* 2. NEURAL NETWORK FORWARD PASS (MLP & Activation Layers)   */}
         {/* ========================================================= */}
         {layers && layers.length > 0 && (
-          <div className="w-full h-full relative flex items-center justify-center max-w-3xl max-h-[350px]">
+          <div className={`w-full h-full relative flex items-center justify-center transition-all duration-300 ${
+            isExpanded ? 'max-w-5xl max-h-[560px]' : 'max-w-3xl max-h-[350px]'
+          }`}>
             <svg
               viewBox="0 0 740 360"
               preserveAspectRatio="xMidYMid meet"
@@ -772,7 +797,9 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         {/* 2.5. SINGLE ARTIFICIAL NEURON (PERCEPTRON) VISUALIZER     */}
         {/* ========================================================= */}
         {neuronState && (
-          <div className="w-full h-full relative flex items-center justify-center max-w-4xl max-h-[350px]">
+          <div className={`w-full h-full relative flex items-center justify-center transition-all duration-300 ${
+            isExpanded ? 'max-w-6xl max-h-[580px]' : 'max-w-4xl max-h-[350px]'
+          }`}>
             <svg
               viewBox="0 0 740 360"
               preserveAspectRatio="xMidYMid meet"
@@ -1013,7 +1040,9 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         {/* 2.6. BIOLOGICAL NEURON & ACTION POTENTIAL OSCILLOSCOPE     */}
         {/* ========================================================= */}
         {modernNeuronState && (
-          <div className="w-full h-full relative flex items-center justify-between p-2 max-w-4xl max-h-[350px]">
+          <div className={`w-full h-full relative flex items-center justify-between p-2 transition-all duration-300 ${
+            isExpanded ? 'max-w-6xl max-h-[580px]' : 'max-w-4xl max-h-[350px]'
+          }`}>
             {/* Left Column: Neuron Architecture (Width: 360) */}
             <svg
               viewBox="0 0 360 340"
@@ -1192,7 +1221,9 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         {/* 3. TRANSFORMER SELF-ATTENTION & NEXT-TOKEN LOGITS         */}
         {/* ========================================================= */}
         {tokens && tokens.length > 0 && (
-          <div className="w-full max-w-4xl flex flex-col items-center gap-3.5 py-1">
+          <div className={`w-full flex flex-col items-center gap-3.5 py-1 transition-all duration-300 ${
+            isExpanded ? 'max-w-6xl' : 'max-w-4xl'
+          }`}>
             {/* 1. Curved Attention Arcs & Tokens Stage */}
             <div
               className={`w-full p-4 rounded-2xl border transition-all ${
@@ -1412,7 +1443,9 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         {/* 4. CNN 2D CONVOLUTION & FEATURE MAP VISUALIZER           */}
         {/* ========================================================= */}
         {inputMatrix && kernel && featureMap && (
-          <div className="w-full h-full max-w-4xl flex items-center justify-center p-2">
+          <div className={`w-full h-full flex items-center justify-center p-2 transition-all duration-300 ${
+            isExpanded ? 'max-w-6xl max-h-[580px]' : 'max-w-4xl max-h-[350px]'
+          }`}>
             <svg
               viewBox="0 0 740 360"
               preserveAspectRatio="xMidYMid meet"
@@ -1651,7 +1684,9 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         {/* 4. CLASSICAL ARRAYS (Pastel Rounded VizLearn Bars)        */}
         {/* ========================================================= */}
         {arr && arr.length > 0 && (
-          <div className="w-full h-full relative flex items-end justify-center pb-6">
+          <div className={`w-full h-full relative flex items-end justify-center pb-6 transition-all duration-300 ${
+            isExpanded ? 'max-h-[560px]' : 'max-h-[340px]'
+          }`}>
             <svg
               ref={svgRef}
               viewBox="0 0 700 360"

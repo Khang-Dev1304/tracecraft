@@ -19,7 +19,7 @@ export const App: React.FC = () => {
   const [sidebarWidth, setSidebarWidth] = useState<number>(290);
   const [language, setLanguage] = useState<Language>('vi');
   const [isResizingSidebar, setIsResizingSidebar] = useState<boolean>(false);
-
+  const [isStageMaximized, setIsStageMaximized] = useState<boolean>(false);
   const isDraggingSidebar = useRef<boolean>(false);
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(290);
@@ -53,6 +53,19 @@ export const App: React.FC = () => {
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
   }, [sidebarWidth]);
+  // Handle Esc key to exit maximized stage mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if (e.key === 'Escape' && isStageMaximized) {
+        setIsStageMaximized(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isStageMaximized]);
   const [appRoute, setAppRoute] = useState<AppView>(() => {
     if (typeof window !== 'undefined' && window.location.hash.startsWith('#visualizer')) {
       return 'visualizer';
@@ -296,10 +309,10 @@ export const App: React.FC = () => {
 
       {/* 2. Docked Curriculum Lesson Sidebar with draggable width resize */}
       <div
-        style={{ width: sidebarOpen ? `${sidebarWidth}px` : '0px' }}
+        style={{ width: (sidebarOpen && !isStageMaximized) ? `${sidebarWidth}px` : '0px' }}
         className={`flex shrink-0 relative overflow-hidden ${
-          isResizingSidebar ? 'transition-none select-none' : 'transition-[width] duration-200 ease-in-out'
-        } ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          isResizingSidebar ? 'transition-none select-none' : 'transition-[width] duration-300 ease-in-out'
+        } ${(sidebarOpen && !isStageMaximized) ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       >
         <LessonSidebar
           theme={theme}
@@ -308,7 +321,7 @@ export const App: React.FC = () => {
           language={language}
           width={sidebarWidth}
         />
-        {sidebarOpen && (
+        {sidebarOpen && !isStageMaximized && (
           <div
             onMouseDown={handleStartResizeSidebar}
             title="Kéo chuột để mở rộng/thu nhỏ sidebar"
@@ -381,6 +394,8 @@ export const App: React.FC = () => {
                     setCurrentStepIndex(0);
                   }}
                   language={language}
+                  isMaximized={isStageMaximized}
+                  onToggleMaximize={() => setIsStageMaximized((prev) => !prev)}
                 />
               </div>
 
@@ -402,18 +417,27 @@ export const App: React.FC = () => {
             </div>
 
             {/* Right Stacked Panels: Code, Inputs, Step Log */}
-            <RightPanels
-              theme={theme}
-              preset={selectedPreset}
-              step={currentStep}
-              activeLine={currentStep.line}
-              inputStr={inputStr}
-              onChangeInput={(val) => {
-                setInputStr(val);
-                setCurrentStepIndex(0);
-              }}
-              language={language}
-            />
+            {/* Right Stacked Panels: Code, Inputs, Step Log */}
+            <div
+              className={`transition-all duration-300 ease-in-out shrink-0 overflow-hidden flex flex-col ${
+                isStageMaximized
+                  ? 'w-0 opacity-0 pointer-events-none border-none'
+                  : 'w-80 lg:w-96 opacity-100'
+              }`}
+            >
+              <RightPanels
+                theme={theme}
+                preset={selectedPreset}
+                step={currentStep}
+                activeLine={currentStep.line}
+                inputStr={inputStr}
+                onChangeInput={(val) => {
+                  setInputStr(val);
+                  setCurrentStepIndex(0);
+                }}
+                language={language}
+              />
+            </div>
             </div>
           )}
         </div>
