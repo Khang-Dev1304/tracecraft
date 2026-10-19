@@ -19,6 +19,7 @@ export type VisualType =
   | 'regression-plot'
   | 'neural-network'
   | 'attention-matrix'
+  | 'cnn-convolution'
   | 'array-bars';
 
 export type StepAction =
@@ -61,6 +62,9 @@ export type PrimitiveStateValue =
   | undefined
   | number[]
   | string[]
+  | number[][]
+  | (number | null)[][]
+  | { r: number; c: number }
   | DataPoint[]
   | NeuralLayer[]
   | { token: string; prob: number }[];
@@ -80,6 +84,10 @@ export interface StepState {
   arr?: number[];
   i?: number;
   j?: number;
+  inputMatrix?: number[][];
+  kernel?: number[][];
+  featureMap?: (number | null)[][];
+  kernelPos?: { r: number; c: number };
   [key: string]: PrimitiveStateValue;
 }
 

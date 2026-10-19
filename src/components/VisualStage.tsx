@@ -84,7 +84,13 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   const layers = step.state.layers;
   const tokens = step.state.tokens;
   const probabilities = step.state.probabilities;
+  const inputMatrix = step.state.inputMatrix;
+  const kernel = step.state.kernel;
+  const featureMap = step.state.featureMap;
+  const kernelPos = (step.state.kernelPos as { r: number; c: number } | undefined) || { r: 0, c: 0 };
 
+  const smoothKernelR = useSmoothValue(kernelPos.r, 420);
+  const smoothKernelC = useSmoothValue(kernelPos.c, 420);
   // Raw values from trace
   const rawW = step.state.weight !== undefined ? Number(step.state.weight) : 0;
   const rawB = step.state.bias !== undefined ? Number(step.state.bias) : 0;
@@ -908,6 +914,245 @@ export const VisualStage: React.FC<VisualStageProps> = ({
           </div>
         )}
 
+        {/* ========================================================= */}
+        {/* 4. CNN 2D CONVOLUTION & FEATURE MAP VISUALIZER           */}
+        {/* ========================================================= */}
+        {inputMatrix && kernel && featureMap && (
+          <div className="w-full h-full max-w-4xl flex items-center justify-center p-2">
+            <svg
+              viewBox="0 0 740 360"
+              preserveAspectRatio="xMidYMid meet"
+              className="w-full h-full select-none"
+            >
+              {/* Section Headers */}
+              <text x="140" y="32" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-sans text-xs font-bold uppercase tracking-wider">
+                Input Image (5x5)
+              </text>
+              <text x="370" y="32" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-sans text-xs font-bold uppercase tracking-wider">
+                Kernel (3x3 Sobel)
+              </text>
+              <text x="600" y="32" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-sans text-xs font-bold uppercase tracking-wider">
+                Feature Map (3x3)
+              </text>
+
+              {/* 1. Input Image 5x5 Grid */}
+              {inputMatrix.map((row, r) =>
+                row.map((val, c) => {
+                  const cellX = 40 + c * 40;
+                  const cellY = 60 + r * 40;
+                  const isHigh = val > 5;
+                  return (
+                    <g key={`in-cell-${r}-${c}`}>
+                      <rect
+                        x={cellX}
+                        y={cellY}
+                        width={38}
+                        height={38}
+                        rx={8}
+                        fill={isHigh ? (isDark ? '#1e293b' : '#f8fafc') : (isDark ? '#0f172a' : '#f1f5f9')}
+                        stroke={isDark ? '#334155' : '#e2e8f0'}
+                        strokeWidth={1.5}
+                      />
+                      <text
+                        x={cellX + 19}
+                        y={cellY + 24}
+                        textAnchor="middle"
+                        fill={isHigh ? (isDark ? '#f8fafc' : '#0f172a') : (isDark ? '#64748b' : '#94a3b8')}
+                        className="font-mono text-xs font-bold"
+                      >
+                        {val}
+                      </text>
+                    </g>
+                  );
+                })
+              )}
+
+              {/* Ultra-Smooth Sliding 3x3 Kernel Window on Input Matrix */}
+              {(() => {
+                const winX = 40 + smoothKernelC * 40 - 2;
+                const winY = 60 + smoothKernelR * 40 - 2;
+                return (
+                  <rect
+                    x={winX}
+                    y={winY}
+                    width={122}
+                    height={122}
+                    rx={12}
+                    fill="rgba(2, 132, 199, 0.12)"
+                    stroke={isDark ? '#38bdf8' : '#0284c7'}
+                    strokeWidth={2.8}
+                    strokeDasharray="6 4"
+                    className="drop-shadow-[0_0_12px_rgba(2,132,199,0.5)]"
+                  />
+                );
+              })()}
+
+              {/* Projection Connection Beams connecting Receptive Field to Feature Map Cell */}
+              {(() => {
+                const patchCenterX = 40 + smoothKernelC * 40 + 60;
+                const patchCenterY = 60 + smoothKernelR * 40 + 60;
+                const outCellX = 530 + smoothKernelC * 46 + 23;
+                const outCellY = 105 + smoothKernelR * 46 + 23;
+
+                return (
+                  <g>
+                    <path
+                      d={`M ${patchCenterX} ${patchCenterY} Q ${(patchCenterX + 370) / 2} ${patchCenterY - 30} 370 180`}
+                      fill="none"
+                      stroke={isDark ? '#06b6d4' : '#0284c7'}
+                      strokeWidth={1.8}
+                      strokeDasharray="4 4"
+                      opacity={0.6}
+                    />
+                    <path
+                      d={`M 370 180 Q ${(370 + outCellX) / 2} ${outCellY - 30} ${outCellX} ${outCellY}`}
+                      fill="none"
+                      stroke={isDark ? '#10b981' : '#059669'}
+                      strokeWidth={2.2}
+                      strokeDasharray="4 4"
+                      opacity={0.8}
+                      className="animate-pulse"
+                    />
+                  </g>
+                );
+              })()}
+
+              {/* 2. Center 3x3 Kernel Matrix */}
+              {kernel.map((row, r) =>
+                row.map((kVal, c) => {
+                  const kX = 315 + c * 36;
+                  const kY = 125 + r * 36;
+                  const isPos = kVal > 0;
+                  const isNeg = kVal < 0;
+
+                  return (
+                    <g key={`k-cell-${r}-${c}`}>
+                      <rect
+                        x={kX}
+                        y={kY}
+                        width={34}
+                        height={34}
+                        rx={8}
+                        fill={
+                          isPos
+                            ? isDark
+                              ? '#1e3a5f'
+                              : '#e0f2fe'
+                            : isNeg
+                              ? isDark
+                                ? '#3b1d24'
+                                : '#fee2e2'
+                              : isDark
+                                ? '#1e293b'
+                                : '#f8fafc'
+                        }
+                        stroke={
+                          isPos
+                            ? isDark
+                              ? '#38bdf8'
+                              : '#0284c7'
+                            : isNeg
+                              ? '#ef4444'
+                              : isDark
+                                ? '#334155'
+                                : '#e2e8f0'
+                        }
+                        strokeWidth={1.5}
+                      />
+                      <text
+                        x={kX + 17}
+                        y={kY + 22}
+                        textAnchor="middle"
+                        fill={isPos ? '#0284c7' : isNeg ? '#ef4444' : isDark ? '#94a3b8' : '#64748b'}
+                        className="font-mono text-xs font-bold"
+                      >
+                        {kVal > 0 ? `+${kVal}` : kVal}
+                      </text>
+                    </g>
+                  );
+                })
+              )}
+
+              {/* Center Operator Symbol */}
+              <text x="370" y="260" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-mono text-xs font-bold">
+                ∑ (Patch ⊙ Kernel)
+              </text>
+
+              {/* 3. Right Output Feature Map 3x3 */}
+              {featureMap.map((row, r) =>
+                row.map((fVal, c) => {
+                  const outX = 530 + c * 46;
+                  const outY = 105 + r * 46;
+                  const isTarget = kernelPos.r === r && kernelPos.c === c;
+                  const isFilled = fVal !== null;
+                  const isHighActivation = Number(fVal) >= 30;
+
+                  return (
+                    <g key={`out-cell-${r}-${c}`}>
+                      <rect
+                        x={outX}
+                        y={outY}
+                        width={42}
+                        height={42}
+                        rx={10}
+                        fill={
+                          isHighActivation
+                            ? '#0284c7'
+                            : isFilled
+                              ? isDark
+                                ? '#1e293b'
+                                : '#e0f2fe'
+                              : isDark
+                                ? '#0b0f19'
+                                : '#f8fafc'
+                        }
+                        stroke={
+                          isTarget
+                            ? isDark
+                              ? '#38bdf8'
+                              : '#0284c7'
+                            : isFilled
+                              ? isDark
+                                ? '#0284c7'
+                                : '#bae6fd'
+                              : isDark
+                                ? '#1e293b'
+                                : '#e2e8f0'
+                        }
+                        strokeWidth={isTarget ? 2.5 : 1.5}
+                        strokeDasharray={isFilled ? undefined : '4 4'}
+                        className="transition-all duration-300"
+                      />
+                      <text
+                        x={outX + 21}
+                        y={outY + 26}
+                        textAnchor="middle"
+                        fill={
+                          isHighActivation
+                            ? '#ffffff'
+                            : isFilled
+                              ? isDark
+                                ? '#38bdf8'
+                                : '#0369a1'
+                              : isDark
+                                ? '#475569'
+                                : '#cbd5e1'
+                        }
+                        className="font-mono text-xs font-bold"
+                      >
+                        {isFilled ? fVal : '·'}
+                      </text>
+                    </g>
+                  );
+                })
+              )}
+            </svg>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* 5. CLASSICAL ARRAYS                                      */}
+        {/* ========================================================= */}
         {/* ========================================================= */}
         {/* 4. CLASSICAL ARRAYS (Pastel Rounded VizLearn Bars)        */}
         {/* ========================================================= */}

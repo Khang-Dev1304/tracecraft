@@ -570,6 +570,267 @@ def forward_mlp(x, W1, b1, W2, b2):
     },
   },
 
+  {
+    id: 'cnn-feature-map',
+    title: 'Convolutional Neural Network (CNN) 2D Feature Map',
+    category: 'Deep Learning & Neural Networks',
+    difficulty: 'Intermediate',
+    badge: 'Computer Vision',
+    visualType: 'cnn-convolution',
+    formula: 'S(i, j) = (I * K)(i, j) = \\sum_{m} \\sum_{n} I(i + m, j + n) \\cdot K(m, n)',
+    summary: 'Slides a learnable 3x3 filter kernel over an input image matrix to detect local visual features like edges and textures.',
+    description: 'Convolutional layers use shared weights and local receptive fields to achieve translation invariance. Traces step-by-step 2D kernel sliding, element-wise dot products, bias addition, and ReLU activation.',
+    inputVariants: [
+      { label: 'Vertical Edge (Sobel-X)', value: 'vertical-edge' },
+      { label: 'Horizontal Edge (Sobel-Y)', value: 'horizontal-edge' },
+      { label: 'Ridge Filter', value: 'ridge' },
+      { label: 'Identity Filter', value: 'identity' },
+    ],
+    vi: {
+      title: 'Mạng Nơ-ron Tích chập (CNN) & Bản đồ Đặc trưng (Feature Map)',
+      category: 'Deep Learning & Mạng Nơ-ron',
+      badge: 'Computer Vision',
+      summary: 'Trượt kernel lọc 3x3 qua ma trận ảnh đầu vào để trích xuất các đặc trưng thị giác cục bộ như đường biên và họa tiết.',
+      description: 'Tầng tích chập (Conv2d) sử dụng chia sẻ trọng số và vùng tiếp nhận cục bộ để đạt tính bất biến tịnh tiến. Trực quan hóa từng bước trượt kernel 2D, nhân tích chập vô hướng và kích hoạt ReLU.',
+      variants: [
+        { label: 'Đường biên dọc (Sobel-X)', value: 'vertical-edge' },
+        { label: 'Đường biên ngang (Sobel-Y)', value: 'horizontal-edge' },
+        { label: 'Bộ lọc Ridge', value: 'ridge' },
+        { label: 'Bộ lọc Identity', value: 'identity' },
+      ],
+      sections: [
+        {
+          title: '1. Tại sao Tích chập (Convolution) tối ưu cho Thị giác Máy tính?',
+          content: 'Nếu làm phẳng một bức ảnh 2D thành một vector dài để đưa vào MLP, số lượng trọng số sẽ bùng nổ lên hàng triệu tham số và làm mất hoàn toàn cấu trúc không gian 2D. Tầng tích chập dùng một kernel nhỏ (ví dụ 3x3) trượt khắp bức ảnh, chia sẻ chung trọng số cho toàn bộ vị trí.',
+          formula: '(I * K)(i, j) = \\sum_{m=0}^{k-1} \\sum_{n=0}^{k-1} I(i+m, j+n) K(m, n)',
+          keyTakeaway: 'Tính bất biến tịnh tiến (Translation Invariance): Một đường biên hay chi tiết được nhận diện chính xác bất kể nó nằm ở góc nào của bức ảnh.',
+        },
+        {
+          title: '2. Bản đồ Đặc trưng (Feature Map) hình thành như thế nào?',
+          content: 'Tại mỗi vị trí trượt, kernel tính tích vô hướng phần tử (element-wise multiplication) với vùng ảnh tương ứng (receptive field) rồi cộng dồn lại. Giá trị tổng này đại diện cho cường độ đặc trưng tại vị trí đó.',
+          keyTakeaway: 'Kích thước đầu ra: Output = (Input - Kernel + 2*Padding) / Stride + 1. Ví dụ ảnh 5x5 qua kernel 3x3 tạo ra Feature Map 3x3.',
+        },
+        {
+          title: '3. Kích hoạt ReLU và Tầng Gom cụm (Max Pooling)',
+          content: 'Sau khi tích chập, hàm ReLU (max(0, z)) loại bỏ các giá trị âm để tăng tính phi tuyến. Tiếp đó, tầng Max Pooling lấy giá trị cực đại trong từng cửa sổ 2x2 để giảm một nửa kích thước không gian và giảm chi phí tính toán.',
+          keyTakeaway: 'Các tầng tích chập đầu tiên học các đường biên/góc cơ bản; các tầng sâu hơn tổng hợp thành hình dạng, bộ phận và vật thể hoàn chỉnh.',
+        },
+      ],
+    },
+    sections: [
+      {
+        title: '1. Why Convolutions for Computer Vision?',
+        content: 'Flattening a 2D image into a 1D vector for a standard MLP destroys 2D spatial relationships and causes an explosion of millions of redundant parameters. CNNs solve this by sliding a compact 3x3 kernel across the entire image with shared weights.',
+        formula: '(I * K)(i, j) = \\sum_{m=0}^{k-1} \\sum_{n=0}^{k-1} I(i+m, j+n) K(m, n)',
+        keyTakeaway: 'Translation Invariance: Features like edges, textures, or shapes are detected identically regardless of their spatial location in the frame.',
+      },
+      {
+        title: '2. Generating the 2D Feature Map',
+        content: 'At each stride position, the kernel performs an element-wise dot product with the underlying receptive field patch and sums the results into a single scalar in the output feature map.',
+        keyTakeaway: 'Output Spatial Dimension Formula: Out = (Input - Kernel + 2*Padding) / Stride + 1. A 5x5 image convolved with a 3x3 kernel yields a 3x3 feature map.',
+      },
+      {
+        title: '3. Non-Linear ReLU and Downsampling via Max Pooling',
+        content: 'Following convolution, ReLU activations clamp negative responses to introduce sparsity. Downstream Max Pooling layers extract the maximum activation in 2x2 windows, reducing dimensions while retaining prominent visual features.',
+        keyTakeaway: 'Early CNN layers capture low-level edges; deeper layers assemble these edges into eyes, wheels, and complex objects.',
+      },
+    ],
+    timeComplexity: 'O(H · W · kH · kW)',
+    spaceComplexity: 'O(C_{out} · H_{out} · W_{out})',
+    tags: ['CNN', 'Computer Vision', 'PyTorch', 'Feature Map', 'Sobel Filter'],
+    defaultInput: 'vertical-edge',
+    pythonCode: `import torch
+import torch.nn as nn
+import numpy as np
+
+# 1. PyTorch Convolutional Layer
+class SimpleCNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # 1 input channel, 1 output feature map, 3x3 kernel
+        self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, stride=1, padding=0)
+        self.relu = nn.ReLU()
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+
+    def forward(self, x):
+        x = self.conv(x)   # 2D Convolution
+        x = self.relu(x)   # Non-linear activation
+        x = self.pool(x)   # Downsampling
+        return x
+
+# 2. Pure NumPy 2D Convolution Operation
+def conv2d_forward(image, kernel, bias=0.0):
+    H, W = image.shape
+    kH, kW = kernel.shape
+    out_H, out_W = H - kH + 1, W - kW + 1
+    feature_map = np.zeros((out_H, out_W))
+    
+    for r in range(out_H):
+        for c in range(out_W):
+            receptive_field = image[r:r+kH, c:c+kW]
+            feature_map[r, c] = np.sum(receptive_field * kernel) + bias
+    return feature_map`,
+    code: `import torch
+import torch.nn as nn
+
+def conv2d(image, kernel, bias=0.0):
+    H, W = image.shape
+    kH, kW = kernel.shape
+    feature_map = np.zeros((H - kH + 1, W - kW + 1))
+    for r in range(H - kH + 1):
+        for c in range(W - kW + 1):
+            patch = image[r:r+kH, c:c+kW]
+            feature_map[r, c] = np.sum(patch * kernel) + bias
+    return np.maximum(0, feature_map)  # ReLU`,
+    generateTraces: (_inputStr?: string, lang: Language = 'en'): TraceStep[] => {
+      const isVi = lang === 'vi';
+      // 5x5 input image containing a vertical boundary between high intensity (10) and low (0)
+      const inputMatrix = [
+        [10, 10, 10,  0,  0],
+        [10, 10, 10,  0,  0],
+        [10, 10, 10,  0,  0],
+        [10, 10, 10,  0,  0],
+        [10, 10, 10,  0,  0],
+      ];
+      // 3x3 Sobel Vertical Edge Detection Filter
+      const kernel = [
+        [1, 0, -1],
+        [2, 0, -2],
+        [1, 0, -1],
+      ];
+
+      const steps: TraceStep[] = [];
+
+      // Step 0: Init at (0, 0)
+      steps.push({
+        step: 0,
+        totalSteps: 0,
+        line: 4,
+        action: 'init',
+        targets: [0],
+        state: {
+          inputMatrix,
+          kernel,
+          kernelPos: { r: 0, c: 0 },
+          featureMap: [
+            [0, null, null],
+            [null, null, null],
+            [null, null, null],
+          ],
+        },
+        explanation: isVi
+          ? 'Khởi tạo ma trận ảnh 5x5 và Kernel lọc biên dọc Sobel 3x3 tại vị trí (r=0, c=0). Receptive field nằm trên vùng đồng nhất nên tổng tích chập = 0.'
+          : 'Initialized 5x5 image matrix and 3x3 Sobel vertical edge kernel at (r=0, c=0). Uniform receptive field yields dot product = 0.',
+        invariant: isVi
+          ? 'Kích thước Feature Map đầu ra: (5 - 3 + 1) x (5 - 3 + 1) = 3x3.'
+          : 'Output Feature Map dimensions: (H - kH + 1) x (W - kW + 1) = 3x3.',
+      });
+
+      // Step 1: Slide to (0, 1) across the vertical edge!
+      steps.push({
+        step: 1,
+        totalSteps: 0,
+        line: 8,
+        action: 'forward',
+        targets: [1],
+        state: {
+          inputMatrix,
+          kernel,
+          kernelPos: { r: 0, c: 1 },
+          featureMap: [
+            [0, 40, null],
+            [null, null, null],
+            [null, null, null],
+          ],
+        },
+        explanation: isVi
+          ? 'Trượt Kernel sang vị trí (r=0, c=1). Cửa sổ bao trùm ranh giới sáng-tối! Tích vô hướng đạt giá trị cao = 40.0. Phát hiện đường biên dọc!'
+          : 'Slid Kernel horizontally to (r=0, c=1). Window spans the edge transition! Dot product peaks at 40.0. Strong vertical edge detected!',
+        invariant: isVi
+          ? 'Tích chập nhân từng phần tử: ∑ (ReceptiveField ⊙ Kernel) = 1(10) + 2(10) + 1(10) = 40.'
+          : 'Element-wise multiplication: ∑ (Patch ⊙ Kernel) = 1(10) + 2(10) + 1(10) = 40.',
+      });
+
+      // Step 2: Slide to (0, 2)
+      steps.push({
+        step: 2,
+        totalSteps: 0,
+        line: 8,
+        action: 'forward',
+        targets: [2],
+        state: {
+          inputMatrix,
+          kernel,
+          kernelPos: { r: 0, c: 2 },
+          featureMap: [
+            [0, 40, 30],
+            [null, null, null],
+            [null, null, null],
+          ],
+        },
+        explanation: isVi
+          ? 'Trượt Kernel sang vị trí (r=0, c=2). Hoàn thành hàng đầu tiên của Feature Map. Giá trị tích chập = 30.0.'
+          : 'Slid Kernel to (r=0, c=2). Completed row 0 of Feature Map with value 30.0.',
+        invariant: isVi
+          ? 'Kernel trượt ngang với Stride = 1 đến khi chạm biên phải.'
+          : 'Horizontal stride = 1 maintained until row boundary.',
+      });
+
+      // Step 3: Stride down to row 1, col 1 (center)
+      steps.push({
+        step: 3,
+        totalSteps: 0,
+        line: 8,
+        action: 'forward',
+        targets: [4],
+        state: {
+          inputMatrix,
+          kernel,
+          kernelPos: { r: 1, c: 1 },
+          featureMap: [
+            [0, 40, 30],
+            [0, 40, 30],
+            [null, null, null],
+          ],
+        },
+        explanation: isVi
+          ? 'Xuống hàng tiếp theo (Stride dọc = 1), trượt tới trung tâm (r=1, c=1). Tiếp tục phát hiện đường biên dọc với giá trị cực đại 40.0.'
+          : 'Strided down to row 1, centered at (r=1, c=1). Senses vertical edge continuously with peak response 40.0.',
+        invariant: isVi
+          ? 'Chia sẻ tham số (Parameter sharing): Sử dụng cùng một bộ lọc 3x3 cho toàn bộ các vị trí ảnh.'
+          : 'Parameter sharing: Identical 3x3 weights applied across all spatial receptive fields.',
+      });
+
+      // Step 4: Done - Full Feature Map and ReLU
+      steps.push({
+        step: 4,
+        totalSteps: 0,
+        line: 10,
+        action: 'done',
+        targets: [8],
+        state: {
+          inputMatrix,
+          kernel,
+          kernelPos: { r: 2, c: 2 },
+          featureMap: [
+            [0, 40, 30],
+            [0, 40, 30],
+            [0, 40, 30],
+          ],
+        },
+        explanation: isVi
+          ? 'Quá trình tích chập hoàn tất! Tạo thành Feature Map 3x3 với dải biên dọc kích hoạt mạnh ở cột giữa (40.0). Áp dụng ReLU giữ nguyên các đặc trưng tích cực.'
+          : '2D Convolution complete! Generated full 3x3 Feature Map exhibiting a bright vertical activation band (40.0) where the edge exists.',
+        invariant: isVi
+          ? 'Bản đồ đặc trưng trích xuất thành công cạnh dọc từ ảnh gốc 5x5.'
+          : 'Feature map successfully extracts structural vertical edge from raw 5x5 pixels.',
+      });
+
+      const total = steps.length;
+      return steps.map((s, idx) => ({ ...s, step: idx + 1, totalSteps: total }));
+    },
+  },
+
   // ==========================================
   // Category 3: Transformers & Modern LLMs
   // ==========================================
