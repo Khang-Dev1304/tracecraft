@@ -45,6 +45,8 @@ export const DockPlayer: React.FC<DockPlayerProps> = ({
     onChangeSpeed(nextSpeed);
   };
 
+  const progressPct = ((currentStep - 1) / Math.max(1, totalSteps - 1)) * 100;
+
   return (
     <div className="w-full max-w-3xl mx-auto px-4 pb-4 select-none shrink-0 z-20">
       <div
@@ -54,15 +56,26 @@ export const DockPlayer: React.FC<DockPlayerProps> = ({
             : 'bg-white/95 border-slate-200 text-slate-800 backdrop-blur-md'
         }`}
       >
-        {/* Full-width Scrubber Slider */}
-        <div className="w-full relative flex items-center">
+        {/* Full-width Scrubber Slider with Smooth Progress Fill */}
+        <div className="w-full relative flex items-center h-4">
+          <div className="absolute inset-x-0 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden pointer-events-none">
+            <div
+              style={{ width: `${progressPct}%` }}
+              className="h-full bg-blue-600 dark:bg-cyan-400 transition-all duration-150 ease-out rounded-full"
+            />
+          </div>
           <input
             type="range"
             min={1}
             max={Math.max(1, totalSteps)}
             value={currentStep}
             onChange={(e) => onSeek(Number(e.target.value))}
-            className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-slate-900 dark:accent-cyan-400"
+            className="w-full h-1.5 opacity-0 cursor-pointer absolute inset-0 z-10"
+          />
+          {/* Smooth Thumb */}
+          <div
+            style={{ left: `calc(${progressPct}% - 7px)` }}
+            className="w-3.5 h-3.5 rounded-full bg-slate-900 dark:bg-cyan-300 shadow-sm pointer-events-none absolute transition-all duration-150 ease-out border-2 border-white dark:border-slate-900"
           />
         </div>
 

@@ -8,7 +8,8 @@ import {
   Database,
   RotateCcw,
   MousePointerClick,
-  TrendingDown
+  TrendingDown,
+  BrainCircuit
 } from 'lucide-react';
 import type { ThemeMode, TraceStep } from '../types';
 import { MathFormula } from './MathFormula';
@@ -379,7 +380,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                     : 'bg-rose-50 text-rose-700 border border-rose-200'
                 }`}
               >
-                Loss: {isDark ? smoothLoss.toFixed(3) : rawLoss}
+                Loss: {smoothLoss.toFixed(3)}
               </span>
             )}
             {step.state.weight !== undefined && (
@@ -390,8 +391,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                     : 'bg-blue-50 text-blue-700 border border-blue-200'
                 }`}
               >
-                w: {isDark ? smoothW.toFixed(2) : rawW} | b:{' '}
-                {isDark ? smoothB.toFixed(2) : rawB}
+                w: {smoothW.toFixed(2)} | b: {smoothB.toFixed(2)}
               </span>
             )}
           </div>
@@ -554,12 +554,12 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                 ↑ Target y
               </text>
 
-              {/* Dynamic Ultra-Smooth Regression Line */}
+              {/* Dynamic Ultra-Smooth Regression Line across both themes */}
               {(() => {
                 const p1X = toSvgX(0.2);
-                const p1Y = toSvgY((isDark ? smoothW : rawW) * 0.2 + (isDark ? smoothB : rawB));
+                const p1Y = toSvgY(smoothW * 0.2 + smoothB);
                 const p2X = toSvgX(coordLimits.maxX - 0.2);
-                const p2Y = toSvgY((isDark ? smoothW : rawW) * (coordLimits.maxX - 0.2) + (isDark ? smoothB : rawB));
+                const p2Y = toSvgY(smoothW * (coordLimits.maxX - 0.2) + smoothB);
 
                 return (
                   <path
@@ -576,8 +576,8 @@ export const VisualStage: React.FC<VisualStageProps> = ({
               {points.map((p, idx) => {
                 const px = toSvgX(p.x);
                 const py = toSvgY(p.y);
-                const currentW = isDark ? smoothW : rawW;
-                const currentB = isDark ? smoothB : rawB;
+                const currentW = smoothW;
+                const currentB = smoothB;
                 const pyPred = toSvgY(currentW * p.x + currentB);
                 const isHovered = hoveredPoint === idx;
 
@@ -805,13 +805,81 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         {/* 3. TRANSFORMER SELF-ATTENTION & NEXT-TOKEN LOGITS         */}
         {/* ========================================================= */}
         {tokens && tokens.length > 0 && (
-          <div className="w-full max-w-2xl flex flex-col items-center gap-6 py-2">
-            <div className="w-full">
-              <div className="text-xs font-mono opacity-60 mb-2 flex items-center justify-between">
-                <span>Causal Context Window (Q & K Tokens)</span>
-                <span>Active Target: &ldquo;{tokens[tokens.length - 1]}&rdquo;</span>
+          <div className="w-full max-w-4xl flex flex-col items-center gap-3.5 py-1">
+            {/* 1. Curved Attention Arcs & Tokens Stage */}
+            <div
+              className={`w-full p-4 rounded-2xl border transition-all ${
+                isDark ? 'bg-[#111827] border-[#1e293b]' : 'bg-white border-slate-200 shadow-xs'
+              }`}
+            >
+              <div className="text-xs font-mono opacity-70 mb-1 flex items-center justify-between font-bold">
+                <span className="flex items-center gap-1.5">
+                  <BrainCircuit className="w-3.5 h-3.5 text-blue-500 dark:text-cyan-400" />
+                  <span>Causal Attention Arcs (Scaled Dot-Product)</span>
+                </span>
+                <span>Active Query: &ldquo;{tokens[tokens.length - 1]}&rdquo;</span>
               </div>
-              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+
+              {/* Curved SVG Attention Arcs */}
+              <div className="w-full h-24 relative overflow-hidden">
+                <svg viewBox="0 0 680 90" className="w-full h-full">
+                  {tokens.map((_, idx) => {
+                    if (idx === tokens.length - 1) return null;
+                    const total = tokens.length;
+                    const stepW = 680 / total;
+                    const x1 = stepW * idx + stepW / 2;
+                    const x2 = stepW * (total - 1) + stepW / 2;
+                    const isAttended = step.targets.includes(idx);
+                    const arcH = 35 + idx * 8;
+
+                    return (
+                      <g key={`arc-${idx}`}>
+                        <path
+                          d={`M ${x1} 85 Q ${(x1 + x2) / 2} ${85 - arcH} ${x2} 85`}
+                          fill="none"
+                          stroke={
+                            isAttended
+                              ? isDark
+                                ? '#38bdf8'
+                                : '#0284c7'
+                              : isDark
+                                ? '#334155'
+                                : '#e2e8f0'
+                          }
+                          strokeWidth={isAttended ? 3 : 1.2}
+                          strokeDasharray={isAttended ? '6 4' : undefined}
+                          className={isAttended ? 'animate-pulse' : undefined}
+                          opacity={isAttended ? 1 : 0.4}
+                        />
+                        {isAttended && (
+                          <rect
+                            x={(x1 + x2) / 2 - 16}
+                            y={85 - arcH - 10}
+                            width="32"
+                            height="16"
+                            rx="8"
+                            fill={isDark ? '#0284c7' : '#0284c7'}
+                          />
+                        )}
+                        {isAttended && (
+                          <text
+                            x={(x1 + x2) / 2}
+                            y={85 - arcH + 2}
+                            textAnchor="middle"
+                            fill="#ffffff"
+                            className="font-mono text-[10px] font-bold"
+                          >
+                            {idx === 3 ? '0.44' : '0.38'}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+
+              {/* Token sequence pills */}
+              <div className="grid grid-cols-5 gap-2 sm:gap-3 w-full">
                 {tokens.map((token, idx) => {
                   const isLast = idx === tokens.length - 1;
                   const isAttended = step.targets.includes(idx);
@@ -819,24 +887,24 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                   return (
                     <div
                       key={idx}
-                      className={`relative flex flex-col items-center px-3.5 py-2 rounded-xl font-mono text-sm transition-all duration-300 ${
+                      className={`relative flex flex-col items-center py-2.5 px-2 rounded-xl font-mono text-xs transition-all ${
                         isDark
                           ? isLast
-                            ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30 border border-cyan-400'
+                            ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/25 border border-cyan-400 font-bold'
                             : isAttended
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md'
-                              : 'bg-slate-800/80 text-slate-300 border border-slate-700'
+                              ? 'bg-cyan-950/60 text-cyan-300 border border-cyan-500/50 shadow-md font-bold'
+                              : 'bg-slate-800/60 text-slate-400 border border-slate-700'
                           : isLast
-                            ? 'bg-blue-600 text-white shadow-md border border-blue-700'
+                            ? 'bg-slate-900 text-white shadow-md border border-slate-900 font-bold'
                             : isAttended
-                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                              : 'bg-white text-slate-800 border border-slate-200 shadow-xs'
+                              ? 'bg-blue-50 text-blue-800 border border-blue-400 shadow-xs font-bold'
+                              : 'bg-slate-100 text-slate-700 border border-slate-200'
                       }`}
                     >
-                      <span className="font-bold">&ldquo;{token}&rdquo;</span>
-                      <span className="text-[10px] opacity-60 mt-0.5 font-mono">pos: {idx}</span>
+                      <span className="font-bold text-sm truncate">&ldquo;{token}&rdquo;</span>
+                      <span className="text-[10px] opacity-60 mt-0.5">k_{idx}</span>
                       {isLast && (
-                        <span className="absolute -top-2.5 right-1 text-[9px] uppercase px-1.5 py-0.2 rounded font-bold bg-cyan-400 text-slate-900">
+                        <span className="absolute -top-2.5 right-2 text-[9px] uppercase px-1.5 py-0.2 rounded font-bold bg-cyan-400 text-slate-900">
                           Query
                         </span>
                       )}
@@ -846,65 +914,110 @@ export const VisualStage: React.FC<VisualStageProps> = ({
               </div>
             </div>
 
-            {probabilities && probabilities.length > 0 && (
+            {/* 2. Softmax Logits + Causal Attention Matrix 2-Col Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+              {/* Softmax Distribution */}
+              {probabilities && (
+                <div
+                  className={`p-4 rounded-2xl border transition-colors ${
+                    isDark ? 'bg-[#111827] border-[#1e293b]' : 'bg-white border-slate-200 shadow-xs'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-xs font-mono font-bold mb-3">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-500 dark:bg-cyan-400 animate-pulse" />
+                      Softmax Probabilities
+                    </span>
+                    <span className="text-[10px] opacity-60 uppercase">Vocab LM Head</span>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {probabilities.map((item, idx) => {
+                      const isTop1 = idx === 0;
+                      const pct = Math.round(item.prob * 100);
+
+                      return (
+                        <div key={item.token} className="flex items-center gap-2.5 text-xs font-mono">
+                          <span
+                            className={`w-16 truncate font-medium ${
+                              isTop1 ? 'text-blue-600 dark:text-cyan-400 font-bold' : 'opacity-70'
+                            }`}
+                          >
+                            &ldquo;{item.token}&rdquo;
+                          </span>
+                          <div
+                            className={`flex-1 h-3 rounded-full overflow-hidden ${
+                              isDark ? 'bg-slate-800' : 'bg-slate-100'
+                            }`}
+                          >
+                            <div
+                              style={{ width: `${pct}%` }}
+                              className={`h-full rounded-full transition-all duration-500 ease-out ${
+                                isTop1
+                                  ? 'bg-blue-600 dark:bg-gradient-to-r dark:from-cyan-400 dark:to-indigo-500 shadow-xs'
+                                  : 'bg-slate-400 dark:bg-slate-600'
+                              }`}
+                            />
+                          </div>
+                          <span
+                            className={`w-10 text-right font-bold ${
+                              isTop1 ? 'text-blue-600 dark:text-cyan-300' : 'opacity-60'
+                            }`}
+                          >
+                            {pct}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Causal Attention Heatmap Matrix */}
               <div
-                className={`w-full p-4 rounded-2xl border transition-colors ${
-                  isDark
-                    ? 'bg-[#111827] border-[#1e293b] text-white'
-                    : 'bg-white border-slate-200 text-slate-800 shadow-xs'
+                className={`p-4 rounded-2xl border transition-colors ${
+                  isDark ? 'bg-[#111827] border-[#1e293b]' : 'bg-white border-slate-200 shadow-xs'
                 }`}
               >
-                <div className="flex items-center justify-between text-xs font-mono mb-3">
-                  <span className="font-bold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                    Softmax Logits & Next-Token Distribution
-                  </span>
-                  <span className="opacity-60">Vocab Projection</span>
+                <div className="flex items-center justify-between text-xs font-mono font-bold mb-3">
+                  <span>Causal Attention Matrix</span>
+                  <span className="text-[10px] opacity-60">Triangular Mask</span>
                 </div>
 
-                <div className="space-y-2">
-                  {probabilities.map((item, idx) => {
-                    const isTop1 = idx === 0;
-                    const pct = Math.round(item.prob * 100);
+                <div className="grid grid-cols-5 gap-1.5 text-center font-mono text-[10px]">
+                  {tokens.map((_q, row) =>
+                    tokens.map((_k, col) => {
+                      const isMasked = col > row;
+                      const isHigh = row === 4 && (col === 3 || col === 1);
+                      const isMid = row >= col;
 
-                    return (
-                      <div key={item.token} className="flex items-center gap-3 text-xs font-mono">
-                        <span
-                          className={`w-16 truncate font-medium ${
-                            isTop1 ? 'text-blue-600 dark:text-cyan-400 font-bold' : 'opacity-70'
-                          }`}
-                        >
-                          &ldquo;{item.token}&rdquo;
-                        </span>
-
+                      return (
                         <div
-                          className={`flex-1 h-3 rounded-full overflow-hidden ${
-                            isDark ? 'bg-slate-800' : 'bg-slate-100'
+                          key={`mat-${row}-${col}`}
+                          className={`p-1.5 rounded-lg font-semibold transition-all ${
+                            isMasked
+                              ? isDark
+                                ? 'bg-slate-900/40 text-slate-700'
+                                : 'bg-slate-50 text-slate-300'
+                              : isHigh
+                                ? isDark
+                                  ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs'
+                                  : 'bg-blue-600 text-white font-bold'
+                                : isMid
+                                  ? isDark
+                                    ? 'bg-cyan-950/60 text-cyan-300'
+                                    : 'bg-blue-100 text-blue-900'
+                                  : 'opacity-40'
                           }`}
                         >
-                          <div
-                            style={{ width: `${pct}%` }}
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              isTop1
-                                ? 'bg-blue-600 dark:bg-gradient-to-r dark:from-cyan-400 dark:to-indigo-500'
-                                : 'bg-slate-400 dark:bg-slate-600'
-                            }`}
-                          />
+                          {isMasked ? '-∞' : isHigh ? '0.44' : '0.14'}
                         </div>
-
-                        <span
-                          className={`w-12 text-right font-bold ${
-                            isTop1 ? 'text-blue-600 dark:text-cyan-300' : 'opacity-60'
-                          }`}
-                        >
-                          {pct}%
-                        </span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -1006,7 +1119,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
           <span>Active Invariant Model:</span>
           {points ? (
             <MathFormula
-              math={`y = ${(isDark ? smoothW : rawW).toFixed(2)}x + ${(isDark ? smoothB : rawB).toFixed(2)}`}
+              math={`y = ${smoothW.toFixed(2)}x + ${smoothB.toFixed(2)}`}
               className="ml-1 font-bold text-blue-600 dark:text-cyan-300"
             />
           ) : (
