@@ -82,6 +82,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   const arr = step.state.arr;
   const points = step.state.points;
   const layers = step.state.layers;
+  const neuronState = step.state.neuronState;
   const tokens = step.state.tokens;
   const probabilities = step.state.probabilities;
   const inputMatrix = step.state.inputMatrix;
@@ -695,6 +696,246 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         )}
 
         {/* ========================================================= */}
+        {/* 2.5. SINGLE ARTIFICIAL NEURON (PERCEPTRON) VISUALIZER     */}
+        {/* ========================================================= */}
+        {neuronState && (
+          <div className="w-full h-full relative flex items-center justify-center max-w-4xl max-h-[350px]">
+            <svg
+              viewBox="0 0 740 360"
+              preserveAspectRatio="xMidYMid meet"
+              className="w-full h-full select-none"
+            >
+              {/* Column Section Titles */}
+              <text x="130" y="32" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-sans text-xs font-bold uppercase tracking-wider">
+                Inputs (Dendrites)
+              </text>
+              <text x="370" y="32" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-sans text-xs font-bold uppercase tracking-wider">
+                Single Neuron (Soma: ∑ + Activation)
+              </text>
+              <text x="610" y="32" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-sans text-xs font-bold uppercase tracking-wider">
+                Output (Axon Firing)
+              </text>
+
+              {/* Synaptic Connection Lines: Inputs to Soma */}
+              {neuronState.inputs.map((inp, idx) => {
+                const inY = idx === 0 ? 110 : 230;
+                const isSynActive = step.line >= 5;
+                const wVal = neuronState.weights[idx] ?? 1.5;
+                const product = (inp.val * wVal).toFixed(2);
+
+                return (
+                  <g key={`syn-${inp.label}`}>
+                    <path
+                      d={`M 155 ${inY} Q 250 ${inY} 315 170`}
+                      fill="none"
+                      stroke={isSynActive ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#334155' : '#e2e8f0')}
+                      strokeWidth={isSynActive ? 2.8 : 1.5}
+                      strokeDasharray={isSynActive ? '6 4' : undefined}
+                      className={isSynActive ? 'animate-pulse' : undefined}
+                      opacity={isSynActive ? 1 : 0.4}
+                    />
+                    {/* Synaptic Weight Badge on Wire */}
+                    <rect
+                      x={195}
+                      y={idx === 0 ? 100 : 210}
+                      width={75}
+                      height={20}
+                      rx={10}
+                      fill={isDark ? '#0f172a' : '#ffffff'}
+                      stroke={isSynActive ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#334155' : '#cbd5e1')}
+                      strokeWidth={1}
+                    />
+                    <text
+                      x={232}
+                      y={idx === 0 ? 114 : 224}
+                      textAnchor="middle"
+                      fill={isSynActive ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#94a3b8' : '#64748b')}
+                      className="font-mono text-[10px] font-bold"
+                    >
+                      w_{idx + 1}={wVal} ({product})
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Axon Output Line from Soma to Output Decision Node */}
+              {(() => {
+                const isFired = step.line >= 7;
+                return (
+                  <g>
+                    <line
+                      x1={425}
+                      y1={170}
+                      x2={560}
+                      y2={170}
+                      stroke={isFired ? (isDark ? '#10b981' : '#16a34a') : (isDark ? '#334155' : '#e2e8f0')}
+                      strokeWidth={isFired ? 3.5 : 1.5}
+                      strokeDasharray={isFired ? '6 4' : undefined}
+                      className={isFired ? 'animate-pulse' : undefined}
+                      opacity={isFired ? 1 : 0.4}
+                    />
+                  </g>
+                );
+              })()}
+
+              {/* 1. Input Dendrite Nodes (x1, x2) */}
+              {neuronState.inputs.map((inp, idx) => {
+                const inY = idx === 0 ? 110 : 230;
+                return (
+                  <g key={`node-in-${inp.label}`}>
+                    <circle
+                      cx={130}
+                      cy={inY}
+                      r={24}
+                      fill={isDark ? '#1e293b' : '#e0f2fe'}
+                      stroke={isDark ? '#06b6d4' : '#0284c7'}
+                      strokeWidth={2}
+                      className="drop-shadow-sm"
+                    />
+                    <text
+                      x={130}
+                      y={inY + 5}
+                      textAnchor="middle"
+                      fill={isDark ? '#e2e8f0' : '#0369a1'}
+                      className="font-display font-bold text-base"
+                    >
+                      {inp.label}
+                    </text>
+                    <rect x={100} y={inY + 32} width={60} height={20} rx={10} fill={isDark ? '#0f172a' : '#ffffff'} stroke={isDark ? '#334155' : '#cbd5e1'} strokeWidth={1} />
+                    <text x={130} y={inY + 46} textAnchor="middle" fill={isDark ? '#38bdf8' : '#0284c7'} className="font-mono text-xs font-bold">
+                      {inp.val}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* 2. Center Soma: Large Split Neuron Body */}
+              {(() => {
+                const isZActive = step.line >= 5;
+                const isSigmoidActive = step.line >= 7;
+                const zVal = neuronState.weightedSum;
+                const isAboveThreshold = zVal >= 0;
+
+                return (
+                  <g className="cursor-pointer">
+                    {/* Outer Glowing Neuron Cell */}
+                    <circle
+                      cx={370}
+                      cy={170}
+                      r={55}
+                      fill={isDark ? '#111827' : '#ffffff'}
+                      stroke={
+                        isSigmoidActive
+                          ? isAboveThreshold
+                            ? '#10b981'
+                            : '#ef4444'
+                          : isZActive
+                            ? (isDark ? '#38bdf8' : '#0284c7')
+                            : (isDark ? '#334155' : '#e2e8f0')
+                      }
+                      strokeWidth={3}
+                      className="drop-shadow-lg transition-all"
+                    />
+
+                    {/* Partition Divider Line */}
+                    <line
+                      x1={370}
+                      y1={118}
+                      x2={370}
+                      y2={222}
+                      stroke={isDark ? '#334155' : '#e2e8f0'}
+                      strokeWidth={1.5}
+                      strokeDasharray="4 3"
+                    />
+
+                    {/* Left Partition: Linear Weighted Sum & Bias */}
+                    <text x={342} y={155} textAnchor="middle" fill={isDark ? '#94a3b8' : '#64748b'} className="font-sans text-[11px] font-bold">
+                      ∑ + b
+                    </text>
+                    <text x={342} y={180} textAnchor="middle" fill={isZActive ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#64748b' : '#94a3b8')} className="font-mono text-xs font-bold">
+                      {isZActive ? zVal : 'z'}
+                    </text>
+
+                    {/* Right Partition: Activation Function Symbol */}
+                    <text x={398} y={155} textAnchor="middle" fill={isDark ? '#94a3b8' : '#64748b'} className="font-sans text-[11px] font-bold">
+                      σ(z)
+                    </text>
+                    <text x={398} y={180} textAnchor="middle" fill={isSigmoidActive ? '#10b981' : (isDark ? '#64748b' : '#94a3b8')} className="font-mono text-xs font-bold">
+                      {isSigmoidActive ? neuronState.outputVal : 'a'}
+                    </text>
+
+                    {/* Bias Badge Below Soma */}
+                    <rect x={320} y={236} width={100} height={22} rx={11} fill={isDark ? '#0f172a' : '#ffffff'} stroke={isDark ? '#334155' : '#cbd5e1'} strokeWidth={1} />
+                    <text x={370} y={251} textAnchor="middle" fill={isDark ? '#e2e8f0' : '#475569'} className="font-mono text-[11px] font-bold">
+                      bias: {neuronState.bias}
+                    </text>
+                  </g>
+                );
+              })()}
+
+              {/* 3. Output Decision Node & Firing Gauge */}
+              {(() => {
+                const isFired = step.line >= 7;
+                const prob = neuronState.outputVal;
+                const isClass1 = prob >= 0.5;
+
+                return (
+                  <g>
+                    <circle
+                      cx={610}
+                      cy={170}
+                      r={36}
+                      fill={isFired ? (isClass1 ? (isDark ? '#064e3b' : '#dcfce7') : (isDark ? '#3b1d24' : '#fee2e2')) : (isDark ? '#0f172a' : '#f8fafc')}
+                      stroke={isFired ? (isClass1 ? '#10b981' : '#ef4444') : (isDark ? '#334155' : '#cbd5e1')}
+                      strokeWidth={3}
+                      className="drop-shadow-md transition-all"
+                    />
+                    <text
+                      x={610}
+                      y={166}
+                      textAnchor="middle"
+                      fill={isFired ? (isClass1 ? (isDark ? '#6ee7b7' : '#15803d') : '#ef4444') : (isDark ? '#94a3b8' : '#64748b')}
+                      className="font-display font-bold text-lg"
+                    >
+                      {isFired ? prob : 'a'}
+                    </text>
+                    <text
+                      x={610}
+                      y={182}
+                      textAnchor="middle"
+                      fill={isFired ? (isClass1 ? (isDark ? '#a7f3d0' : '#16a34a') : '#f87171') : (isDark ? '#64748b' : '#94a3b8')}
+                      className="font-mono text-[10px] font-bold"
+                    >
+                      {isFired ? `${(prob * 100).toFixed(0)}%` : 'Output'}
+                    </text>
+
+                    {/* Decision Badge Below Output */}
+                    <rect
+                      x={535}
+                      y={220}
+                      width={150}
+                      height={24}
+                      rx={12}
+                      fill={isFired ? (isClass1 ? (isDark ? '#064e3b' : '#dcfce7') : (isDark ? '#3b1d24' : '#fee2e2')) : (isDark ? '#0f172a' : '#ffffff')}
+                      stroke={isFired ? (isClass1 ? '#10b981' : '#ef4444') : (isDark ? '#334155' : '#cbd5e1')}
+                      strokeWidth={1.5}
+                    />
+                    <text
+                      x={610}
+                      y={236}
+                      textAnchor="middle"
+                      fill={isFired ? (isClass1 ? (isDark ? '#6ee7b7' : '#15803d') : '#ef4444') : (isDark ? '#94a3b8' : '#64748b')}
+                      className="font-sans text-[11px] font-bold"
+                    >
+                      {isFired ? (isClass1 ? 'FIRE: Class 1 (Active)' : 'REST: Class 0 (Inhibited)') : 'Pending Activation'}
+                    </text>
+                  </g>
+                );
+              })()}
+            </svg>
+          </div>
+        )}
+        {/* ========================================================= */}
         {/* 3. TRANSFORMER SELF-ATTENTION & NEXT-TOKEN LOGITS         */}
         {/* ========================================================= */}
         {tokens && tokens.length > 0 && (
@@ -1252,6 +1493,11 @@ export const VisualStage: React.FC<VisualStageProps> = ({
           {points ? (
             <MathFormula
               math={`y = ${smoothW.toFixed(2)}x + ${smoothB.toFixed(2)}`}
+              className="ml-1 font-bold text-blue-600 dark:text-cyan-300"
+            />
+          ) : neuronState ? (
+            <MathFormula
+              math={`z = \\mathbf{w}^T\\mathbf{x} + b = ${neuronState.weightedSum} \\implies a = ${neuronState.outputVal}`}
               className="ml-1 font-bold text-blue-600 dark:text-cyan-300"
             />
           ) : (

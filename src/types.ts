@@ -18,6 +18,7 @@ export type DifficultyLevel = 'Beginner' | 'Intermediate' | 'Advanced';
 export type VisualType =
   | 'regression-plot'
   | 'neural-network'
+  | 'single-neuron'
   | 'attention-matrix'
   | 'cnn-convolution'
   | 'array-bars';
@@ -54,6 +55,15 @@ export interface NeuralLayer {
   nodes: NeuralNode[];
 }
 
+export interface SingleNeuronState {
+  inputs: { label: string; val: number }[];
+  weights: number[];
+  bias: number;
+  weightedSum: number;
+  activationName: string;
+  outputVal: number;
+}
+
 export type PrimitiveStateValue =
   | string
   | number
@@ -67,6 +77,7 @@ export type PrimitiveStateValue =
   | { r: number; c: number }
   | DataPoint[]
   | NeuralLayer[]
+  | SingleNeuronState
   | { token: string; prob: number }[];
 
 export interface StepState {
@@ -88,6 +99,7 @@ export interface StepState {
   kernel?: number[][];
   featureMap?: (number | null)[][];
   kernelPos?: { r: number; c: number };
+  neuronState?: SingleNeuronState;
   [key: string]: PrimitiveStateValue;
 }
 
