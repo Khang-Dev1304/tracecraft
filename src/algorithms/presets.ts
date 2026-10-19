@@ -44,11 +44,11 @@ export const ALGORITHM_PRESETS: AlgorithmPreset[] = [
       { label: 'Steep', value: '(1, 0.5), (2, 2.4), (3, 4.2), (4, 6.1), (5, 8.0)' },
     ],
     vi: {
-      title: 'Hồi quy Tuyến tính & Hạ Gradient',
-      category: 'Học máy Cổ điển',
-      badge: 'Tối ưu hóa',
-      summary: 'Khớp đường thẳng tối ưu với dữ liệu 2D liên tục bằng cách cực tiểu hóa sai số toàn phương trung bình (MSE) qua thuật toán hạ gradient.',
-      description: 'Hồi quy tuyến tính mô hình hóa tương quan giữa biến đặc trưng đầu vào X và biến mục tiêu y. Thuật toán Hạ Gradient tính đạo hàm riêng của hàm mất mát MSE theo trọng số w và độ lệch b, cập nhật tham số ngược hướng dốc gradient để tìm đáy tối ưu.',
+      title: 'Hồi quy Tuyến tính & Gradient Descent',
+      category: 'Machine Learning Cổ điển',
+      badge: 'Gradient Descent',
+      summary: 'Khớp đường thẳng tối ưu với dữ liệu 2D bằng cách cực tiểu hóa MSE Loss thông qua thuật toán Gradient Descent.',
+      description: 'Hồi quy tuyến tính mô hình hóa tương quan giữa biến đầu vào X và biến mục tiêu y. Thuật toán Gradient Descent tính gradient của hàm MSE Loss theo weight w và bias b, cập nhật tham số ngược hướng dốc để tối ưu mô hình.',
       variants: [
         { label: 'Chuẩn', value: '(1, 2.2), (2, 2.8), (3, 4.5), (4, 4.9), (5, 6.2)' },
         { label: 'Nhiễu', value: '(1, 1.4), (2, 3.8), (3, 3.1), (4, 5.9), (5, 5.2)' },
@@ -57,21 +57,21 @@ export const ALGORITHM_PRESETS: AlgorithmPreset[] = [
       ],
       sections: [
         {
-          title: '1. Mục tiêu Cốt lõi: Cực tiểu hóa Sai số Dư (Residuals)',
-          content: 'Với mỗi điểm dữ liệu (X, y), mô hình dự đoán y_pred = w * x + b. Phần dư là (y_pred - y). Ta bình phương sai số này để loại bỏ dấu âm và phạt nặng sai lệch lớn, tạo nên hàm mất mát Sai số Toàn phương Trung bình (MSE).',
+          title: '1. Mục tiêu Cốt lõi: Cực tiểu hóa Residuals (Sai số dư)',
+          content: 'Với mỗi điểm dữ liệu (X, y), mô hình dự đoán y_pred = w * x + b. Phần dư residual là (y_pred - y). Ta bình phương sai số này để phạt nặng sai lệch lớn và loại bỏ dấu âm, tạo nên hàm MSE Loss (Mean Squared Error).',
           formula: 'MSE(w, b) = \\frac{1}{n} \\sum_{i=1}^n (w \\cdot x_i + b - y_i)^2',
-          keyTakeaway: 'Hàm mất mát MSE có dạng parabol lồi (convex), đảm bảo chỉ tồn tại một nghiệm cực tiểu toàn cục duy nhất.',
+          keyTakeaway: 'Hàm MSE Loss có dạng parabol lồi (convex), đảm bảo Gradient Descent sẽ hội tụ về điểm cực tiểu toàn cục duy nhất.',
         },
         {
-          title: '2. Đạo hàm và Quy tắc Cập nhật Hạ Gradient',
-          content: 'Để tìm w và b tối ưu, ta tính vector đạo hàm riêng (gradient) của hàm MSE theo từng tham số theo quy tắc chuỗi: d/dw = (2/n) * sum(x * (y_pred - y)) và d/db = (2/n) * sum(y_pred - y).',
+          title: '2. Đạo hàm và Quy tắc Cập nhật Gradient Descent',
+          content: 'Để tìm w và b tối ưu, ta tính gradient của hàm MSE Loss theo từng tham số bằng Chain Rule: d/dw = (2/n) * sum(x * (y_pred - y)) và d/db = (2/n) * sum(y_pred - y).',
           formula: 'w \\leftarrow w - \\alpha \\frac{\\partial L}{\\partial w}, \\quad b \\leftarrow b - \\alpha \\frac{\\partial L}{\\partial b}',
-          keyTakeaway: 'Tốc độ học α quyết định bước nhảy. Nếu quá lớn thuật toán sẽ phân kỳ; nếu quá nhỏ sẽ hội tụ rất chậm.',
+          keyTakeaway: 'Learning rate α quyết định bước nhảy. Nếu quá lớn thuật toán sẽ phân kỳ (diverge); nếu quá nhỏ sẽ hội tụ rất chậm.',
         },
         {
-          title: '3. Tầm quan trọng trong Nền tảng Học Sâu',
-          content: 'Hồi quy tuyến tính kết hợp hạ gradient là viên gạch nền tảng của toàn bộ AI hiện đại: tính lan truyền xuôi, tính hàm mất mát, lấy đạo hàm ngược và lan truyền cập nhật trọng số.',
-          keyTakeaway: 'Mạng nơ-ron sâu bản chất là sự xếp chồng của nhiều phép biến đổi phi tuyến được tối ưu bằng các biến thể của thuật toán hạ gradient.',
+          title: '3. Tầm quan trọng trong Nền tảng Deep Learning',
+          content: 'Hồi quy tuyến tính kết hợp Gradient Descent là nền tảng cốt lõi của toàn bộ Deep Learning: Forward pass tính dự đoán, tính Loss, Backpropagation lấy gradient và cập nhật weights.',
+          keyTakeaway: 'Mạng nơ-ron sâu bản chất là sự xếp chồng của nhiều layers phi tuyến được tối ưu bằng các biến thể của chính thuật toán Gradient Descent này.',
         },
       ],
     },
@@ -153,10 +153,10 @@ def linear_regression(X, y, lr=0.06, epochs=8):
           points: initPoints,
         },
         explanation: isVi
-          ? `Khởi tạo trọng số ban đầu: w = ${w}, b = ${b}. Sai số mất mát MSE ban đầu: ${initLoss}.`
+          ? `Khởi tạo weight ban đầu w = ${w}, bias b = ${b}. MSE Loss ban đầu: ${initLoss}.`
           : `Initialized weights at w = ${w}, b = ${b}. Starting Mean Squared Error Loss: ${initLoss}.`,
         invariant: isVi
-          ? 'Đường ngẫu nhiên chưa huấn luyện. Bước hạ gradient ban đầu: epoch = 0.'
+          ? 'Đường ngẫu nhiên chưa huấn luyện. Bước Gradient Descent ban đầu: epoch = 0.'
           : 'Untrained random line. Gradient step counter epoch = 0.',
       });
 
@@ -183,10 +183,10 @@ def linear_regression(X, y, lr=0.06, epochs=8):
             points: currentPoints,
           },
           explanation: isVi
-            ? `Epoch #${epoch}: Lan truyền xuôi tính dự đoán y_pred = ${w.toFixed(2)}x + ${b.toFixed(2)}. Mất mát MSE: ${lossVal}.`
+            ? `Epoch #${epoch}: Chạy Forward pass tính y_pred = ${w.toFixed(2)}x + ${b.toFixed(2)}. MSE Loss: ${lossVal}.`
             : `Epoch #${epoch}: Forward pass computed predictions y_pred = ${w.toFixed(2)}x + ${b.toFixed(2)}. Current MSE Loss: ${lossVal}.`,
           invariant: isVi
-            ? 'Độ dốc của hàm mất mát đánh giá chất lượng khớp đường thẳng hiện tại.'
+            ? 'Hàm MSE Loss đánh giá chất lượng khớp đường thẳng hiện tại.'
             : `MSE Loss evaluates current fit quality. Target is local/global minimum.`,
         });
 
@@ -214,10 +214,10 @@ def linear_regression(X, y, lr=0.06, epochs=8):
             points: currentPoints,
           },
           explanation: isVi
-            ? `Tính gradient theo quy tắc chuỗi: ∂L/∂w = ${gradW}, ∂L/∂b = ${gradB}. Hướng ngược gradient chỉ đường dốc xuống đáy bát.`
+            ? `Tính gradient theo Chain Rule: ∂L/∂w = ${gradW}, ∂L/∂b = ${gradB}. Đi ngược hướng gradient để giảm Loss.`
             : `Calculated gradients via chain rule: ∂L/∂w = ${gradW}, ∂L/∂b = ${gradB}. Negative gradient directs downhill step.`,
           invariant: isVi
-            ? 'Vector gradient ∇L chỉ hướng dốc tăng nhanh nhất; ta đi ngược lại để cực tiểu hóa hàm số.'
+            ? 'Vector gradient ∇L chỉ hướng dốc tăng nhanh nhất; ta đi ngược lại để tìm cực tiểu.'
             : 'Gradient vector ∇L points in direction of steepest ascent.',
         });
 
@@ -249,10 +249,10 @@ def linear_regression(X, y, lr=0.06, epochs=8):
             points: updatedPoints,
           },
           explanation: isVi
-            ? `Cập nhật tham số: w = ${w.toFixed(2)} (thay đổi ${(-lr * gradW).toFixed(2)}), b = ${b.toFixed(2)}. Mất mát MSE giảm xuống còn ${newLoss}.`
+            ? `Cập nhật tham số: w = ${w.toFixed(2)}, b = ${b.toFixed(2)}. MSE Loss giảm xuống còn ${newLoss}.`
             : `Parameter update: w = ${w.toFixed(2)} (changed by ${(-lr * gradW).toFixed(2)}), b = ${b.toFixed(2)}. Loss dropped to ${newLoss}.`,
           invariant: isVi
-            ? 'Hàm mất mát đơn điệu giảm dần dưới tốc độ học phù hợp.'
+            ? 'Hàm MSE Loss đơn điệu giảm dần dưới learning rate phù hợp.'
             : 'Loss strictly non-increasing under appropriate learning rate.',
           variableDiff: {
             w: { before: oldW, after: Number(w.toFixed(2)) },
@@ -287,7 +287,7 @@ def linear_regression(X, y, lr=0.06, epochs=8):
           })),
         },
         explanation: isVi
-          ? `Hạ gradient đã hội tụ! Đường khớp tối ưu: y = ${w.toFixed(2)}x + ${b.toFixed(2)}. Phần dư sai số đạt mức tối thiểu.`
+          ? `Quá trình Gradient Descent đã hội tụ! Đường hồi quy tối ưu: y = ${w.toFixed(2)}x + ${b.toFixed(2)}. Residuals đạt mức tối thiểu.`
           : `Gradient descent converged! Best fit line: y = ${w.toFixed(2)}x + ${b.toFixed(2)}. Residual variance minimized.`,
         invariant: isVi
           ? '||∇L|| ≈ 0: Vector trọng số đã chạm đáy cực tiểu lồi.'
@@ -319,11 +319,11 @@ def linear_regression(X, y, lr=0.06, epochs=8):
       { label: 'Zero In', value: 'x1: 0.0, x2: 0.0' },
     ],
     vi: {
-      title: 'Mạng Nơ-ron Đa tầng (MLP) Lan truyền Xuôi',
-      category: 'Học sâu & Mạng Nơ-ron',
-      badge: 'Lan truyền tiến',
-      summary: 'Truyền các giá trị kích hoạt qua các tầng ẩn với hàm phi tuyến ReLU để tính toán xác suất phân loại đầu ra.',
-      description: 'Mạng Perceptron Đa tầng (MLP) ánh xạ các đặc trưng đầu vào phi tuyến sang không gian biểu diễn chiều cao. Quan sát tổ hợp tuyến tính và các hàm kích hoạt lan truyền qua từng nơ-ron nhân tạo.',
+      title: 'Multi-Layer Perceptron (MLP) Forward Pass',
+      category: 'Deep Learning & Mạng Nơ-ron',
+      badge: 'Forward Pass',
+      summary: 'Lan truyền activations qua các hidden layers với hàm phi tuyến ReLU để tính toán output dự đoán.',
+      description: 'Mạng Multi-Layer Perceptron (MLP) ánh xạ các features đầu vào sang không gian biểu diễn nhiều chiều. Quan sát tổ hợp tuyến tính và các hàm activation lan truyền qua từng neuron.',
       variants: [
         { label: 'Chuẩn', value: 'x1: 0.8, x2: 0.4' },
         { label: 'Biên độ cao', value: 'x1: 1.5, x2: 1.2' },
@@ -332,21 +332,21 @@ def linear_regression(X, y, lr=0.06, epochs=8):
       ],
       sections: [
         {
-          title: '1. Tại sao Tầng Ẩn tạo nên Tính Phi tuyến tính?',
-          content: 'Một tầng tuyến tính đơn lẻ chỉ có thể học được ranh giới quyết định tuyến tính (siêu phẳng). Bằng cách xếp chồng các tầng với các hàm kích hoạt phi tuyến như ReLU (max(0, z)), mạng nơ-ron có thể xấp xỉ bất kỳ hàm số toán học liên tục nào (Định lý Xấp xỉ Phổ quát).',
+          title: '1. Tại sao Hidden Layers tạo nên Tính Phi tuyến?',
+          content: 'Một linear layer đơn lẻ chỉ có thể học được ranh giới quyết định tuyến tính. Bằng cách xếp chồng các layers với hàm kích hoạt phi tuyến như ReLU (max(0, z)), mạng nơ-ron có thể xấp xỉ bất kỳ hàm số liên tục nào (Universal Approximation Theorem).',
           formula: '\\text{ReLU}(z) = \\max(0, z)',
-          keyTakeaway: 'Nếu không có hàm phi tuyến, việc xếp chồng 100 tầng tuyến tính sẽ sụp đổ về mặt toán học thành đúng một tầng tuyến tính duy nhất.',
+          keyTakeaway: 'Nếu không có hàm phi tuyến, việc xếp chồng 100 linear layers sẽ sụp đổ thành đúng một linear layer duy nhất.',
         },
         {
-          title: '2. Phép Nhân Ma trận và Kích hoạt Nơ-ron',
-          content: 'Với mỗi tầng l, ta tính z^[l] = W^[l] * a^[l-1] + b^[l], sau đó áp dụng hàm kích hoạt a^[l] = g(z^[l]). Phép lan truyền tiến xâu chuỗi các phép tính này từ tầng đầu vào đến tầng đầu ra.',
+          title: '2. Phép Nhân Ma trận và Kích hoạt Neurons',
+          content: 'Với mỗi layer l, ta tính z^[l] = W^[l] * a^[l-1] + b^[l], sau đó áp dụng hàm activation a^[l] = g(z^[l]). Forward pass xâu chuỗi các phép tính này từ input layer đến output layer.',
           formula: 'z^{[1]} = W^{[1]} x + b^{[1]}, \\quad a^{[1]} = \\text{ReLU}(z^{[1]})',
-          keyTakeaway: 'Phép nhân ma trận chạy song song cực nhanh trên GPU, giải thích lý do vì sao chip phần cứng AI được tối ưu hóa cho các lõi tensor ma trận.',
+          keyTakeaway: 'Phép nhân ma trận chạy song song cực nhanh trên GPU với các Tensor Cores.',
         },
         {
-          title: '3. Kết nối Lan truyền Xuôi với Lan truyền Ngược (Backprop)',
-          content: 'Trong giai đoạn suy luận (inference), mô hình chỉ chạy lan truyền xuôi. Trong giai đoạn huấn luyện, sai số đầu ra tạo ra gradient truyền ngược theo Chain Rule để cập nhật từng ma trận trọng số.',
-          keyTakeaway: 'Các giá trị kích hoạt được lưu tạm trong bộ nhớ (cache) để tái sử dụng trong pha lan truyền ngược.',
+          title: '3. Kết nối Forward Pass với Backpropagation',
+          content: 'Trong giai đoạn inference, mô hình chỉ chạy Forward pass. Trong giai đoạn training, sai số output tạo ra gradient truyền ngược (Backpropagation) theo Chain Rule để cập nhật weights.',
+          keyTakeaway: 'Activations từ Forward pass được lưu trong memory (cache) để tái sử dụng khi tính gradient ở pha Backpropagation.',
         },
       ],
     },
@@ -589,11 +589,11 @@ def forward_mlp(x, W1, b1, W2, b2):
       { label: 'Code Tokens', value: 'def, forward, layer, loss' },
     ],
     vi: {
-      title: 'Cơ chế Tự chú ý (Self-Attention: Q, K, V)',
-      category: 'Transformers & Mô hình LLM',
-      badge: 'Lõi Transformer',
-      summary: 'Tính toán điểm số liên quan ngữ cảnh động giữa tất cả các cặp token trong văn bản đầu vào để nắm bắt ngữ nghĩa sâu.',
-      description: 'Nền tảng của toàn bộ các Mô hình Ngôn ngữ Lớn (LLMs). Mỗi token tạo ra các vector nhúng Query (Q), Key (K) và Value (V). Tích vô hướng giữa Query và Key đo lường mức độ tương thích ngữ nghĩa trong câu.',
+      title: 'Cơ chế Self-Attention (Q, K, V)',
+      category: 'Transformer & Mô hình LLM',
+      badge: 'Transformer Core',
+      summary: 'Tính toán điểm attention liên quan ngữ cảnh động giữa tất cả các cặp tokens trong câu.',
+      description: 'Nền tảng của các mô hình LLM hiện đại. Mỗi token tạo ra các vector nhúng Query (Q), Key (K) và Value (V). Tích vô hướng giữa Query và Key đo lường mức độ tương quan ngữ cảnh trong câu.',
       variants: [
         { label: 'Chuẩn', value: 'The, quick, brown, fox, jumps' },
         { label: 'Câu ngắn', value: 'AI, models, learn, patterns' },
@@ -601,21 +601,21 @@ def forward_mlp(x, W1, b1, W2, b2):
       ],
       sections: [
         {
-          title: '1. Tại sao Self-Attention tạo nên Cuộc Cách mạng Xử lý Ngôn ngữ?',
-          content: 'Các mô hình tuần hoàn trước đây (RNN/LSTM) xử lý từng từ nối tiếp nhau, gây nghẽn bộ nhớ khi gặp câu dài. Cơ chế Tự chú ý cho phép mỗi từ tương tác trực tiếp với mọi từ khác trong văn bản với đường dẫn hằng số O(1), đồng thời huấn luyện song song quy mô lớn trên GPU.',
+          title: '1. Tại sao Self-Attention tạo nên Cuộc Cách mạng NLP?',
+          content: 'Các kiến trúc tuần hoàn trước đây (RNN/LSTM) xử lý từng từ nối tiếp nhau, gây nghẽn memory khi gặp câu dài. Cơ chế Self-Attention cho phép mỗi từ tương tác trực tiếp với mọi từ khác trong văn bản với đường dẫn O(1), đồng thời huấn luyện song song cực nhanh trên GPU.',
           formula: 'S_{ij} = \\frac{q_i \\cdot k_j^T}{\\sqrt{d_k}}',
-          keyTakeaway: 'Attention giải quyết triệt để vấn đề phụ thuộc ngữ cảnh tầm xa bằng cách thay thế đệ quy tuần hoàn bằng các phép nhân tích vô hướng ma trận.',
+          keyTakeaway: 'Self-Attention giải quyết triệt để vấn đề phụ thuộc tầm xa (long-range dependency) bằng ma trận dot-product.',
         },
         {
           title: '2. Vai trò của Query, Key và Value',
-          content: 'Query giống như một câu truy vấn tìm kiếm ("Chủ ngữ của hành động này là gì?"), Keys đóng vai trò như các thẻ chỉ mục trên mỗi từ trong ngữ cảnh, và Values là nội dung ngữ nghĩa thực tế được trích xuất khi Query và Key khớp nhau.',
-          keyTakeaway: 'Hàm Softmax chuyển đổi tích vô hướng thành phân phối xác suất có tổng bằng 1.0, điều hướng mô hình tập trung sự chú ý vào đâu.',
+          content: 'Query là câu truy vấn tìm kiếm, Keys là các thẻ chỉ mục trên mỗi token trong ngữ cảnh, và Values là thông tin ngữ nghĩa thực tế được trích xuất khi Query và Key match nhau.',
+          keyTakeaway: 'Hàm Softmax chuẩn hóa dot-products thành phân phối xác suất có tổng bằng 1.0, điều hướng mô hình tập trung sự chú ý.',
         },
         {
-          title: '3. Mặt nạ Nhân quả (Causal Masking) trong Mô hình LLM Tạo sinh',
-          content: 'Trong các mô hình sinh tự hồi quy (như GPT), token ở hiện tại không được phép nhìn trước tương lai. Mặt nạ nhân quả tam giác dưới gán các vị trí tương lai bằng -vô cùng (-inf), khiến Softmax triệt tiêu xác suất về 0.',
+          title: '3. Causal Masking trong Mô hình Generative LLMs',
+          content: 'Trong các mô hình autoregressive (như GPT), token ở hiện tại không được phép nhìn trước tương lai. Causal mask gán các vị trí tương lai bằng -inf, khiến Softmax triệt tiêu xác suất về 0.',
           formula: '\\text{Masked}(S_{ij}) = -\\infty \\quad \\text{if } j > i',
-          keyTakeaway: 'Mặt nạ nhân quả đảm bảo nguyên tắc định hướng thời gian một chiều nghiêm ngặt trong quá trình huấn luyện và sinh từ.',
+          keyTakeaway: 'Causal mask đảm bảo nguyên tắc autoregressive một chiều trong quá trình training và generation.',
         },
       ],
     },
