@@ -4,80 +4,64 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --bg-sketch-grid: #f3ede2;
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
 }
 
-/* Background Grids */
-.bg-sketch-grid {
-  background-color: #fdfbf7;
-  background-image: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+/* VizLearn Subtle Canvas Dots Grid */
+.bg-viz-dots {
+  background-color: #fbfbfb;
+  background-image: radial-gradient(rgba(148, 163, 184, 0.28) 1.2px, transparent 1.2px);
   background-size: 24px 24px;
 }
 
-.bg-sketch-dots {
-  background-color: #fcf9f2;
-  background-image: radial-gradient(rgba(40, 40, 40, 0.15) 1.2px, transparent 1.2px);
-  background-size: 20px 20px;
-}
-
-.bg-studio-grid {
-  background-color: #090d16;
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
-
-.bg-studio-dots {
-  background-color: #090d16;
-  background-image: radial-gradient(rgba(99, 102, 241, 0.15) 1px, transparent 1px);
+.bg-viz-dots-dark {
+  background-color: #0b0f19;
+  background-image: radial-gradient(rgba(99, 102, 241, 0.2) 1.2px, transparent 1.2px);
   background-size: 24px 24px;
 }
 
-/* Sketch Hand-drawn aesthetic tweaks */
-.sketch-border {
-  border: 2px solid #3c3836;
-  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
-  box-shadow: 2px 3px 0px #3c3836;
+/* Card Styling */
+.viz-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
-.sketch-border-subtle {
-  border: 1.5px solid #504945;
-  border-radius: 4px;
-  box-shadow: 1px 2px 0px rgba(60, 56, 54, 0.4);
+.dark .viz-card {
+  background-color: #111827;
+  border-color: #1f293d;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
 }
 
-.sketch-card {
-  background: #fbf7ee;
-  border: 2px solid #3c3836;
-  border-radius: 6px;
-  box-shadow: 3px 4px 0px #3c3836;
+/* Smooth Transition for all interactive elements */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.sketch-theme ::-webkit-scrollbar-thumb {
-  background: #d5c4a1;
-  border-radius: 3px;
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
 }
 
-.studio-theme ::-webkit-scrollbar-thumb {
-  background: #2a3449;
-  border-radius: 3px;
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #888;
+  background: #94a3b8;
 }

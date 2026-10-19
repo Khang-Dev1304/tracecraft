@@ -1,24 +1,27 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { ThemeMode, ViewMode, AlgorithmPreset, TraceStep, AppView, StudioTab } from './types';
+import type { ThemeMode, ViewMode, AlgorithmPreset, TraceStep, AppView, StudioTab, AICategory } from './types';
 import { ALGORITHM_PRESETS } from './algorithms/presets';
-import { Header } from './components/Header';
-import { PlayerControls } from './components/PlayerControls';
+import { NavRail } from './components/NavRail';
+import { LessonSidebar } from './components/LessonSidebar';
+import { TopBar } from './components/TopBar';
 import { VisualStage } from './components/VisualStage';
-import { CodePane } from './components/CodePane';
-import { DiagnosticsPane } from './components/DiagnosticsPane';
+import { RightPanels } from './components/RightPanels';
+import { DockPlayer } from './components/DockPlayer';
+import { LessonGuide } from './components/LessonGuide';
 import { MobileStoryMode } from './components/MobileStoryMode';
 import { CatalogView } from './components/CatalogView';
-import { CurriculumSidebar } from './components/CurriculumSidebar';
-import { LessonGuide } from './components/LessonGuide';
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeMode>('sketch');
   const [viewMode, setViewMode] = useState<ViewMode>('desktop-3pane');
+  const [studioTab, setStudioTab] = useState<StudioTab>('trace');
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+
   const [appRoute, setAppRoute] = useState<AppView>(() => {
     if (typeof window !== 'undefined' && window.location.hash.startsWith('#visualizer')) {
       return 'visualizer';
     }
-    return 'catalog';
+    return 'visualizer'; // Directly opens the stunning studio by default, just like VizLearn!
   });
 
   const [selectedPreset, setSelectedPreset] = useState<AlgorithmPreset>(() => {
@@ -37,12 +40,6 @@ export const App: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
 
-  // Dynamic layout panel states
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  const [showCodePane, setShowCodePane] = useState<boolean>(true);
-  const [showDiagnosticsPane, setShowDiagnosticsPane] = useState<boolean>(true);
-  const [studioTab, setStudioTab] = useState<StudioTab>('trace');
-
   // Sync hash changes (browser back/forward button)
   useEffect(() => {
     const handleHashChange = () => {
@@ -59,7 +56,7 @@ export const App: React.FC = () => {
             setIsPlaying(false);
           }
         }
-      } else {
+      } else if (hash === '#catalog') {
         setAppRoute('catalog');
         setIsPlaying(false);
       }
@@ -96,7 +93,7 @@ export const App: React.FC = () => {
           action: 'init',
           targets: [],
           state: {},
-          explanation: 'Failed to parse input or generate execution steps.',
+          explanation: 'Failed to generate execution steps.',
         },
       ];
     }
@@ -151,25 +148,16 @@ export const App: React.FC = () => {
     setInputStr(preset.defaultInput);
     setCurrentStepIndex(0);
     setIsPlaying(false);
-    window.location.hash = `#visualizer?id=${preset.id}`;
-  }, []);
-
-  const handleOpenFromCatalog = useCallback((preset: AlgorithmPreset) => {
-    setSelectedPreset(preset);
-    setInputStr(preset.defaultInput);
-    setCurrentStepIndex(0);
-    setIsPlaying(false);
-    setStudioTab('trace');
     setAppRoute('visualizer');
     window.location.hash = `#visualizer?id=${preset.id}`;
   }, []);
 
-  const handleBackToCatalog = useCallback(() => {
-    setIsPlaying(false);
-    setSidebarOpen(false);
-    setAppRoute('catalog');
-    window.location.hash = '#catalog';
-  }, []);
+  const handleSelectCategoryFromRail = useCallback((cat: AICategory | 'All') => {
+    const found = ALGORITHM_PRESETS.find((p) => cat === 'All' || p.category === cat);
+    if (found) {
+      handleSelectPreset(found);
+    }
+  }, [handleSelectPreset]);
 
   // Timer loop for autoplay
   useEffect(() => {
@@ -189,7 +177,7 @@ export const App: React.FC = () => {
     return () => clearInterval(timer);
   }, [isPlaying, speed, totalSteps]);
 
-  // Global keyboard shortcuts (only in visualizer view)
+  // Global keyboard shortcuts
   useEffect(() => {
     if (appRoute !== 'visualizer') return;
 
@@ -204,12 +192,6 @@ export const App: React.FC = () => {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
         e.preventDefault();
         setSidebarOpen((prev) => !prev);
-        return;
-      }
-
-      if (e.key === 'Escape' && sidebarOpen) {
-        e.preventDefault();
-        setSidebarOpen(false);
         return;
       }
 
@@ -235,111 +217,74 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [appRoute, sidebarOpen, handleTogglePlay, handleNext, handlePrev, handleFirst, handleLast, handleReset]);
+  }, [appRoute, handleTogglePlay, handleNext, handlePrev, handleFirst, handleLast, handleReset]);
 
-  const isSketch = theme === 'sketch';
+  const isDark = theme === 'studio';
 
-  // Compute dynamic column grid allocations
-  const getGridConfig = () => {
-    if (showCodePane && showDiagnosticsPane) {
-      return {
-        codeClass: 'hidden lg:block lg:col-span-4',
-        stageClass: 'col-span-1 lg:col-span-5',
-        diagClass: 'hidden md:block col-span-1 lg:col-span-3',
-      };
-    }
-    if (showCodePane && !showDiagnosticsPane) {
-      return {
-        codeClass: 'hidden lg:block lg:col-span-5',
-        stageClass: 'col-span-1 lg:col-span-7',
-        diagClass: 'hidden',
-      };
-    }
-    if (!showCodePane && showDiagnosticsPane) {
-      return {
-        codeClass: 'hidden',
-        stageClass: 'col-span-1 lg:col-span-8',
-        diagClass: 'hidden md:block col-span-1 lg:col-span-4',
-      };
-    }
-    return {
-      codeClass: 'hidden',
-      stageClass: 'col-span-12',
-      diagClass: 'hidden',
-    };
-  };
-
-  const grid = getGridConfig();
-
-  // If on Catalog Route, render the rich categorized Curriculum / Catalog View
+  // If on Catalog Route
   if (appRoute === 'catalog') {
     return (
       <CatalogView
         theme={theme}
-        onSelectAlgorithm={handleOpenFromCatalog}
-        onToggleTheme={() => setTheme(isSketch ? 'studio' : 'sketch')}
+        onSelectAlgorithm={handleSelectPreset}
+        onToggleTheme={() => setTheme(isDark ? 'sketch' : 'studio')}
       />
     );
   }
 
-  // Otherwise, render the Interactive Studio
+  // Unified VizLearn-aligned studio architecture
   return (
     <div
-      className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
-        isSketch
-          ? 'bg-sketch-grid text-[#282828] sketch-theme'
-          : 'bg-studio-grid text-slate-100 studio-theme dark'
+      className={`h-screen w-screen flex overflow-hidden font-sans select-none transition-colors duration-200 ${
+        isDark
+          ? 'bg-[#090d16] text-slate-100 dark bg-viz-dots-dark'
+          : 'bg-[#fbfbfb] text-slate-800 bg-viz-dots'
       }`}
     >
-      {/* Top Navigation & App Bar */}
-      <Header
+      {/* 1. Leftmost Slim Navigation Rail */}
+      <NavRail
         theme={theme}
-        onToggleTheme={() => setTheme(isSketch ? 'studio' : 'sketch')}
-        viewMode={viewMode}
-        onToggleViewMode={() =>
-          setViewMode((prev) =>
-            prev === 'desktop-3pane' ? 'mobile-story' : 'desktop-3pane'
-          )
-        }
-        selectedPreset={selectedPreset}
-        inputStr={inputStr}
-        onChangeInput={(val) => {
-          setInputStr(val);
-          setCurrentStepIndex(0);
-        }}
-        onReset={handleReset}
-        onBackToCatalog={handleBackToCatalog}
+        onToggleTheme={() => setTheme(isDark ? 'sketch' : 'studio')}
+        sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
-        showCodePane={showCodePane}
-        onToggleCodePane={() => setShowCodePane((prev) => !prev)}
-        showDiagnosticsPane={showDiagnosticsPane}
-        onToggleDiagnosticsPane={() => setShowDiagnosticsPane((prev) => !prev)}
-        studioTab={studioTab}
-        onSelectStudioTab={setStudioTab}
+        onSelectCategory={handleSelectCategoryFromRail}
+        onGoHome={() => {
+          setAppRoute('catalog');
+          window.location.hash = '#catalog';
+        }}
       />
 
-      {/* Dynamic Slide-out Curriculum Sidebar Drawer */}
-      <CurriculumSidebar
-        theme={theme}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        selectedPreset={selectedPreset}
-        onSelectPreset={handleSelectPreset}
-        onViewFullCatalog={handleBackToCatalog}
-      />
-
-      {/* Backdrop overlay when sidebar is open */}
+      {/* 2. Docked Curriculum Lesson Sidebar */}
       {sidebarOpen && (
-        <div
-          onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 transition-opacity"
+        <LessonSidebar
+          theme={theme}
+          selectedPreset={selectedPreset}
+          onSelectPreset={handleSelectPreset}
         />
       )}
 
-      {/* Main Workspace Body */}
-      <main className="flex-1 flex overflow-hidden">
+      {/* 3. Main Center Workspace + TopBar + Right Panels */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Top Breadcrumb & Segmented Pill Switcher */}
+        <TopBar
+          theme={theme}
+          onToggleTheme={() => setTheme(isDark ? 'sketch' : 'studio')}
+          viewMode={viewMode}
+          onToggleViewMode={() =>
+            setViewMode((prev) =>
+              prev === 'desktop-3pane' ? 'mobile-story' : 'desktop-3pane'
+            )
+          }
+          selectedPreset={selectedPreset}
+          studioTab={studioTab}
+          onSelectStudioTab={setStudioTab}
+          onReset={handleReset}
+        />
+
+        {/* Content Body */}
         {studioTab === 'theory' ? (
-          <div className="flex-1 overflow-y-auto">
+          // Explain / Lesson Guide Tab
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             <LessonGuide
               theme={theme}
               preset={selectedPreset}
@@ -347,7 +292,7 @@ export const App: React.FC = () => {
             />
           </div>
         ) : viewMode === 'mobile-story' ? (
-          // Mobile Story Card Layout
+          // Mobile Story View
           <div className="flex-1 overflow-y-auto py-4">
             <MobileStoryMode
               theme={theme}
@@ -363,66 +308,53 @@ export const App: React.FC = () => {
             />
           </div>
         ) : (
-          // Dynamic Synchronized Grid Layout
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
-            {/* Left Column: Code Pane */}
-            {showCodePane && (
-              <div className={`${grid.codeClass} h-full overflow-hidden`}>
-                <CodePane
+          // Desktop Studio: Center Spacious Stage + Right Stacked Cards
+          <div className="flex-1 flex overflow-hidden">
+            {/* Center Area: Stage + Bottom Dock Player */}
+            <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <VisualStage
                   theme={theme}
-                  code={selectedPreset.code}
-                  activeLine={currentStep.line}
                   step={currentStep}
-                  onToggleCollapse={() => setShowCodePane(false)}
+                  category={selectedPreset.category}
+                  onChangeInput={(val) => {
+                    setInputStr(val);
+                    setCurrentStepIndex(0);
+                  }}
                 />
               </div>
-            )}
 
-            {/* Center Column: Visual Stage */}
-            <div className={`${grid.stageClass} h-full overflow-hidden flex flex-col`}>
-              <VisualStage
+              {/* Bottom Floating Dock Player */}
+              <DockPlayer
                 theme={theme}
-                step={currentStep}
-                category={selectedPreset.category}
-                onChangeInput={(val) => {
-                  setInputStr(val);
-                  setCurrentStepIndex(0);
-                }}
+                currentStep={currentStepIndex + 1}
+                totalSteps={totalSteps}
+                isPlaying={isPlaying}
+                speed={speed}
+                onTogglePlay={handleTogglePlay}
+                onNextStep={handleNext}
+                onPrevStep={handlePrev}
+                onReset={handleReset}
+                onSeek={handleSeek}
+                onChangeSpeed={setSpeed}
               />
             </div>
 
-            {/* Right Column: Diagnostics & Invariants */}
-            {showDiagnosticsPane && (
-              <div className={`${grid.diagClass} h-full overflow-hidden`}>
-                <DiagnosticsPane
-                  theme={theme}
-                  step={currentStep}
-                  algorithmTitle={selectedPreset.title}
-                  onToggleCollapse={() => setShowDiagnosticsPane(false)}
-                />
-              </div>
-            )}
+            {/* Right Stacked Panels: Code, Inputs, Step Log */}
+            <RightPanels
+              theme={theme}
+              preset={selectedPreset}
+              step={currentStep}
+              activeLine={currentStep.line}
+              inputStr={inputStr}
+              onChangeInput={(val) => {
+                setInputStr(val);
+                setCurrentStepIndex(0);
+              }}
+            />
           </div>
         )}
-      </main>
-
-      {/* Bottom Sticky Player Controls Bar */}
-      {viewMode === 'desktop-3pane' && studioTab === 'trace' && (
-        <PlayerControls
-          theme={theme}
-          currentStep={currentStepIndex + 1}
-          totalSteps={totalSteps}
-          isPlaying={isPlaying}
-          speed={speed}
-          onTogglePlay={handleTogglePlay}
-          onNextStep={handleNext}
-          onPrevStep={handlePrev}
-          onFirstStep={handleFirst}
-          onLastStep={handleLast}
-          onSeek={handleSeek}
-          onChangeSpeed={setSpeed}
-        />
-      )}
+      </div>
     </div>
   );
 };
