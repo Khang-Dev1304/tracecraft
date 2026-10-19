@@ -2,248 +2,233 @@ import type { AlgorithmPreset, TraceStep } from '../types';
 
 export const ALGORITHM_PRESETS: AlgorithmPreset[] = [
   // ==========================================
-  // Category 1: Foundations & Sorting
+  // Category 1: Classical Machine Learning
   // ==========================================
   {
-    id: 'bubble-sort',
-    title: 'Bubble Sort (Adaptive)',
-    category: 'Foundations & Sorting',
+    id: 'linear-regression',
+    title: 'Linear Regression & Gradient Descent',
+    category: 'Classical Machine Learning',
     difficulty: 'Beginner',
-    badge: 'Adjacent Swaps',
-    summary: 'Compares adjacent items and swaps them if out of order, stopping early if array is already sorted.',
-    description: 'Iteratively sweeps through the array, comparing adjacent pairs and bubbling the largest unplaced element to the end. Features an early-exit optimization flag that terminates in O(n) when no swaps occur.',
-    timeComplexity: 'O(n) best / O(n²) worst',
-    spaceComplexity: 'O(1) auxiliary',
-    tags: ['Array', 'In-Place', 'Stable', 'Comparison'],
-    defaultInput: '5, 2, 8, 1, 4',
-    code: `function bubbleSort(arr) {
-  let n = arr.length;
-  for (let i = 0; i < n - 1; i++) {
-    let swapped = false;
-    for (let j = 0; j < n - i - 1; j++) {
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
-    }
-    if (!swapped) break;
-  }
-  return arr;
-}`,
-    generateTraces: (inputStr: string): TraceStep[] => {
-      const parsed = inputStr
-        .split(',')
-        .map((s) => Number(s.trim()))
-        .filter((n) => !Number.isNaN(n));
-      const arr = parsed.length > 0 ? parsed : [5, 2, 8, 1, 4];
-      const n = arr.length;
+    badge: 'Optimization',
+    visualType: 'regression-plot',
+    formula: 'y = w \\cdot x + b, \\quad L = \\frac{1}{N}\\sum_{i=1}^N (\\hat{y}_i - y_i)^2',
+    summary: 'Fits an optimal line to 2D continuous data by iteratively minimizing Mean Squared Error (MSE) using gradient descent.',
+    description: 'Linear Regression models the relationship between an input feature X and a target variable y. Gradient Descent computes the partial derivatives of the MSE loss with respect to weight w and bias b, updating parameters in the opposite direction of the gradient.',
+    sections: [
+      {
+        title: '1. The Core Objective: Minimizing Residuals',
+        content: 'Given data points (X, y), our model predicts y_pred = w * x + b. For each point, the prediction error (residual) is (y_pred - y). We square these errors to heavily penalize large deviations and eliminate negative signs, producing the Mean Squared Error (MSE) objective function.',
+        formula: 'MSE(w, b) = \\frac{1}{n} \\sum_{i=1}^n (w \\cdot x_i + b - y_i)^2',
+        keyTakeaway: 'The MSE cost function forms a convex parabolic bowl with a single global minimum.',
+      },
+      {
+        title: '2. Gradient Descent Derivation',
+        content: 'To find the optimal w and b, we compute the gradient (vector of partial derivatives) of MSE with respect to each parameter. By the chain rule: d/dw = (2/n) * sum(x * (y_pred - y)) and d/db = (2/n) * sum(y_pred - y).',
+        formula: 'w \\leftarrow w - \\alpha \\frac{\\partial L}{\\partial w}, \\quad b \\leftarrow b - \\alpha \\frac{\\partial L}{\\partial b}',
+        keyTakeaway: 'The learning rate alpha controls step size. Too high causes divergence; too low slows convergence.',
+      },
+      {
+        title: '3. Why It Matters in Modern AI',
+        content: 'Linear regression with gradient descent is the conceptual foundation of all deep learning: computing predictions, calculating loss, taking gradients, and backpropagating parameter updates.',
+        keyTakeaway: 'Deep neural networks are essentially stacked non-linear regressions optimized by variants of this same gradient rule.',
+      },
+    ],
+    timeComplexity: 'O(epochs · N)',
+    spaceComplexity: 'O(1) parameters',
+    tags: ['Supervised', 'Regression', 'Gradient Descent', 'MSE Loss', 'NumPy'],
+    defaultInput: '(1, 2.2), (2, 2.8), (3, 4.5), (4, 4.9), (5, 6.2)',
+    pythonCode: `import numpy as np
+
+def linear_regression(X, y, lr=0.06, epochs=8):
+    w, b = 0.0, 0.0  # Initialize weights at zero
+    n = len(X)
+    
+    for epoch in range(epochs):
+        # 1. Forward Pass: compute predictions
+        y_pred = w * X + b
+        
+        # 2. Compute Loss: Mean Squared Error
+        loss = np.mean((y_pred - y) ** 2)
+        
+        # 3. Compute Gradients via Chain Rule
+        grad_w = (2 / n) * np.sum(X * (y_pred - y))
+        grad_b = (2 / n) * np.sum(y_pred - y)
+        
+        # 4. Parameter Update
+        w -= lr * grad_w
+        b -= lr * grad_b
+        
+    return w, b`,
+    code: `import numpy as np
+
+def linear_regression(X, y, lr=0.06, epochs=8):
+    w, b = 0.0, 0.0  # Initialize weights
+    n = len(X)
+    for epoch in range(epochs):
+        y_pred = w * X + b  # Forward prediction
+        loss = np.mean((y_pred - y) ** 2)  # MSE Loss
+        grad_w = (2 / n) * np.sum(X * (y_pred - y))
+        grad_b = (2 / n) * np.sum(y_pred - y)
+        w -= lr * grad_w  # Update weight
+        b -= lr * grad_b  # Update bias
+    return w, b`,
+    generateTraces: (): TraceStep[] => {
+      // Default sample 2D data points
+      const points = [
+        { x: 1, y: 2.2 },
+        { x: 2, y: 2.8 },
+        { x: 3, y: 4.5 },
+        { x: 4, y: 4.9 },
+        { x: 5, y: 6.2 },
+      ];
+      const n = points.length;
+      const lr = 0.06;
+      let w = 0.2;
+      let b = 0.5;
+
       const steps: TraceStep[] = [];
+
+      // Step 0: init
+      const initPoints = points.map((p) => ({ ...p, yPred: Number((w * p.x + b).toFixed(2)) }));
+      const initLoss = Number(
+        (initPoints.reduce((acc, p) => acc + (p.yPred! - p.y) ** 2, 0) / n).toFixed(3)
+      );
 
       steps.push({
         step: 0,
         totalSteps: 0,
-        line: 1,
+        line: 4,
         action: 'init',
         targets: [],
-        state: { arr: [...arr], i: 0, j: 0, swapped: false },
-        explanation: `Initialized array with ${n} elements. Ready to begin sorting passes.`,
-        invariant: 'Initial unsorted state. Outer pass counter i = 0.',
+        state: {
+          epoch: 0,
+          weight: w,
+          bias: b,
+          learningRate: lr,
+          loss: initLoss,
+          points: initPoints,
+        },
+        explanation: `Initialized weights at w = ${w}, b = ${b}. Starting Mean Squared Error Loss: ${initLoss}.`,
+        invariant: 'Untrained random line. Gradient step counter epoch = 0.',
       });
 
-      const currentArr = [...arr];
+      for (let epoch = 1; epoch <= 7; epoch++) {
+        // Forward pass
+        const currentPoints = points.map((p) => ({
+          ...p,
+          yPred: Number((w * p.x + b).toFixed(2)),
+        }));
+        const lossVal = Number(
+          (currentPoints.reduce((acc, p) => acc + (p.yPred! - p.y) ** 2, 0) / n).toFixed(3)
+        );
 
-      for (let i = 0; i < n - 1; i++) {
-        let swapped = false;
         steps.push({
           step: steps.length,
           totalSteps: 0,
-          line: 4,
-          action: 'init',
+          line: 7,
+          action: 'forward',
           targets: [],
-          state: { arr: [...currentArr], i, j: 0, swapped: false },
-          explanation: `Starting Pass #${i + 1}. Last ${i} element(s) are already locked in sorted positions.`,
-          invariant: `Suffix arr[${n - i}..${n - 1}] is guaranteed sorted.`,
+          state: {
+            epoch,
+            weight: Number(w.toFixed(2)),
+            bias: Number(b.toFixed(2)),
+            loss: lossVal,
+            points: currentPoints,
+          },
+          explanation: `Epoch #${epoch}: Forward pass computed predictions y_pred = ${w.toFixed(2)}x + ${b.toFixed(2)}. Current MSE Loss: ${lossVal}.`,
+          invariant: `MSE Loss evaluates current fit quality. Target is local/global minimum.`,
         });
 
-        for (let j = 0; j < n - i - 1; j++) {
-          const val1 = currentArr[j];
-          const val2 = currentArr[j + 1];
+        // Compute Gradients
+        const gradW = Number(
+          ((2 / n) * currentPoints.reduce((acc, p) => acc + p.x * (p.yPred! - p.y), 0)).toFixed(3)
+        );
+        const gradB = Number(
+          ((2 / n) * currentPoints.reduce((acc, p) => acc + (p.yPred! - p.y), 0)).toFixed(3)
+        );
 
-          steps.push({
-            step: steps.length,
-            totalSteps: 0,
-            line: 6,
-            action: 'compare',
-            targets: [j, j + 1],
-            state: { arr: [...currentArr], i, j, swapped },
-            explanation: `Comparing adjacent pair: arr[${j}] = ${val1} and arr[${j + 1}] = ${val2}.`,
-            invariant: `Verifying local order between indices ${j} and ${j + 1}.`,
-          });
-
-          if (val1 > val2) {
-            currentArr[j] = val2;
-            currentArr[j + 1] = val1;
-            swapped = true;
-
-            steps.push({
-              step: steps.length,
-              totalSteps: 0,
-              line: 7,
-              action: 'swap',
-              targets: [j, j + 1],
-              state: { arr: [...currentArr], i, j, swapped: true },
-              explanation: `${val1} > ${val2}: Inversion found. Swapping arr[${j}] and arr[${j + 1}].`,
-              invariant: `Inversion corrected. Local pair now non-decreasing.`,
-              variableDiff: {
-                [`arr[${j}]`]: { before: val1, after: val2 },
-                [`arr[${j + 1}]`]: { before: val2, after: val1 },
-                swapped: { before: false, after: true },
-              },
-            });
-          }
-        }
-
-        if (!swapped) {
-          steps.push({
-            step: steps.length,
-            totalSteps: 0,
-            line: 11,
-            action: 'done',
-            targets: [],
-            state: { arr: [...currentArr], i, swapped: false },
-            explanation: `Zero swaps occurred in Pass #${i + 1}. Adaptive early-exit triggered: array is fully sorted!`,
-            invariant: 'Array is monotonically ordered. Terminated in optimal pass.',
-          });
-          break;
-        }
-      }
-
-      steps.push({
-        step: steps.length,
-        totalSteps: 0,
-        line: 13,
-        action: 'done',
-        targets: Array.from({ length: n }, (_, k) => k),
-        state: { arr: [...currentArr] },
-        explanation: `Sorting complete! All ${n} elements are in non-decreasing order.`,
-        invariant: '∀ k ∈ [0, n-2]: arr[k] ≤ arr[k+1]',
-      });
-
-      const total = steps.length;
-      return steps.map((s, idx) => ({ ...s, step: idx + 1, totalSteps: total }));
-    },
-  },
-
-  {
-    id: 'insertion-sort',
-    title: 'Insertion Sort',
-    category: 'Foundations & Sorting',
-    difficulty: 'Beginner',
-    badge: 'Incremental Build',
-    summary: 'Builds a sorted subarray one element at a time by shifting larger items to the right.',
-    description: 'Maintains a sorted prefix at the beginning of the array. For each new element, scans backwards through the sorted segment and inserts it into its correct position.',
-    timeComplexity: 'O(n) best / O(n²) worst',
-    spaceComplexity: 'O(1) auxiliary',
-    tags: ['Array', 'In-Place', 'Adaptive', 'Online'],
-    defaultInput: '7, 3, 9, 2, 6',
-    code: `function insertionSort(arr) {
-  for (let i = 1; i < arr.length; i++) {
-    let key = arr[i];
-    let j = i - 1;
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j]; // Shift right
-      j = j - 1;
-    }
-    arr[j + 1] = key; // Place key
-  }
-  return arr;
-}`,
-    generateTraces: (inputStr: string): TraceStep[] => {
-      const parsed = inputStr
-        .split(',')
-        .map((s) => Number(s.trim()))
-        .filter((n) => !Number.isNaN(n));
-      const arr = parsed.length > 0 ? parsed : [7, 3, 9, 2, 6];
-      const n = arr.length;
-      const current = [...arr];
-      const steps: TraceStep[] = [];
-
-      steps.push({
-        step: 0,
-        totalSteps: 0,
-        line: 1,
-        action: 'init',
-        targets: [0],
-        state: { arr: [...current], i: 1 },
-        explanation: `Initial state: Prefix arr[0..0] (${current[0]}) is trivially sorted.`,
-        invariant: 'Prefix of length 1 is sorted.',
-      });
-
-      for (let i = 1; i < n; i++) {
-        const key = current[i];
-        let j = i - 1;
-
-        steps.push({
-          step: steps.length,
-          totalSteps: 0,
-          line: 3,
-          action: 'pivot',
-          targets: [i],
-          state: { arr: [...current], i, key, j },
-          explanation: `Picking key = arr[${i}] (${key}) to insert into sorted prefix arr[0..${i - 1}].`,
-          invariant: `Prefix arr[0..${i - 1}] is sorted. Key ${key} ready for insertion.`,
-        });
-
-        while (j >= 0 && current[j] > key) {
-          const shiftedVal = current[j];
-          steps.push({
-            step: steps.length,
-            totalSteps: 0,
-            line: 5,
-            action: 'compare',
-            targets: [j, j + 1],
-            state: { arr: [...current], i, j, key },
-            explanation: `arr[${j}] = ${shiftedVal} > key (${key}). Shifting ${shiftedVal} right to index ${j + 1}.`,
-            invariant: 'Creating open slot for key by right-shifting larger elements.',
-          });
-
-          current[j + 1] = shiftedVal;
-          j = j - 1;
-
-          steps.push({
-            step: steps.length,
-            totalSteps: 0,
-            line: 6,
-            action: 'swap',
-            targets: [j + 1, j + 2],
-            state: { arr: [...current], i, j, key },
-            explanation: `Shifted element to index ${j + 2}. Vacant slot moved left to index ${j + 1}.`,
-            invariant: 'Partial shift complete.',
-          });
-        }
-
-        current[j + 1] = key;
         steps.push({
           step: steps.length,
           totalSteps: 0,
           line: 9,
-          action: 'visit',
-          targets: [j + 1],
-          state: { arr: [...current], i, j: j + 1, key },
-          explanation: `Placed key (${key}) into final position at arr[${j + 1}]. Prefix arr[0..${i}] is now sorted.`,
-          invariant: `Prefix arr[0..${i}] is monotonically sorted.`,
+          action: 'backward',
+          targets: [],
+          state: {
+            epoch,
+            weight: Number(w.toFixed(2)),
+            bias: Number(b.toFixed(2)),
+            gradW,
+            gradB,
+            loss: lossVal,
+            points: currentPoints,
+          },
+          explanation: `Calculated gradients via chain rule: ∂L/∂w = ${gradW}, ∂L/∂b = ${gradB}. Negative gradient directs downhill step.`,
+          invariant: 'Gradient vector ∇L points in direction of steepest ascent.',
+        });
+
+        // Update weights
+        const oldW = Number(w.toFixed(2));
+        const oldB = Number(b.toFixed(2));
+        w = w - lr * gradW;
+        b = b - lr * gradB;
+
+        const updatedPoints = points.map((p) => ({
+          ...p,
+          yPred: Number((w * p.x + b).toFixed(2)),
+        }));
+        const newLoss = Number(
+          (updatedPoints.reduce((acc, p) => acc + (p.yPred! - p.y) ** 2, 0) / n).toFixed(3)
+        );
+
+        steps.push({
+          step: steps.length,
+          totalSteps: 0,
+          line: 11,
+          action: 'update',
+          targets: [],
+          state: {
+            epoch,
+            weight: Number(w.toFixed(2)),
+            bias: Number(b.toFixed(2)),
+            loss: newLoss,
+            points: updatedPoints,
+          },
+          explanation: `Parameter update: w = ${w.toFixed(2)} (changed by ${(-lr * gradW).toFixed(2)}), b = ${b.toFixed(2)}. Loss dropped to ${newLoss}.`,
+          invariant: 'Loss strictly non-increasing under appropriate learning rate.',
+          variableDiff: {
+            w: { before: oldW, after: Number(w.toFixed(2)) },
+            b: { before: oldB, after: Number(b.toFixed(2)) },
+            loss: { before: lossVal, after: newLoss },
+          },
         });
       }
 
+      // Final step: converged
       steps.push({
         step: steps.length,
         totalSteps: 0,
-        line: 11,
-        action: 'done',
-        targets: Array.from({ length: n }, (_, k) => k),
-        state: { arr: [...current] },
-        explanation: 'Insertion sort completed across all elements.',
-        invariant: 'Entire array is fully sorted.',
+        line: 13,
+        action: 'converged',
+        targets: [],
+        state: {
+          epoch: 8,
+          weight: Number(w.toFixed(2)),
+          bias: Number(b.toFixed(2)),
+          loss: Number(
+            (
+              points.reduce(
+                (acc, p) => acc + (Number((w * p.x + b).toFixed(2)) - p.y) ** 2,
+                0
+              ) / n
+            ).toFixed(3)
+          ),
+          points: points.map((p) => ({
+            ...p,
+            yPred: Number((w * p.x + b).toFixed(2)),
+          })),
+        },
+        explanation: `Gradient descent converged! Best fit line: y = ${w.toFixed(2)}x + ${b.toFixed(2)}. Residual variance minimized.`,
+        invariant: '||∇L|| ≈ 0: Parameter weights reside at local convex minimum.',
       });
 
       const total = steps.length;
@@ -251,443 +236,289 @@ export const ALGORITHM_PRESETS: AlgorithmPreset[] = [
     },
   },
 
+  // ==========================================
+  // Category 2: Deep Learning & Neural Networks
+  // ==========================================
   {
-    id: 'quick-sort',
-    title: 'QuickSort (Lomuto)',
-    category: 'Foundations & Sorting',
+    id: 'neural-network-mlp',
+    title: 'Multi-Layer Perceptron (MLP) Forward Pass',
+    category: 'Deep Learning & Neural Networks',
     difficulty: 'Intermediate',
-    badge: 'Divide & Conquer',
-    summary: 'Partitions array around a pivot element so smaller items lie to the left and larger to the right.',
-    description: 'Selects the rightmost element as the pivot, maintains a partition boundary pointer i, and scans through with pointer j. Swaps elements into the smaller partition before placing the pivot.',
-    timeComplexity: 'O(n log n) avg / O(n²) worst',
-    spaceComplexity: 'O(log n) call stack',
-    tags: ['Divide & Conquer', 'Recursive', 'Partitioning'],
-    defaultInput: '6, 2, 9, 3, 7, 5',
-    code: `function partition(arr, low, high) {
-  let pivot = arr[high]; // Last element as pivot
-  let i = low - 1;
-  for (let j = low; j < high; j++) {
-    if (arr[j] < pivot) {
-      i++;
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-  }
-  [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
-  return i + 1; // Pivot final position
-}`,
-    generateTraces: (inputStr: string): TraceStep[] => {
-      const parsed = inputStr
-        .split(',')
-        .map((s) => Number(s.trim()))
-        .filter((n) => !Number.isNaN(n));
-      const arr = parsed.length > 0 ? parsed : [6, 2, 9, 3, 7, 5];
-      const current = [...arr];
-      const steps: TraceStep[] = [];
-      const low = 0;
-      const high = current.length - 1;
-      const pivot = current[high];
+    badge: 'Feedforward',
+    visualType: 'neural-network',
+    formula: 'h = \\text{ReLU}(W_1 x + b_1), \\quad \\hat{y} = \\sigma(W_2 h + b_2)',
+    summary: 'Propagates input activations through hidden layers with ReLU non-linearities to calculate final network predictions.',
+    description: 'A Multi-Layer Perceptron (MLP) maps non-linear input features into high-dimensional representations. Traces how weighted sums and activation functions fire across artificial neurons.',
+    sections: [
+      {
+        title: '1. Why Hidden Layers Enable Non-Linearity',
+        content: 'A single linear layer can only learn linear decision boundaries (hyperplanes). By stacking layers with non-linear activation functions like ReLU (max(0, z)), deep neural networks can approximate any continuous mathematical function (Universal Approximation Theorem).',
+        formula: '\\text{ReLU}(z) = \\max(0, z)',
+        keyTakeaway: 'Without non-linear activations, stacking 100 linear layers collapses mathematically into just one linear layer.',
+      },
+      {
+        title: '2. The Matrix Multiplication Step',
+        content: 'For layer l, we compute z^[l] = W^[l] * a^[l-1] + b^[l], followed by element-wise activation a^[l] = g(z^[l]). Forward propagation chains these operations from input to output.',
+        formula: 'z^{[1]} = W^{[1]} x + b^{[1]}, \\quad a^{[1]} = \\text{ReLU}(z^{[1]})',
+        keyTakeaway: 'Matrix multiplications run in parallel on GPUs, which is why AI hardware excels at matrix tensor cores.',
+      },
+      {
+        title: '3. Connecting Forward to Backprop',
+        content: 'During inference, only the forward pass runs. During training, the prediction error generates gradients that travel backwards via the Chain Rule to update each weight matrix.',
+        keyTakeaway: 'The forward activations computed here are cached in memory for use during the backward gradient pass.',
+      },
+    ],
+    timeComplexity: 'O(∑ d_{in} · d_{out})',
+    spaceComplexity: 'O(∑ d_l) activations',
+    tags: ['Neural Network', 'MLP', 'ReLU', 'Forward Pass', 'PyTorch'],
+    defaultInput: 'x1: 0.8, x2: 0.4',
+    pythonCode: `import torch
+import torch.nn as nn
 
+class SimpleMLP(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # Input: 2 features, Hidden: 3 neurons, Output: 1 score
+        self.fc1 = nn.Linear(2, 3)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(3, 1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        # 1. Hidden Layer Linear Projection
+        z1 = self.fc1(x)
+        # 2. ReLU Activation
+        h1 = self.relu(z1)
+        # 3. Output Layer Linear Projection
+        z2 = self.fc2(h1)
+        # 4. Sigmoid Probability Output
+        y_hat = self.sigmoid(z2)
+        return y_hat`,
+    code: `import torch
+import torch.nn as nn
+
+def forward_mlp(x, W1, b1, W2, b2):
+    # 1. Hidden Layer Weighted Sum
+    z1 = np.dot(x, W1) + b1
+    # 2. Non-linear Activation (ReLU)
+    h1 = np.maximum(0, z1)
+    # 3. Output Layer Weighted Sum
+    z2 = np.dot(h1, W2) + b2
+    # 4. Sigmoid Probability Activation
+    y_hat = 1 / (1 + np.exp(-z2))
+    return y_hat`,
+    generateTraces: (): TraceStep[] => {
+      const steps: TraceStep[] = [];
+
+      // Step 1: Input Layer
       steps.push({
         step: 0,
         totalSteps: 0,
         line: 2,
         action: 'init',
-        targets: [high],
-        state: { arr: [...current], pivotIndex: high, pivot },
-        explanation: `Selected pivot arr[${high}] = ${pivot}. Partition range [${low}..${high}].`,
-        invariant: `Partitioning range [${low}..${high}] around pivot ${pivot}.`,
+        targets: [0, 1],
+        state: {
+          layers: [
+            {
+              name: 'Input Layer',
+              nodes: [
+                { label: 'x₁', value: 0.8 },
+                { label: 'x₂', value: 0.4 },
+              ],
+            },
+            {
+              name: 'Hidden Layer',
+              nodes: [
+                { label: 'h₁', value: 0 },
+                { label: 'h₂', value: 0 },
+                { label: 'h₃', value: 0 },
+              ],
+            },
+            {
+              name: 'Output Layer',
+              nodes: [{ label: 'ŷ', value: 0 }],
+            },
+          ],
+        },
+        explanation: 'Input Layer initialized with feature vector x = [0.8, 0.4]. Ready to compute forward activation.',
+        invariant: 'Input features are normalized in range [0, 1].',
       });
 
-      let i = low - 1;
-
-      for (let j = low; j < high; j++) {
-        const val = current[j];
-
-        steps.push({
-          step: steps.length,
-          totalSteps: 0,
-          line: 5,
-          action: 'compare',
-          targets: [j, high],
-          state: { arr: [...current], i, j, pivotIndex: high, pivot },
-          explanation: `Comparing arr[${j}] = ${val} with pivot (${pivot}).`,
-          invariant: `All elements in arr[0..${Math.max(-1, i)}] are < pivot.`,
-        });
-
-        if (val < pivot) {
-          i++;
-          const swap1 = current[i];
-          const swap2 = current[j];
-          current[i] = swap2;
-          current[j] = swap1;
-
-          steps.push({
-            step: steps.length,
-            totalSteps: 0,
-            line: 7,
-            action: 'swap',
-            targets: [i, j],
-            state: { arr: [...current], i, j, pivotIndex: high, pivot },
-            explanation: `${val} < ${pivot}: Incremented i to ${i} and swapped arr[${i}] (${swap1}) with arr[${j}] (${swap2}).`,
-            invariant: `Extended partition of elements smaller than pivot up to index ${i}.`,
-          });
-        }
-      }
-
-      // Place pivot in correct spot
-      const finalPivotIdx = i + 1;
-      const oldVal = current[finalPivotIdx];
-      current[finalPivotIdx] = current[high];
-      current[high] = oldVal;
-
+      // Step 2: Linear transformation into Hidden Layer (z1)
       steps.push({
-        step: steps.length,
+        step: 1,
         totalSteps: 0,
-        line: 10,
-        action: 'swap',
-        targets: [finalPivotIdx, high],
-        state: { arr: [...current], pivotIndex: finalPivotIdx, pivot },
-        explanation: `Placed pivot ${pivot} into its exact final sorted position at index ${finalPivotIdx}.`,
-        invariant: `∀ k < ${finalPivotIdx}: arr[k] < pivot, and ∀ k > ${finalPivotIdx}: arr[k] ≥ pivot.`,
+        line: 4,
+        action: 'compute',
+        targets: [0, 1, 2],
+        state: {
+          layers: [
+            {
+              name: 'Input Layer',
+              nodes: [
+                { label: 'x₁', value: 0.8 },
+                { label: 'x₂', value: 0.4 },
+              ],
+            },
+            {
+              name: 'Hidden Layer (Pre-activation z₁)',
+              nodes: [
+                { label: 'z₁', value: 1.12 },
+                { label: 'z₂', value: -0.45 },
+                { label: 'z₃', value: 0.84 },
+              ],
+            },
+            {
+              name: 'Output Layer',
+              nodes: [{ label: 'ŷ', value: 0 }],
+            },
+          ],
+        },
+        explanation: 'Computed linear combination z₁ = W₁ · x + b₁. Notice node z₂ = -0.45 is negative.',
+        invariant: 'Affine projection z = Wx + b preserves linear dimensionality.',
       });
 
+      // Step 3: ReLU Activation
       steps.push({
-        step: steps.length,
+        step: 2,
         totalSteps: 0,
-        line: 11,
+        line: 6,
+        action: 'forward',
+        targets: [0, 1, 2],
+        state: {
+          layers: [
+            {
+              name: 'Input Layer',
+              nodes: [
+                { label: 'x₁', value: 0.8 },
+                { label: 'x₂', value: 0.4 },
+              ],
+            },
+            {
+              name: 'Hidden Layer (Activated h₁)',
+              nodes: [
+                { label: 'h₁ (ReLU)', value: 1.12 },
+                { label: 'h₂ (ReLU)', value: 0.0 }, // clamped by ReLU!
+                { label: 'h₃ (ReLU)', value: 0.84 },
+              ],
+            },
+            {
+              name: 'Output Layer',
+              nodes: [{ label: 'ŷ', value: 0 }],
+            },
+          ],
+        },
+        explanation: 'Applied ReLU activation: max(0, z). Node z₂ (-0.45) clamped to 0.0 (inactive neuron sparsity).',
+        invariant: 'ReLU(z) enforces non-negativity: a ∈ [0, ∞).',
+      });
+
+      // Step 4: Output Layer projection & Sigmoid
+      steps.push({
+        step: 3,
+        totalSteps: 0,
+        line: 8,
         action: 'done',
-        targets: [finalPivotIdx],
-        state: { arr: [...current], pivotIndex: finalPivotIdx },
-        explanation: `Partition step complete! Pivot ${pivot} is locked at index ${finalPivotIdx}. Sub-arrays left and right recurse next.`,
-        invariant: 'Lomuto partition boundary confirmed.',
-      });
-
-      const total = steps.length;
-      return steps.map((s, idx) => ({ ...s, step: idx + 1, totalSteps: total }));
-    },
-  },
-
-  // ==========================================
-  // Category 2: Search & Pointers
-  // ==========================================
-  {
-    id: 'binary-search',
-    title: 'Binary Search',
-    category: 'Search & Pointers',
-    difficulty: 'Beginner',
-    badge: 'Two-Pointer Halving',
-    summary: 'Locates target in a sorted collection by repeatedly halving search intervals.',
-    description: 'Finds the exact index of a target element in a monotonic array by comparing against the midpoint element and discarding the half where the target cannot exist.',
-    timeComplexity: 'O(log n)',
-    spaceComplexity: 'O(1) auxiliary',
-    tags: ['Sorted Array', 'Divide & Conquer', 'Pointers'],
-    defaultInput: '1, 3, 5, 9, 14, 21, 35 | target: 14',
-    code: `function binarySearch(arr, target) {
-  let left = 0;
-  let right = arr.length - 1;
-  while (left <= right) {
-    let mid = Math.floor((left + right) / 2);
-    if (arr[mid] === target) {
-      return mid; // Target found
-    }
-    if (arr[mid] < target) {
-      left = mid + 1; // Search right half
-    } else {
-      right = mid - 1; // Search left half
-    }
-  }
-  return -1; // Not found
-}`,
-    generateTraces: (inputStr: string): TraceStep[] => {
-      let rawArr = [1, 3, 5, 9, 14, 21, 35];
-      let target = 14;
-
-      if (inputStr.includes('|')) {
-        const parts = inputStr.split('|');
-        const numPart = parts[0]
-          .split(',')
-          .map((s) => Number(s.trim()))
-          .filter((n) => !Number.isNaN(n));
-        if (numPart.length > 0) rawArr = numPart.sort((a, b) => a - b);
-        const targetMatch = parts[1].match(/-?\d+/);
-        if (targetMatch) target = Number(targetMatch[0]);
-      } else {
-        const numPart = inputStr
-          .split(',')
-          .map((s) => Number(s.trim()))
-          .filter((n) => !Number.isNaN(n));
-        if (numPart.length > 0) rawArr = numPart.sort((a, b) => a - b);
-      }
-
-      const steps: TraceStep[] = [];
-      let left = 0;
-      let right = rawArr.length - 1;
-
-      steps.push({
-        step: 0,
-        totalSteps: 0,
-        line: 2,
-        action: 'init',
-        targets: [left, right],
-        state: { arr: [...rawArr], left, right, target },
-        explanation: `Initialize left pointer at index 0 and right pointer at index ${right}. Target = ${target}.`,
-        invariant: 'If target exists, it is strictly within arr[left..right].',
-      });
-
-      let found = false;
-
-      while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        const midVal = rawArr[mid];
-
-        steps.push({
-          step: steps.length,
-          totalSteps: 0,
-          line: 5,
-          action: 'pivot',
-          targets: [mid],
-          state: { arr: [...rawArr], left, right, mid, target },
-          explanation: `Calculated midpoint: mid = ⌊(${left} + ${right}) / 2⌋ = ${mid}. arr[${mid}] = ${midVal}.`,
-          invariant: `Remaining search space length: ${right - left + 1} elements.`,
-        });
-
-        steps.push({
-          step: steps.length,
-          totalSteps: 0,
-          line: 6,
-          action: 'compare',
-          targets: [mid],
-          state: { arr: [...rawArr], left, right, mid, target },
-          explanation: `Evaluating condition: arr[mid] (${midVal}) === target (${target}).`,
-          invariant: `Comparing arr[${mid}] against target ${target}.`,
-        });
-
-        if (midVal === target) {
-          steps.push({
-            step: steps.length,
-            totalSteps: 0,
-            line: 7,
-            action: 'found',
-            targets: [mid],
-            state: { arr: [...rawArr], left, right, mid, target },
-            explanation: `Match confirmed! arr[${mid}] equals ${target}. Target found at index ${mid}.`,
-            invariant: `Target located at index ${mid}. O(log n) convergence achieved.`,
-          });
-          found = true;
-          break;
-        }
-
-        if (midVal < target) {
-          const oldLeft = left;
-          left = mid + 1;
-          steps.push({
-            step: steps.length,
-            totalSteps: 0,
-            line: 10,
-            action: 'visit',
-            targets: [mid],
-            state: { arr: [...rawArr], left, right, mid, target },
-            explanation: `arr[mid] (${midVal}) < target (${target}). Target must lie to the right. Adjust left = ${left}.`,
-            invariant: 'Eliminated left half [0..mid].',
-            variableDiff: {
-              left: { before: oldLeft, after: left },
+        targets: [0],
+        state: {
+          loss: 0.042,
+          layers: [
+            {
+              name: 'Input Layer',
+              nodes: [
+                { label: 'x₁', value: 0.8 },
+                { label: 'x₂', value: 0.4 },
+              ],
             },
-          });
-        } else {
-          const oldRight = right;
-          right = mid - 1;
-          steps.push({
-            step: steps.length,
-            totalSteps: 0,
-            line: 12,
-            action: 'visit',
-            targets: [mid],
-            state: { arr: [...rawArr], left, right, mid, target },
-            explanation: `arr[mid] (${midVal}) > target (${target}). Target must lie to the left. Adjust right = ${right}.`,
-            invariant: `Eliminated right half [mid..${rawArr.length - 1}].`,
-            variableDiff: {
-              right: { before: oldRight, after: right },
+            {
+              name: 'Hidden Layer (Activated)',
+              nodes: [
+                { label: 'h₁', value: 1.12 },
+                { label: 'h₂', value: 0.0 },
+                { label: 'h₃', value: 0.84 },
+              ],
             },
-          });
-        }
-      }
-
-      if (!found) {
-        steps.push({
-          step: steps.length,
-          totalSteps: 0,
-          line: 15,
-          action: 'not-found',
-          targets: [],
-          state: { arr: [...rawArr], left, right, target },
-          explanation: `Pointers crossed (left=${left} > right=${right}). Target ${target} is not in the array.`,
-          invariant: 'Search space exhausted without match.',
-        });
-      }
-
-      const total = steps.length;
-      return steps.map((s, idx) => ({ ...s, step: idx + 1, totalSteps: total }));
-    },
-  },
-
-  {
-    id: 'two-pointer-sum',
-    title: 'Two-Sum (Sorted)',
-    category: 'Search & Pointers',
-    difficulty: 'Beginner',
-    badge: 'Opposite Pointers',
-    summary: 'Finds two numbers in a sorted array that sum to a given target using two inward-moving pointers.',
-    description: 'Starting with pointers at opposite ends of a sorted array, calculates their sum. If the sum is too small, advances the left pointer; if too large, retreats the right pointer.',
-    timeComplexity: 'O(n)',
-    spaceComplexity: 'O(1) auxiliary',
-    tags: ['Two Pointers', 'Array', 'LeetCode 167'],
-    defaultInput: '2, 7, 11, 15, 19 | target: 18',
-    code: `function twoSumSorted(arr, target) {
-  let left = 0;
-  let right = arr.length - 1;
-  while (left < right) {
-    let sum = arr[left] + arr[right];
-    if (sum === target) return [left, right];
-    if (sum < target) {
-      left++; // Need a larger sum
-    } else {
-      right--; // Need a smaller sum
-    }
-  }
-  return [];
-}`,
-    generateTraces: (inputStr: string): TraceStep[] => {
-      let rawArr = [2, 7, 11, 15, 19];
-      let target = 18;
-
-      if (inputStr.includes('|')) {
-        const parts = inputStr.split('|');
-        const numPart = parts[0]
-          .split(',')
-          .map((s) => Number(s.trim()))
-          .filter((n) => !Number.isNaN(n));
-        if (numPart.length > 0) rawArr = numPart.sort((a, b) => a - b);
-        const targetMatch = parts[1].match(/-?\d+/);
-        if (targetMatch) target = Number(targetMatch[0]);
-      }
-
-      const steps: TraceStep[] = [];
-      let left = 0;
-      let right = rawArr.length - 1;
-
-      steps.push({
-        step: 0,
-        totalSteps: 0,
-        line: 2,
-        action: 'init',
-        targets: [left, right],
-        state: { arr: [...rawArr], left, right, target },
-        explanation: `Initialize left = 0 (arr[0]=${rawArr[0]}), right = ${right} (arr[${right}]=${rawArr[right]}). Target = ${target}.`,
-        invariant: 'Two pointers at opposing boundaries.',
+            {
+              name: 'Output Layer (ŷ)',
+              nodes: [{ label: 'ŷ (Sigmoid)', value: 0.87 }],
+            },
+          ],
+        },
+        explanation: 'Forward pass complete! Final output neuron ŷ = 0.87 (87% positive class probability). Binary Cross-Entropy Loss: 0.042.',
+        invariant: 'Output normalized into valid class probability distribution via Sigmoid.',
       });
 
-      let found = false;
-
-      while (left < right) {
-        const sum = rawArr[left] + rawArr[right];
-
-        steps.push({
-          step: steps.length,
-          totalSteps: 0,
-          line: 5,
-          action: 'compare',
-          targets: [left, right],
-          state: { arr: [...rawArr], left, right, target, curr: sum },
-          explanation: `Summing arr[${left}] (${rawArr[left]}) + arr[${right}] (${rawArr[right]}) = ${sum}. Target is ${target}.`,
-          invariant: `Current sum evaluated against target ${target}.`,
-        });
-
-        if (sum === target) {
-          steps.push({
-            step: steps.length,
-            totalSteps: 0,
-            line: 6,
-            action: 'found',
-            targets: [left, right],
-            state: { arr: [...rawArr], left, right, target, curr: sum },
-            explanation: `Exact sum matched! arr[${left}] (${rawArr[left]}) + arr[${right}] (${rawArr[right]}) = ${target}.`,
-            invariant: `Solution found at indices [${left}, ${right}].`,
-          });
-          found = true;
-          break;
-        }
-
-        if (sum < target) {
-          left++;
-          steps.push({
-            step: steps.length,
-            totalSteps: 0,
-            line: 8,
-            action: 'visit',
-            targets: [left, right],
-            state: { arr: [...rawArr], left, right, target, curr: sum },
-            explanation: `Sum ${sum} < target ${target}. Advancing left pointer to ${left} to increase sum.`,
-            invariant: 'Eliminated left index: no paired right value can satisfy target.',
-          });
-        } else {
-          right--;
-          steps.push({
-            step: steps.length,
-            totalSteps: 0,
-            line: 10,
-            action: 'visit',
-            targets: [left, right],
-            state: { arr: [...rawArr], left, right, target, curr: sum },
-            explanation: `Sum ${sum} > target ${target}. Retreating right pointer to ${right} to decrease sum.`,
-            invariant: 'Eliminated right index: no paired left value can satisfy target.',
-          });
-        }
-      }
-
-      if (!found) {
-        steps.push({
-          step: steps.length,
-          totalSteps: 0,
-          line: 13,
-          action: 'not-found',
-          targets: [],
-          state: { arr: [...rawArr], left, right, target },
-          explanation: `Pointers met without finding any pair summing to ${target}.`,
-          invariant: 'No valid pair exists.',
-        });
-      }
-
       const total = steps.length;
       return steps.map((s, idx) => ({ ...s, step: idx + 1, totalSteps: total }));
     },
   },
 
   // ==========================================
-  // Category 3: Modern AI & LLMs
+  // Category 3: Transformers & Modern LLMs
   // ==========================================
   {
-    id: 'ai-next-token',
-    title: 'Self-Attention & Next-Token Logits',
-    category: 'Modern AI & LLMs',
+    id: 'self-attention',
+    title: 'Self-Attention Mechanism (Q, K, V)',
+    category: 'Transformers & Modern LLMs',
     difficulty: 'Advanced',
-    badge: 'Transformer / LLM',
-    summary: 'Visualizes causal attention weights across context tokens and the resulting softmax next-token probability distribution.',
-    description: 'Traces the transformer forward pass: projecting query and key vectors from prompt context, computing scaled dot-product attention scores, applying causal masking, and projecting final logits onto vocabulary tokens.',
-    timeComplexity: 'O(N² · d) attention',
+    badge: 'Core Transformer',
+    visualType: 'attention-matrix',
+    formula: '\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{Q K^T}{\\sqrt{d_k}}\\right) V',
+    summary: 'Calculates dynamic relevance scores between all token pairs in an input prompt to capture contextual meaning.',
+    description: 'The foundation of all Modern LLMs (GPT-4, Claude, LLaMA). Each token generates Query (Q), Key (K), and Value (V) embedding vectors. The dot product of Query and Keys measures semantic compatibility.',
+    sections: [
+      {
+        title: '1. Why Self-Attention Revolutionized NLP',
+        content: 'Earlier recurrent models (RNNs/LSTMs) processed words sequentially, causing memory bottlenecks over long paragraphs. Self-Attention allows every word to interact directly with every other word in constant O(1) path length, running massively in parallel on GPUs.',
+        formula: 'S_{ij} = \\frac{q_i \\cdot k_j^T}{\\sqrt{d_k}}',
+        keyTakeaway: 'Attention solves the long-range dependency problem by replacing sequential recurrence with matrix dot products.',
+      },
+      {
+        title: '2. The Role of Query, Key, and Value',
+        content: 'Think of Query as a search query ("What is the subject of this sentence?"), Keys as indexed tags on words in the context, and Values as the actual semantic content retrieved when a Query and Key match.',
+        keyTakeaway: 'Softmax turns dot products into a probability distribution summing to 1.0, directing the model where to focus.',
+      },
+      {
+        title: '3. Causal Masking in Generative LLMs',
+        content: 'In autoregressive generation (GPT models), tokens must not peek into the future. A lower-triangular causal mask fills future positions with -inf, so softmax zeroes them out.',
+        formula: '\\text{Masked}(S_{ij}) = -\\infty \\quad \\text{if } j > i',
+        keyTakeaway: 'Causal masking enforces strict temporal directionality during training and generation.',
+      },
+    ],
+    timeComplexity: 'O(N² · d)',
     spaceComplexity: 'O(N · d) KV-Cache',
-    tags: ['Transformer', 'Attention', 'Softmax', 'LLMs'],
+    tags: ['Transformer', 'Attention', 'Softmax', 'LLMs', 'PyTorch'],
     defaultInput: 'The, quick, brown, fox, jumps',
-    code: `// Causal Self-Attention & Softmax Logits
-function forwardAttention(tokens) {
-  const Q = computeQuery(tokens.last);
-  const K = computeKeys(tokens);
-  const scores = dotProduct(Q, K) / Math.sqrt(d_k);
-  const causalMasked = applyCausalMask(scores);
-  const attentionWeights = softmax(causalMasked);
-  const logits = projectVocabulary(attentionWeights);
-  const nextTokenProbs = softmax(logits);
-  return sampleTopCandidate(nextTokenProbs);
-}`,
+    pythonCode: `import torch
+import torch.nn.functional as F
+
+def scaled_dot_product_attention(Q, K, V, d_k):
+    # 1. Compute Raw Attention Scores
+    scores = torch.matmul(Q, K.transpose(-2, -1)) / (d_k ** 0.5)
+    
+    # 2. Apply Causal Mask (prevent looking ahead)
+    seq_len = Q.size(-2)
+    mask = torch.tril(torch.ones(seq_len, seq_len))
+    scores = scores.masked_fill(mask == 0, float('-inf'))
+    
+    # 3. Softmax Normalization
+    weights = F.softmax(scores, dim=-1)
+    
+    # 4. Weighted Sum of Values
+    output = torch.matmul(weights, V)
+    return output, weights`,
+    code: `import torch
+import torch.nn.functional as F
+
+def forward_attention(Q, K, V, d_k):
+    # 1. Scaled Dot-Product of Query & Key
+    scores = torch.matmul(Q, K.T) / (d_k ** 0.5)
+    # 2. Causal Masking (Lower Triangular)
+    scores = apply_causal_mask(scores)
+    # 3. Softmax Probabilities
+    attn_weights = F.softmax(scores, dim=-1)
+    # 4. Contextual Value Aggregation
+    context = torch.matmul(attn_weights, V)
+    return context`,
     generateTraces: (inputStr: string): TraceStep[] => {
       const tokens = inputStr
         .split(',')
@@ -713,69 +544,50 @@ function forwardAttention(tokens) {
             { token: 'through', prob: 0.05 },
           ],
         },
-        explanation: `Received context window of ${activeTokens.length} tokens: [${activeTokens.map((t) => `"${t}"`).join(', ')}]. Active Query generated from last token "${lastToken}".`,
-        invariant: 'Autoregressive context window: each token attends only to prior positions.',
+        explanation: `Context window initialized with ${activeTokens.length} tokens. Active Query vector projected from last token "${lastToken}".`,
+        invariant: 'Autoregressive sequence: prior tokens stored in KV-Cache.',
       });
 
       steps.push({
         step: 1,
         totalSteps: 0,
-        line: 4,
+        line: 5,
         action: 'compute',
         targets: [activeTokens.length - 1],
         state: {
           tokens: activeTokens,
           probabilities: [
-            { token: 'over', prob: 0.25 },
-            { token: 'high', prob: 0.15 },
+            { token: 'over', prob: 0.28 },
+            { token: 'high', prob: 0.18 },
             { token: 'away', prob: 0.12 },
             { token: 'through', prob: 0.08 },
           ],
         },
-        explanation: `Projecting token "${lastToken}" into Query vector Q. Fetching Key vectors K from KV-Cache for all ${activeTokens.length} positions.`,
-        invariant: 'Q · K^T scaled dot-product measures contextual relevance.',
+        explanation: `Scaled dot-product: Q · K^T / √d_k. Computes contextual correlation scores between "${lastToken}" and all prior tokens.`,
+        invariant: 'Scaling by 1/√d_k prevents dot-product values from growing too large into vanishing gradient softmax regions.',
       });
 
       steps.push({
         step: 2,
         totalSteps: 0,
-        line: 5,
-        action: 'compare',
+        line: 7,
+        action: 'forward',
         targets: [1, 3, activeTokens.length - 1],
         state: {
           tokens: activeTokens,
           probabilities: [
-            { token: 'over', prob: 0.48 },
-            { token: 'high', prob: 0.22 },
-            { token: 'away', prob: 0.15 },
-            { token: 'onto', prob: 0.09 },
+            { token: 'over', prob: 0.52 },
+            { token: 'high', prob: 0.20 },
+            { token: 'away', prob: 0.14 },
+            { token: 'onto', prob: 0.08 },
           ],
         },
-        explanation: `Attention Head weights: High cross-attention between subject "fox" (0.42) and verb "${lastToken}" (0.38). Scaling factor 1/√d applied.`,
-        invariant: 'Softmax(Q · K^T / √d) sums to 1.0 across sequence dimension.',
+        explanation: `Softmax applied across row: Highest attention score placed on subject token "fox" (44%) and verb "${lastToken}" (38%).`,
+        invariant: '∑_j Attention[i, j] = 1.0 across the sequence dimension.',
       });
 
       steps.push({
         step: 3,
-        totalSteps: 0,
-        line: 6,
-        action: 'pivot',
-        targets: [activeTokens.length - 1],
-        state: {
-          tokens: activeTokens,
-          probabilities: [
-            { token: 'over', prob: 0.65 },
-            { token: 'high', prob: 0.18 },
-            { token: 'away', prob: 0.09 },
-            { token: 'onto', prob: 0.05 },
-          ],
-        },
-        explanation: 'Applying lower-triangular causal mask to prevent information leakage from future tokens.',
-        invariant: 'Attention score mask[-∞] enforces strict autoregressive causality.',
-      });
-
-      steps.push({
-        step: 4,
         totalSteps: 0,
         line: 9,
         action: 'done',
@@ -783,15 +595,15 @@ function forwardAttention(tokens) {
         state: {
           tokens: activeTokens,
           probabilities: [
-            { token: 'over', prob: 0.74 },
-            { token: 'high', prob: 0.14 },
-            { token: 'away', prob: 0.06 },
+            { token: 'over', prob: 0.76 },
+            { token: 'high', prob: 0.13 },
+            { token: 'away', prob: 0.05 },
             { token: 'onto', prob: 0.04 },
             { token: 'into', prob: 0.02 },
           ],
         },
-        explanation: `Vocabulary LM Head output: Softmax logits concentrated on "over" (74.0% probability) following "${lastToken}".`,
-        invariant: 'Top-1 greedy candidate selected: "over" completing the idiom.',
+        explanation: `Value aggregation complete! Context vector passed to Language Model Head. Top-1 predicted next token: "over" (76% probability).`,
+        invariant: 'Autoregressive generation step complete; ready to sample next token.',
       });
 
       const total = steps.length;

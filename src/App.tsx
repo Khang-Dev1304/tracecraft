@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { ThemeMode, ViewMode, AlgorithmPreset, TraceStep, AppView } from './types';
+import type { ThemeMode, ViewMode, AlgorithmPreset, TraceStep, AppView, StudioTab } from './types';
 import { ALGORITHM_PRESETS } from './algorithms/presets';
 import { Header } from './components/Header';
 import { PlayerControls } from './components/PlayerControls';
@@ -9,6 +9,7 @@ import { DiagnosticsPane } from './components/DiagnosticsPane';
 import { MobileStoryMode } from './components/MobileStoryMode';
 import { CatalogView } from './components/CatalogView';
 import { CurriculumSidebar } from './components/CurriculumSidebar';
+import { LessonGuide } from './components/LessonGuide';
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeMode>('sketch');
@@ -40,6 +41,7 @@ export const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [showCodePane, setShowCodePane] = useState<boolean>(true);
   const [showDiagnosticsPane, setShowDiagnosticsPane] = useState<boolean>(true);
+  const [studioTab, setStudioTab] = useState<StudioTab>('trace');
 
   // Sync hash changes (browser back/forward button)
   useEffect(() => {
@@ -157,6 +159,7 @@ export const App: React.FC = () => {
     setInputStr(preset.defaultInput);
     setCurrentStepIndex(0);
     setIsPlaying(false);
+    setStudioTab('trace');
     setAppRoute('visualizer');
     window.location.hash = `#visualizer?id=${preset.id}`;
   }, []);
@@ -311,6 +314,8 @@ export const App: React.FC = () => {
         onToggleCodePane={() => setShowCodePane((prev) => !prev)}
         showDiagnosticsPane={showDiagnosticsPane}
         onToggleDiagnosticsPane={() => setShowDiagnosticsPane((prev) => !prev)}
+        studioTab={studioTab}
+        onSelectStudioTab={setStudioTab}
       />
 
       {/* Dynamic Slide-out Curriculum Sidebar Drawer */}
@@ -333,7 +338,15 @@ export const App: React.FC = () => {
 
       {/* Main Workspace Body */}
       <main className="flex-1 flex overflow-hidden">
-        {viewMode === 'mobile-story' ? (
+        {studioTab === 'theory' ? (
+          <div className="flex-1 overflow-y-auto">
+            <LessonGuide
+              theme={theme}
+              preset={selectedPreset}
+              onLaunchVisualizer={() => setStudioTab('trace')}
+            />
+          </div>
+        ) : viewMode === 'mobile-story' ? (
           // Mobile Story Card Layout
           <div className="flex-1 overflow-y-auto py-4">
             <MobileStoryMode
@@ -390,7 +403,7 @@ export const App: React.FC = () => {
       </main>
 
       {/* Bottom Sticky Player Controls Bar */}
-      {viewMode === 'desktop-3pane' && (
+      {viewMode === 'desktop-3pane' && studioTab === 'trace' && (
         <PlayerControls
           theme={theme}
           currentStep={currentStepIndex + 1}

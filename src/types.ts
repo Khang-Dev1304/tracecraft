@@ -4,24 +4,53 @@ export type ViewMode = 'desktop-3pane' | 'mobile-story';
 
 export type AppView = 'catalog' | 'visualizer';
 
-export type AlgorithmCategory =
-  | 'Foundations & Sorting'
-  | 'Search & Pointers'
-  | 'Trees & Graphs'
-  | 'Modern AI & LLMs';
+export type StudioTab = 'trace' | 'theory';
 
+export type AICategory =
+  | 'Classical Machine Learning'
+  | 'Deep Learning & Neural Networks'
+  | 'Transformers & Modern LLMs';
+
+export type AlgorithmCategory = AICategory;
 export type DifficultyLevel = 'Beginner' | 'Intermediate' | 'Advanced';
+
+export type VisualType =
+  | 'regression-plot'
+  | 'neural-network'
+  | 'attention-matrix'
+  | 'array-bars';
 
 export type StepAction =
   | 'init'
+  | 'forward'
+  | 'loss'
+  | 'backward'
+  | 'update'
+  | 'converged'
   | 'compare'
   | 'swap'
   | 'pivot'
   | 'visit'
   | 'found'
-  | 'not-found'
   | 'compute'
   | 'done';
+
+export interface DataPoint {
+  x: number;
+  y: number;
+  yPred?: number;
+}
+
+export interface NeuralNode {
+  label: string;
+  value: number;
+  activation?: string;
+}
+
+export interface NeuralLayer {
+  name: string;
+  nodes: NeuralNode[];
+}
 
 export type PrimitiveStateValue =
   | string
@@ -31,22 +60,25 @@ export type PrimitiveStateValue =
   | undefined
   | number[]
   | string[]
+  | DataPoint[]
+  | NeuralLayer[]
   | { token: string; prob: number }[];
 
 export interface StepState {
-  arr?: number[];
-  left?: number;
-  right?: number;
-  mid?: number;
-  target?: number;
-  pivotIndex?: number;
+  epoch?: number;
+  loss?: number;
+  weight?: number;
+  bias?: number;
+  learningRate?: number;
+  gradW?: number;
+  gradB?: number;
+  points?: DataPoint[];
+  layers?: NeuralLayer[];
   tokens?: string[];
   probabilities?: { token: string; prob: number }[];
+  arr?: number[];
   i?: number;
   j?: number;
-  swapped?: boolean;
-  curr?: number;
-  visited?: number[];
   [key: string]: PrimitiveStateValue;
 }
 
@@ -67,18 +99,29 @@ export interface TraceStep {
   variableDiff?: Record<string, VariableDiffItem>;
 }
 
+export interface LessonSection {
+  title: string;
+  content: string;
+  formula?: string;
+  keyTakeaway?: string;
+}
+
 export interface AlgorithmPreset {
   id: string;
   title: string;
-  category: AlgorithmCategory;
+  category: AICategory;
   difficulty: DifficultyLevel;
   badge: string;
+  visualType: VisualType;
+  formula: string;
   summary: string;
   description: string;
+  sections: LessonSection[];
   timeComplexity: string;
   spaceComplexity: string;
   defaultInput: string;
   tags: string[];
-  code: string;
+  pythonCode: string;
+  code: string; // for display in code pane
   generateTraces: (inputStr: string) => TraceStep[];
 }

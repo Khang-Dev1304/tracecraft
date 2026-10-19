@@ -7,7 +7,6 @@ import {
   Cpu, 
   Binary, 
   Layers, 
-  GitFork, 
   BrainCircuit, 
   ArrowRight
 } from 'lucide-react';
@@ -36,9 +35,9 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
 
   const categories: (AlgorithmCategory | 'All')[] = [
     'All',
-    'Foundations & Sorting',
-    'Search & Pointers',
-    'Modern AI & LLMs',
+    'Classical Machine Learning',
+    'Deep Learning & Neural Networks',
+    'Transformers & Modern LLMs',
   ];
 
   const filteredPresets = useMemo(() => {
@@ -70,14 +69,14 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
 
   const getCategoryIcon = (category: AlgorithmCategory) => {
     switch (category) {
-      case 'Foundations & Sorting':
+      case 'Classical Machine Learning':
         return <Layers className="w-5 h-5 text-amber-500" />;
-      case 'Search & Pointers':
-        return <Binary className="w-5 h-5 text-emerald-500" />;
-      case 'Trees & Graphs':
-        return <GitFork className="w-5 h-5 text-indigo-500" />;
-      case 'Modern AI & LLMs':
+      case 'Deep Learning & Neural Networks':
+        return <Binary className="w-5 h-5 text-indigo-400" />;
+      case 'Transformers & Modern LLMs':
         return <BrainCircuit className="w-5 h-5 text-cyan-400" />;
+      default:
+        return <Sparkles className="w-5 h-5 text-emerald-400" />;
     }
   };
 
@@ -182,7 +181,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               : 'text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-cyan-300'
           }`}
         >
-          Explore Algorithms & AI Internals
+          Interactive AI & Machine Learning
         </h1>
 
         <p
@@ -190,7 +189,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             isSketch ? 'font-sketch text-lg sm:text-xl' : 'text-slate-300'
           }`}
         >
-          Trace step-by-step state mutations, active code lines, and algorithmic invariants. Choose a category below to launch into the live debugger studio.
+          Master AI from first principles to modern Transformers. Step through gradient descent, neural layer activations, and self-attention heads with synchronized Python code.
         </p>
 
         {/* Search & Filter Bar */}
@@ -316,6 +315,19 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                         >
                           {preset.summary}
                         </p>
+
+                        {/* Formula snippet */}
+                        {preset.formula && (
+                          <div
+                            className={`mt-2.5 p-1.5 rounded font-mono text-[11px] truncate ${
+                              isSketch
+                                ? 'bg-[#ebdbb2]/50 text-[#282828] border border-[#3c3836]/20'
+                                : 'bg-slate-900/80 text-cyan-300 border border-slate-800'
+                            }`}
+                          >
+                            {preset.formula}
+                          </div>
+                        )}
                       </div>
 
                       {/* Card Footer Details */}

@@ -17,6 +17,8 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   const isSketch = theme === 'sketch';
 
   const arr = step.state.arr;
+  const points = step.state.points;
+  const layers = step.state.layers;
   const tokens = step.state.tokens;
   const probabilities = step.state.probabilities;
 
@@ -25,12 +27,87 @@ export const VisualStage: React.FC<VisualStageProps> = ({
     if (!isSketch || !svgRef.current) return;
 
     const svg = svgRef.current;
-    // Clear previously drawn rough elements
     const oldRough = svg.querySelectorAll('.rough-element');
     oldRough.forEach((el) => el.remove());
 
     const rc = rough.svg(svg);
 
+    // 1. Regression Plot in Sketch Mode
+    if (points && points.length > 0) {
+      const originX = 70;
+      const originY = 300;
+      const scaleX = 110;
+      const scaleY = 38;
+
+      // Draw Axes
+      const xAxis = rc.line(originX, originY, originX + 580, originY, {
+        stroke: '#3c3836',
+        strokeWidth: 2,
+        roughness: 1.5,
+      });
+      xAxis.classList.add('rough-element');
+      svg.appendChild(xAxis);
+
+      const yAxis = rc.line(originX, originY, originX, originY - 240, {
+        stroke: '#3c3836',
+        strokeWidth: 2,
+        roughness: 1.5,
+      });
+      yAxis.classList.add('rough-element');
+      svg.appendChild(yAxis);
+
+      // Regression Line y = w*x + b
+      const w = step.state.weight !== undefined ? Number(step.state.weight) : 0;
+      const b = step.state.bias !== undefined ? Number(step.state.bias) : 0;
+
+      const xStart = 0.5;
+      const xEnd = 5.5;
+      const yStartVal = w * xStart + b;
+      const yEndVal = w * xEnd + b;
+
+      const p1X = originX + xStart * scaleX;
+      const p1Y = originY - yStartVal * scaleY;
+      const p2X = originX + xEnd * scaleX;
+      const p2Y = originY - yEndVal * scaleY;
+
+      const regLine = rc.line(p1X, p1Y, p2X, p2Y, {
+        stroke: '#d65d0e',
+        strokeWidth: 3,
+        roughness: 1.2,
+      });
+      regLine.classList.add('rough-element');
+      svg.appendChild(regLine);
+
+      // Data points and residuals
+      points.forEach((p) => {
+        const px = originX + p.x * scaleX;
+        const py = originY - p.y * scaleY;
+        const pyPred = originY - (p.yPred ?? (w * p.x + b)) * scaleY;
+
+        // Residual error stem
+        const stem = rc.line(px, py, px, pyPred, {
+          stroke: '#cc241d',
+          strokeWidth: 1.5,
+          roughness: 1.4,
+          strokeLineDash: [4, 4],
+        });
+        stem.classList.add('rough-element');
+        svg.appendChild(stem);
+
+        // Point circle
+        const circle = rc.circle(px, py, 18, {
+          fill: '#fabd2f',
+          fillStyle: 'solid',
+          stroke: '#3c3836',
+          strokeWidth: 1.8,
+          roughness: 1.2,
+        });
+        circle.classList.add('rough-element');
+        svg.appendChild(circle);
+      });
+    }
+
+    // 2. Classical Array in Sketch Mode
     if (arr && arr.length > 0) {
       const maxVal = Math.max(...arr, 1);
       const width = 700;
@@ -47,23 +124,17 @@ export const VisualStage: React.FC<VisualStageProps> = ({
 
         const isTarget = step.targets.includes(idx);
         const isSwap = step.action === 'swap' && isTarget;
-        const isPivot = (step.state.mid === idx || step.state.pivotIndex === idx);
 
         let fillColor = '#fbf7ee';
         let strokeColor = '#3c3836';
-        let fillWeight = 1.2;
-
         if (isSwap) {
-          fillColor = '#cc241d'; // Crimson swap
+          fillColor = '#cc241d';
           strokeColor = '#9d0006';
         } else if (isTarget) {
-          fillColor = '#fabd2f'; // Yellow active compare
+          fillColor = '#fabd2f';
           strokeColor = '#b57614';
-        } else if (isPivot) {
-          fillColor = '#b16286'; // Purple pivot/mid
-          strokeColor = '#8f3f71';
         } else if (step.action === 'done') {
-          fillColor = '#98971a'; // Green sorted
+          fillColor = '#98971a';
           strokeColor = '#79740e';
         }
 
@@ -72,15 +143,14 @@ export const VisualStage: React.FC<VisualStageProps> = ({
           fillStyle: 'hachure',
           stroke: strokeColor,
           strokeWidth: isTarget ? 2.5 : 1.8,
-          fillWeight,
+          fillWeight: 1.2,
           roughness: 1.6,
-          bowing: 1.2,
         });
         rect.classList.add('rough-element');
         svg.appendChild(rect);
       });
     }
-  }, [isSketch, arr, step]);
+  }, [isSketch, points, arr, step]);
 
   return (
     <div
@@ -91,7 +161,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
       }`}
     >
       {/* Stage Header Info */}
-      <div className="flex items-center justify-between z-10">
+      <div className="flex items-center justify-between z-10 shrink-0">
         <div className="flex items-center gap-2">
           <span
             className={`text-xs uppercase font-mono tracking-wider px-2 py-0.5 rounded font-semibold ${
@@ -107,215 +177,250 @@ export const VisualStage: React.FC<VisualStageProps> = ({
           </span>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center gap-3 text-[11px] font-mono">
-          <div className="flex items-center gap-1.5">
+        {/* Dynamic Metric Badges */}
+        <div className="flex items-center gap-2 text-xs font-mono">
+          {step.state.loss !== undefined && (
             <span
-              className={`w-2.5 h-2.5 rounded-sm ${
-                isSketch ? 'bg-[#fabd2f] border border-[#3c3836]' : 'bg-amber-400 shadow-sm shadow-amber-400/50'
+              className={`px-2 py-0.5 rounded font-bold ${
+                isSketch
+                  ? 'bg-[#cc241d]/20 text-[#cc241d] border border-[#cc241d]/40'
+                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
               }`}
-            />
-            <span className="opacity-70">Active/Compare</span>
-          </div>
-          <div className="flex items-center gap-1.5">
+            >
+              Loss (MSE): {step.state.loss}
+            </span>
+          )}
+          {step.state.weight !== undefined && (
             <span
-              className={`w-2.5 h-2.5 rounded-sm ${
-                isSketch ? 'bg-[#cc241d] border border-[#3c3836]' : 'bg-rose-500 shadow-sm shadow-rose-500/50'
+              className={`px-2 py-0.5 rounded font-bold ${
+                isSketch
+                  ? 'bg-[#ebdbb2] text-[#3c3836]'
+                  : 'bg-cyan-950 text-cyan-300 border border-cyan-800'
               }`}
-            />
-            <span className="opacity-70">Swap/Mutate</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span
-              className={`w-2.5 h-2.5 rounded-sm ${
-                isSketch ? 'bg-[#98971a] border border-[#3c3836]' : 'bg-emerald-400 shadow-sm shadow-emerald-400/50'
-              }`}
-            />
-            <span className="opacity-70">Sorted/Complete</span>
-          </div>
+            >
+              w: {step.state.weight} | b: {step.state.bias}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Main Canvas Area */}
-      <div className="relative flex-1 w-full flex items-center justify-center my-2">
-        {/* Scenario 1: Array Visualization */}
-        {arr && arr.length > 0 && (
-          <div className="w-full h-full relative flex items-end justify-center pb-6">
+      {/* Main Stage Visual Content */}
+      <div className="relative flex-1 w-full flex items-center justify-center my-2 overflow-hidden">
+        {/* ========================================================= */}
+        {/* 1. REGRESSION PLOT VISUALIZER (Linear & Logistic Regression) */}
+        {/* ========================================================= */}
+        {points && points.length > 0 && (
+          <div className="w-full h-full relative flex items-center justify-center">
             {isSketch ? (
-              // Sketch Canvas (RoughJS SVGs + Handwritten labels)
+              // Sketch Mode 2D Plot
               <svg
                 ref={svgRef}
                 viewBox="0 0 700 360"
                 preserveAspectRatio="xMidYMid meet"
                 className="w-full h-full max-h-[340px]"
               >
-                {arr.map((val, idx) => {
-                  const maxVal = Math.max(...arr, 1);
-                  const width = 700;
-                  const height = 360;
-                  const barMargin = 12;
-                  const availableWidth = width - 80;
-                  const barWidth = Math.min(64, Math.max(28, availableWidth / arr.length - barMargin));
-                  const startX = (width - (arr.length * (barWidth + barMargin) - barMargin)) / 2;
-                  const x = startX + idx * (barWidth + barMargin);
-                  const barHeight = Math.max(30, (val / maxVal) * (height - 130));
-                  const y = height - 60 - barHeight;
-
-                  const isLeft = step.state.left === idx;
-                  const isRight = step.state.right === idx;
-                  const isMid = step.state.mid === idx;
-                  const isI = step.state.i === idx;
-                  const isJ = step.state.j === idx;
-
+                {/* Labels and values rendered via SVG text */}
+                {points.map((p, idx) => {
+                  const originX = 70;
+                  const originY = 300;
+                  const scaleX = 110;
+                  const scaleY = 38;
+                  const px = originX + p.x * scaleX;
+                  const py = originY - p.y * scaleY;
                   return (
-                    <g key={idx}>
-                      {/* Bar Value text */}
-                      <text
-                        x={x + barWidth / 2}
-                        y={y - 8}
-                        textAnchor="middle"
-                        className="font-sketch font-bold text-lg fill-[#282828]"
-                      >
-                        {val}
-                      </text>
-                      {/* Index text */}
-                      <text
-                        x={x + barWidth / 2}
-                        y={height - 38}
-                        textAnchor="middle"
-                        className="font-mono text-xs fill-[#7c6f64]"
-                      >
-                        [{idx}]
-                      </text>
-
-                      {/* Pointer labels */}
-                      <g transform={`translate(${x + barWidth / 2}, ${height - 15})`}>
-                        {isMid && (
-                          <text textAnchor="middle" className="font-sketch font-bold text-sm fill-[#b16286]">
-                            mid
-                          </text>
-                        )}
-                        {isLeft && !isMid && (
-                          <text textAnchor="middle" className="font-sketch font-bold text-sm fill-[#458588]">
-                            left
-                          </text>
-                        )}
-                        {isRight && !isMid && (
-                          <text textAnchor="middle" className="font-sketch font-bold text-sm fill-[#458588]">
-                            right
-                          </text>
-                        )}
-                        {isI && isJ ? (
-                          <text textAnchor="middle" className="font-sketch font-bold text-sm fill-[#d65d0e]">
-                            i, j
-                          </text>
-                        ) : (
-                          <>
-                            {isI && (
-                              <text textAnchor="middle" className="font-sketch font-bold text-sm fill-[#d65d0e]">
-                                i
-                              </text>
-                            )}
-                            {isJ && (
-                              <text textAnchor="middle" className="font-sketch font-bold text-sm fill-[#b57614]">
-                                j
-                              </text>
-                            )}
-                          </>
-                        )}
-                      </g>
-                    </g>
+                    <text
+                      key={idx}
+                      x={px}
+                      y={py - 14}
+                      textAnchor="middle"
+                      className="font-sketch font-bold text-sm fill-[#282828]"
+                    >
+                      ({p.x}, {p.y})
+                    </text>
                   );
                 })}
+                {/* Axis Labels */}
+                <text x="640" y="320" className="font-sketch font-bold text-base fill-[#3c3836]">
+                  Feature X
+                </text>
+                <text x="40" y="60" className="font-sketch font-bold text-base fill-[#3c3836]">
+                  Target y
+                </text>
               </svg>
             ) : (
-              // Clean Pro Studio Mode: Crisp Geometric glowing bars
-              <div className="flex items-end justify-center gap-3 w-full h-full max-h-[300px] px-4">
-                {arr.map((val, idx) => {
-                  const maxVal = Math.max(...arr, 1);
-                  const barHeightPct = Math.max(14, (val / maxVal) * 85);
-                  const isTarget = step.targets.includes(idx);
-                  const isSwap = step.action === 'swap' && isTarget;
-                  const isMid = step.state.mid === idx;
-                  const isLeft = step.state.left === idx;
-                  const isRight = step.state.right === idx;
-                  const isDone = step.action === 'done';
+              // Clean Pro Studio Mode: Neon Glowing Scatter & Dynamic Fit Line
+              <div className="w-full h-full relative max-w-2xl max-h-[320px]">
+                <svg
+                  viewBox="0 0 700 360"
+                  preserveAspectRatio="xMidYMid meet"
+                  className="w-full h-full"
+                >
+                  <defs>
+                    <linearGradient id="regGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#06b6d4" />
+                      <stop offset="100%" stopColor="#6366f1" />
+                    </linearGradient>
+                  </defs>
 
-                  let barStyle = 'from-slate-700 to-slate-800 border-slate-600 text-slate-300';
-                  if (isDone) {
-                    barStyle = 'from-emerald-500 to-teal-600 border-emerald-400 text-white shadow-lg shadow-emerald-500/20';
-                  } else if (isSwap) {
-                    barStyle = 'from-rose-500 to-red-600 border-rose-300 text-white shadow-lg shadow-rose-500/40 animate-pulse';
-                  } else if (isTarget) {
-                    barStyle = 'from-amber-400 to-orange-500 border-amber-300 text-slate-900 shadow-lg shadow-amber-400/40';
-                  } else if (isMid) {
-                    barStyle = 'from-purple-500 to-indigo-600 border-purple-400 text-white shadow-lg shadow-purple-500/30';
-                  }
+                  {/* Subtle Grid Lines */}
+                  {[1, 2, 3, 4, 5, 6].map((gridX) => (
+                    <line
+                      key={`gx-${gridX}`}
+                      x1={70 + gridX * 90}
+                      y1="40"
+                      x2={70 + gridX * 90}
+                      y2="300"
+                      stroke="#1e293b"
+                      strokeDasharray="4 4"
+                    />
+                  ))}
+                  {[1, 2, 3, 4, 5, 6, 7].map((gridY) => (
+                    <line
+                      key={`gy-${gridY}`}
+                      x1="70"
+                      y1={300 - gridY * 36}
+                      x2="650"
+                      y2={300 - gridY * 36}
+                      stroke="#1e293b"
+                      strokeDasharray="4 4"
+                    />
+                  ))}
 
-                  return (
-                    <div
-                      key={idx}
-                      className="flex flex-col items-center justify-end h-full flex-1 max-w-[68px] group transition-all duration-300"
-                    >
-                      {/* Numerical Value Bubble */}
-                      <span
-                        className={`text-xs font-mono font-bold mb-1.5 transition-transform group-hover:scale-110 ${
-                          isTarget ? 'text-amber-300' : 'text-slate-300'
-                        }`}
-                      >
-                        {val}
-                      </span>
+                  {/* Axes */}
+                  <line x1="70" y1="300" x2="650" y2="300" stroke="#475569" strokeWidth="2" />
+                  <line x1="70" y1="300" x2="70" y2="40" stroke="#475569" strokeWidth="2" />
 
-                      {/* Bar Column */}
-                      <div
-                        style={{ height: `${barHeightPct}%` }}
-                        className={`w-full rounded-t-lg bg-gradient-to-t border-t border-x transition-all duration-300 flex items-center justify-center ${barStyle}`}
-                      >
-                        {isTarget && (
-                          <div className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                        )}
-                      </div>
+                  {/* Axis Text */}
+                  <text x="630" y="325" fill="#94a3b8" className="font-mono text-xs font-bold">
+                    Feature X
+                  </text>
+                  <text x="35" y="45" fill="#94a3b8" className="font-mono text-xs font-bold">
+                    Target y
+                  </text>
 
-                      {/* Index & Pointer Labels */}
-                      <div className="flex flex-col items-center mt-2 font-mono">
-                        <span className="text-[11px] text-slate-500">[{idx}]</span>
-                        <div className="h-5 flex items-center gap-1 text-[10px] font-bold">
-                          {isMid && (
-                            <span className="px-1 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                              mid
-                            </span>
-                          )}
-                          {isLeft && (
-                            <span className="px-1 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                              L
-                            </span>
-                          )}
-                          {isRight && (
-                            <span className="px-1 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                              R
-                            </span>
-                          )}
-                          {step.state.i === idx && (
-                            <span className="px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
-                              i
-                            </span>
-                          )}
-                          {step.state.j === idx && (
-                            <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                              j
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                  {/* Regression Fit Line */}
+                  {(() => {
+                    const originX = 70;
+                    const originY = 300;
+                    const scaleX = 100;
+                    const scaleY = 36;
+                    const w = step.state.weight !== undefined ? Number(step.state.weight) : 0;
+                    const b = step.state.bias !== undefined ? Number(step.state.bias) : 0;
+                    const p1X = originX + 0.5 * scaleX;
+                    const p1Y = originY - (w * 0.5 + b) * scaleY;
+                    const p2X = originX + 5.5 * scaleX;
+                    const p2Y = originY - (w * 5.5 + b) * scaleY;
+
+                    return (
+                      <line
+                        x1={p1X}
+                        y1={p1Y}
+                        x2={p2X}
+                        y2={p2Y}
+                        stroke="url(#regGrad)"
+                        strokeWidth="3.5"
+                        strokeLinecap="round"
+                        className="transition-all duration-300 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]"
+                      />
+                    );
+                  })()}
+
+                  {/* Data Points and Error Residuals */}
+                  {points.map((p, idx) => {
+                    const originX = 70;
+                    const originY = 300;
+                    const scaleX = 100;
+                    const scaleY = 36;
+                    const px = originX + p.x * scaleX;
+                    const py = originY - p.y * scaleY;
+                    const w = step.state.weight !== undefined ? Number(step.state.weight) : 0;
+                    const b = step.state.bias !== undefined ? Number(step.state.bias) : 0;
+                    const pyPred = originY - (p.yPred ?? (w * p.x + b)) * scaleY;
+
+                    return (
+                      <g key={idx}>
+                        {/* Red Residual Error dashed line */}
+                        <line
+                          x1={px}
+                          y1={py}
+                          x2={px}
+                          y2={pyPred}
+                          stroke="#ef4444"
+                          strokeWidth="2"
+                          strokeDasharray="4 3"
+                        />
+                        {/* Target Data Point */}
+                        <circle
+                          cx={px}
+                          cy={py}
+                          r="7"
+                          fill="#f59e0b"
+                          stroke="#fbbf24"
+                          strokeWidth="2"
+                          className="drop-shadow-[0_0_6px_rgba(245,158,11,0.6)]"
+                        />
+                        <text
+                          x={px}
+                          y={py - 12}
+                          fill="#f1f5f9"
+                          textAnchor="middle"
+                          className="font-mono text-[11px] font-semibold"
+                        >
+                          ({p.x}, {p.y})
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
               </div>
             )}
           </div>
         )}
 
-        {/* Scenario 2: Modern AI / Self-Attention Head Visualization */}
+        {/* ========================================================= */}
+        {/* 2. NEURAL NETWORK FORWARD PASS (MLP & Activation Layers)   */}
+        {/* ========================================================= */}
+        {layers && layers.length > 0 && (
+          <div className="w-full max-w-3xl flex items-center justify-around py-4">
+            {layers.map((layer) => (
+              <div key={layer.name} className="flex flex-col items-center gap-4">
+                <span className="text-xs font-mono font-bold opacity-70">
+                  {layer.name}
+                </span>
+
+                <div className="flex flex-col gap-4">
+                  {layer.nodes.map((node) => {
+                    const isActive = node.value > 0;
+
+                    return (
+                      <div
+                        key={node.label}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl font-mono text-xs border transition-all ${
+                          isSketch
+                            ? isActive
+                              ? 'bg-[#fabd2f] text-[#282828] sketch-border font-bold'
+                              : 'bg-[#fbf7ee] text-[#7c6f64] border-[#3c3836]/40'
+                            : isActive
+                              ? 'bg-gradient-to-r from-indigo-600/40 to-cyan-500/40 text-cyan-200 border-cyan-400 shadow-lg shadow-cyan-500/20 font-bold'
+                              : 'bg-slate-800/80 text-slate-400 border-slate-700'
+                        }`}
+                      >
+                        <span className="w-6 h-6 rounded-full flex items-center justify-center font-bold bg-black/10 dark:bg-white/10">
+                          {node.label}
+                        </span>
+                        <span>{node.value}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* 3. TRANSFORMER SELF-ATTENTION & NEXT-TOKEN LOGITS         */}
+        {/* ========================================================= */}
         {tokens && tokens.length > 0 && (
           <div className="w-full max-w-2xl flex flex-col items-center gap-6 py-2">
             {/* Context Token Window */}
@@ -433,17 +538,65 @@ export const VisualStage: React.FC<VisualStageProps> = ({
             )}
           </div>
         )}
+
+        {/* ========================================================= */}
+        {/* 4. CLASSICAL ARRAYS (for legacy reference)               */}
+        {/* ========================================================= */}
+        {arr && arr.length > 0 && (
+          <div className="w-full h-full relative flex items-end justify-center pb-6">
+            <svg
+              ref={svgRef}
+              viewBox="0 0 700 360"
+              preserveAspectRatio="xMidYMid meet"
+              className="w-full h-full max-h-[340px]"
+            >
+              {arr.map((val, idx) => {
+                const maxVal = Math.max(...arr, 1);
+                const width = 700;
+                const height = 360;
+                const barMargin = 12;
+                const availableWidth = width - 80;
+                const barWidth = Math.min(64, Math.max(28, availableWidth / arr.length - barMargin));
+                const startX = (width - (arr.length * (barWidth + barMargin) - barMargin)) / 2;
+                const x = startX + idx * (barWidth + barMargin);
+                const barHeight = Math.max(30, (val / maxVal) * (height - 130));
+                const y = height - 60 - barHeight;
+
+                return (
+                  <g key={idx}>
+                    <text
+                      x={x + barWidth / 2}
+                      y={y - 8}
+                      textAnchor="middle"
+                      className="font-sketch font-bold text-lg fill-[#282828]"
+                    >
+                      {val}
+                    </text>
+                    <text
+                      x={x + barWidth / 2}
+                      y={height - 38}
+                      textAnchor="middle"
+                      className="font-mono text-xs fill-[#7c6f64]"
+                    >
+                      [{idx}]
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+        )}
       </div>
 
       {/* Stage Footer Status */}
       <div
-        className={`pt-2 border-t text-xs font-mono flex items-center justify-between ${
+        className={`pt-2 border-t text-xs font-mono flex items-center justify-between shrink-0 ${
           isSketch ? 'border-[#3c3836]/20 text-[#7c6f64]' : 'border-slate-800 text-slate-400'
         }`}
       >
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          Interactive Trace Lockstep Active
+          Interactive AI Execution Trace Active
         </span>
         <span>Action: {step.action.toUpperCase()}</span>
       </div>

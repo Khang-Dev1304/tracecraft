@@ -12,7 +12,7 @@ import {
   PanelLeft,
   PanelRight
 } from 'lucide-react';
-import type { ThemeMode, ViewMode, AlgorithmPreset } from '../types';
+import type { ThemeMode, ViewMode, AlgorithmPreset, StudioTab } from '../types';
 
 interface HeaderProps {
   theme: ThemeMode;
@@ -29,6 +29,8 @@ interface HeaderProps {
   onToggleCodePane: () => void;
   showDiagnosticsPane: boolean;
   onToggleDiagnosticsPane: () => void;
+  studioTab: StudioTab;
+  onSelectStudioTab: (tab: StudioTab) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -46,6 +48,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleCodePane,
   showDiagnosticsPane,
   onToggleDiagnosticsPane,
+  studioTab,
+  onSelectStudioTab,
 }) => {
   const isSketch = theme === 'sketch';
 
@@ -132,6 +136,41 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
+          {/* Trace vs Theory Tab Switcher */}
+          <div
+            className={`flex items-center p-0.5 rounded-lg border text-xs font-mono ${
+              isSketch
+                ? 'bg-[#ebdbb2] border-[#3c3836]/30'
+                : 'bg-[#121929] border-[#222f46]'
+            }`}
+          >
+            <button
+              onClick={() => onSelectStudioTab('trace')}
+              className={`px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 ${
+                studioTab === 'trace'
+                  ? isSketch
+                    ? 'bg-[#d65d0e] text-white'
+                    : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                  : 'opacity-60 hover:opacity-100'
+              }`}
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>Trace</span>
+            </button>
+            <button
+              onClick={() => onSelectStudioTab('theory')}
+              className={`px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 ${
+                studioTab === 'theory'
+                  ? isSketch
+                    ? 'bg-[#d65d0e] text-white'
+                    : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                  : 'opacity-60 hover:opacity-100'
+              }`}
+            >
+              <BookOpen className="w-3 h-3" />
+              <span>Theory</span>
+            </button>
+          </div>
           {/* Quick Input Tweaker */}
           <div className="hidden xl:flex items-center gap-1.5">
             <Sliders className="w-3.5 h-3.5 opacity-60" />

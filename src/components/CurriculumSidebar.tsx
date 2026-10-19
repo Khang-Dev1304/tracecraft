@@ -60,14 +60,14 @@ export const CurriculumSidebar: React.FC<CurriculumSidebarProps> = ({
 
   const getCategoryIcon = (category: AlgorithmCategory) => {
     switch (category) {
-      case 'Foundations & Sorting':
+      case 'Classical Machine Learning':
         return <Layers className="w-4 h-4 text-amber-500" />;
-      case 'Search & Pointers':
-        return <Binary className="w-4 h-4 text-emerald-500" />;
-      case 'Modern AI & LLMs':
+      case 'Deep Learning & Neural Networks':
+        return <Binary className="w-4 h-4 text-indigo-400" />;
+      case 'Transformers & Modern LLMs':
         return <BrainCircuit className="w-4 h-4 text-cyan-400" />;
       default:
-        return <BookOpen className="w-4 h-4 text-indigo-400" />;
+        return <BookOpen className="w-4 h-4 text-emerald-400" />;
     }
   };
 
