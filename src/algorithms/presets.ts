@@ -6,7 +6,7 @@ export const ALGORITHM_PRESETS: AlgorithmPreset[] = [
   // ==========================================
   {
     id: 'linear-regression',
-    title: 'Linear Regression & Gradient Descent',
+    title: '01. Linear Regression & Gradient Descent',
     category: 'Classical Machine Learning',
     difficulty: 'Beginner',
     badge: 'Optimization',
@@ -44,7 +44,7 @@ export const ALGORITHM_PRESETS: AlgorithmPreset[] = [
       { label: 'Steep', value: '(1, 0.5), (2, 2.4), (3, 4.2), (4, 6.1), (5, 8.0)' },
     ],
     vi: {
-      title: 'Hồi quy Tuyến tính & Gradient Descent',
+      title: '01. Hồi quy Tuyến tính & Gradient Descent',
       category: 'Machine Learning Cổ điển',
       badge: 'Gradient Descent',
       summary: 'Khớp đường thẳng tối ưu với dữ liệu 2D bằng cách cực tiểu hóa MSE Loss thông qua thuật toán Gradient Descent.',
@@ -303,8 +303,244 @@ def linear_regression(X, y, lr=0.06, epochs=8):
   // Category 2: Deep Learning & Neural Networks
   // ==========================================
   {
+    id: 'single-neuron',
+    title: '01. The Artificial Neuron (Perceptron)',
+    category: 'Deep Learning & Neural Networks',
+    difficulty: 'Beginner',
+    badge: 'Neural Building Block',
+    visualType: 'single-neuron',
+    formula: 'z = \\sum_{i=1}^n w_i x_i + b = \\mathbf{w}^T \\mathbf{x} + b, \\quad a = \\sigma(z) = \\frac{1}{1 + e^{-z}}',
+    summary: 'The foundational atomic unit of deep learning: aggregates weighted inputs, adds a threshold bias, and fires via an activation function.',
+    description: 'Inspired by biological neurons (dendrites, soma, axon), Frank Rosenblatt’s Perceptron computes a linear combination z = w^T x + b followed by an activation function a = f(z). Traces how inputs scale through synaptic weights to produce binary or probability decisions.',
+    inputVariants: [
+      { label: 'AND Gate (x=[1, 1])', value: 'x1: 1.0, x2: 1.0' },
+      { label: 'OR Gate (x=[0, 1])', value: 'x1: 0.0, x2: 1.0' },
+      { label: 'Below Threshold (x=[0, 0])', value: 'x1: 0.0, x2: 0.0' },
+      { label: 'Continuous (x=[0.8, -0.5])', value: 'x1: 0.8, x2: -0.5' },
+    ],
+    vi: {
+      title: '01. Nơ-ron Nhân tạo (Perceptron)',
+      category: 'Deep Learning & Mạng Nơ-ron',
+      badge: 'Viên gạch Nơ-ron',
+      summary: 'Đơn vị nguyên tử nền tảng của học sâu: tổng hợp đầu vào có trọng số, cộng bias ngưỡng và kích hoạt qua hàm phi tuyến để ra quyết định.',
+      description: 'Lấy cảm hứng từ nơ-ron sinh học (sợi nhánh, thân tế bào, sợi trục), Perceptron của Frank Rosenblatt tính tổ hợp tuyến tính z = w^T x + b và kích hoạt phi tuyến a = f(z). Mô phỏng từng luồng tín hiệu từ đầu vào qua trọng số đến quyết định kích hoạt.',
+      variants: [
+        { label: 'Cổng AND (x=[1, 1])', value: 'x1: 1.0, x2: 1.0' },
+        { label: 'Cổng OR (x=[0, 1])', value: 'x1: 0.0, x2: 1.0' },
+        { label: 'Dưới ngưỡng (x=[0, 0])', value: 'x1: 0.0, x2: 0.0' },
+        { label: 'Liên tục (x=[0.8, -0.5])', value: 'x1: 0.8, x2: -0.5' },
+      ],
+      sections: [
+        {
+          title: '1. Cấu trúc Nơ-ron Nhân tạo (Từ Sinh học đến Toán học)',
+          content: 'Lấy cảm hứng từ nơ-ron sinh học: Sợi nhánh (Dendrites) nhận tín hiệu đầu vào x_i, Khớp thần kinh (Synapses) khuếch đại hoặc làm suy giảm tín hiệu qua trọng số w_i, Thân tế bào (Soma) cộng dồn toàn bộ z = ∑ w_i x_i + b, và Sợi trục (Axon) phát xung đầu ra a = f(z).',
+          formula: 'z = \\mathbf{w}^T \\mathbf{x} + b = w_1 x_1 + w_2 x_2 + \\dots + w_n x_n + b',
+          keyTakeaway: 'Weights (w) quyết định tầm quan trọng của từng đặc trưng; Bias (b) điều chỉnh ngưỡng kích hoạt nơ-ron dễ hay khó phát xung.',
+        },
+        {
+          title: '2. Các Hàm Kích hoạt: Step Function, Sigmoid và ReLU',
+          content: 'Perceptron ban đầu của Rosenblatt sử dụng hàm bước nhảy (Step function) nhị phân 0 hoặc 1. Mạng nơ-ron hiện đại chuyển sang các hàm kích hoạt mượt mà có đạo hàm như Sigmoid (1 / (1 + e^-z)) hoặc ReLU (max(0, z)) để phục vụ việc tính gradient khi huấn luyện.',
+          formula: '\\sigma(z) = \\frac{1}{1 + e^{-z}}, \\quad \\text{ReLU}(z) = \\max(0, z)',
+          keyTakeaway: 'Tính khả vi (differentiable) của các hàm kích hoạt mượt cho phép thuật toán Gradient Descent tính đạo hàm và tinh chỉnh trọng số.',
+        },
+        {
+          title: '3. Giới hạn Ranh giới Quyết định Tuyến tính & Bài toán XOR',
+          content: 'Một nơ-ron đơn lẻ chỉ có thể tạo ra một siêu phẳng tuyến tính w1*x1 + w2*x2 + b = 0 chia không gian thành hai nửa. Nó có thể học được cổng logic AND và OR, nhưng thất bại hoàn toàn trước cổng XOR (Minsky & Papert, 1969).',
+          keyTakeaway: 'Hạn chế này thúc đẩy sự ra đời của Mạng nơ-ron Đa tầng (MLP) với các tầng ẩn để giải quyết các bài toán phi tuyến phức tạp.',
+        },
+      ],
+    },
+    sections: [
+      {
+        title: '1. Anatomy of an Artificial Neuron (Biology to Math)',
+        content: 'Inspired by biological neurons: Dendrites receive input signals x_i, Synapses apply signal strength via weights w_i, the Cell Body (Soma) computes the weighted sum z = ∑ w_i x_i + b, and the Axon fires an activation signal a = f(z).',
+        formula: 'z = \\mathbf{w}^T \\mathbf{x} + b = w_1 x_1 + w_2 x_2 + \\dots + w_n x_n + b',
+        keyTakeaway: 'Weights (w) scale feature importance; Bias (b) shifts the threshold for how easily the neuron fires.',
+      },
+      {
+        title: '2. Activation Functions: From Step Function to Sigmoid & ReLU',
+        content: 'Rosenblatt’s historical perceptron used a discrete step function (0 or 1). Modern deep learning requires smooth, differentiable activations like Sigmoid or ReLU so gradients can be propagated backward during gradient descent training.',
+        formula: '\\sigma(z) = \\frac{1}{1 + e^{-z}}, \\quad \\text{ReLU}(z) = \\max(0, z)',
+        keyTakeaway: 'Smooth differentiable activations allow infinitesimal weight nudges to produce measurable loss changes.',
+      },
+      {
+        title: '3. The Linear Decision Boundary & The XOR Limit',
+        content: 'A single neuron defines a linear decision boundary w1*x1 + w2*x2 + b = 0 dividing space into two half-planes. It easily solves AND and OR gates, but is mathematically incapable of separating the non-linear XOR function (Minsky & Papert, 1969).',
+        keyTakeaway: 'Overcoming the single neuron’s linear boundary limit directly necessitated Multi-Layer Perceptrons (MLPs).',
+      },
+    ],
+    timeComplexity: 'O(n) inputs dot-product',
+    spaceComplexity: 'O(n) parameters',
+    tags: ['Perceptron', 'Neural Network', 'Activation', 'Sigmoid', 'PyTorch'],
+    defaultInput: 'x1: 1.0, x2: 1.0',
+    pythonCode: `import numpy as np
+
+def single_neuron(x, w, b, activation="sigmoid"):
+    # 1. Linear Weighted Sum + Bias
+    z = np.dot(x, w) + b
+    
+    # 2. Non-linear Activation
+    if activation == "sigmoid":
+        a = 1 / (1 + np.exp(-z))
+    elif activation == "relu":
+        a = np.maximum(0, z)
+    elif activation == "step":
+        a = 1.0 if z >= 0 else 0.0
+    return z, a
+
+# Logic AND gate weights configuration
+w = np.array([1.5, 1.5])
+b = -2.0
+x = np.array([1.0, 1.0])
+z, output = single_neuron(x, w, b, activation="sigmoid")
+print(f"z = {z:.2f}, Output probability = {output:.4f}")`,
+    code: `import numpy as np
+
+def neuron(x, w, b):
+    # 1. Weighted sum
+    z = np.dot(x, w) + b
+    # 2. Sigmoid activation
+    a = 1 / (1 + np.exp(-z))
+    return z, a`,
+    generateTraces: (inputStr?: string, lang: Language = 'en'): TraceStep[] => {
+      const isVi = lang === 'vi';
+      let x1 = 1.0;
+      let x2 = 1.0;
+
+      if (inputStr) {
+        const m1 = inputStr.match(/x1:\s*(-?[0-9.]+)/i);
+        const m2 = inputStr.match(/x2:\s*(-?[0-9.]+)/i);
+        if (m1) x1 = Number(m1[1]);
+        if (m2) x2 = Number(m2[1]);
+      }
+
+      const w1 = 1.5;
+      const w2 = 1.5;
+      const b = -2.0;
+      const weightedSum = Number((w1 * x1 + w2 * x2 + b).toFixed(2));
+      const outputProb = Number((1 / (1 + Math.exp(-weightedSum))).toFixed(3));
+
+      const steps: TraceStep[] = [];
+
+      // Step 0: Input Signal Reception
+      steps.push({
+        step: 0,
+        totalSteps: 0,
+        line: 4,
+        action: 'init',
+        targets: [0, 1],
+        state: {
+          neuronState: {
+            inputs: [
+              { label: 'x₁', val: x1 },
+              { label: 'x₂', val: x2 },
+            ],
+            weights: [w1, w2],
+            bias: b,
+            weightedSum: 0,
+            activationName: 'Pending',
+            outputVal: 0,
+          },
+        },
+        explanation: isVi
+          ? `Đầu vào x = [${x1}, ${x2}] được tiếp nhận bởi sợi nhánh (dendrites). Trọng số khớp thần kinh: w₁ = ${w1}, w₂ = ${w2}, bias ngưỡng b = ${b}.`
+          : `Inputs x = [${x1}, ${x2}] received at dendrites. Synaptic weights: w₁ = ${w1}, w₂ = ${w2}, threshold bias b = ${b}.`,
+        invariant: isVi
+          ? 'Tín hiệu đầu vào sẵn sàng truyền qua các kết nối synap.'
+          : 'Input signals ready for synaptic scaling.',
+      });
+
+      // Step 1: Synaptic Weighting (w1*x1 and w2*x2)
+      steps.push({
+        step: 1,
+        totalSteps: 0,
+        line: 5,
+        action: 'compute',
+        targets: [0, 1],
+        state: {
+          neuronState: {
+            inputs: [
+              { label: 'x₁', val: x1 },
+              { label: 'x₂', val: x2 },
+            ],
+            weights: [w1, w2],
+            bias: b,
+            weightedSum: Number((w1 * x1 + w2 * x2).toFixed(2)),
+            activationName: 'Scaling',
+            outputVal: 0,
+          },
+        },
+        explanation: isVi
+          ? `Tín hiệu khuếch đại qua synap: w₁·x₁ = ${w1}·${x1} = ${(w1 * x1).toFixed(2)}, w₂·x₂ = ${w2}·${x2} = ${(w2 * x2).toFixed(2)}.`
+          : `Synaptic transmission: w₁·x₁ = ${w1}·${x1} = ${(w1 * x1).toFixed(2)}, w₂·x₂ = ${w2}·${x2} = ${(w2 * x2).toFixed(2)}.`,
+        invariant: isVi
+          ? 'Phép nhân trọng số điều chỉnh cường độ đóng góp của từng đặc trưng.'
+          : 'Synaptic scaling weights feature importance.',
+      });
+
+      // Step 2: Summation and Bias in Soma (z = w^T x + b)
+      steps.push({
+        step: 2,
+        totalSteps: 0,
+        line: 5,
+        action: 'forward',
+        targets: [2],
+        state: {
+          neuronState: {
+            inputs: [
+              { label: 'x₁', val: x1 },
+              { label: 'x₂', val: x2 },
+            ],
+            weights: [w1, w2],
+            bias: b,
+            weightedSum,
+            activationName: 'z = ∑ + b',
+            outputVal: 0,
+          },
+        },
+        explanation: isVi
+          ? `Thân nơ-ron (Soma) tính tổng và cộng bias: z = (${(w1 * x1).toFixed(2)} + ${(w2 * x2).toFixed(2)}) + (${b}) = ${weightedSum}. ${weightedSum >= 0 ? 'Giá trị vượt ngưỡng kích hoạt (z ≥ 0)!' : 'Giá trị dưới ngưỡng kích hoạt (z < 0).'}`
+          : `Soma aggregates inputs and adds bias: z = (${(w1 * x1).toFixed(2)} + ${(w2 * x2).toFixed(2)}) + (${b}) = ${weightedSum}. ${weightedSum >= 0 ? 'Above activation threshold (z ≥ 0)!' : 'Below threshold (z < 0).'}`,
+        invariant: isVi
+          ? 'Tổ hợp tuyến tính z đo khoảng cách đại số tới ranh giới quyết định.'
+          : 'Affine combination z measures signed distance to decision boundary.',
+      });
+
+      // Step 3: Activation Function Firing (Sigmoid)
+      steps.push({
+        step: 3,
+        totalSteps: 0,
+        line: 7,
+        action: 'done',
+        targets: [3],
+        state: {
+          neuronState: {
+            inputs: [
+              { label: 'x₁', val: x1 },
+              { label: 'x₂', val: x2 },
+            ],
+            weights: [w1, w2],
+            bias: b,
+            weightedSum,
+            activationName: 'Sigmoid',
+            outputVal: outputProb,
+          },
+        },
+        explanation: isVi
+          ? `Hàm kích hoạt Sigmoid phát xung đầu ra: a = σ(${weightedSum}) = ${outputProb} (xác suất ${(outputProb * 100).toFixed(1)}%). Nơ-ron đưa ra quyết định ${outputProb >= 0.5 ? 'KÍCH HOẠT (Output = 1)' : 'KHÔNG KÍCH HOẠT (Output = 0)'}!`
+          : `Sigmoid activation fires: a = σ(${weightedSum}) = ${outputProb} (${(outputProb * 100).toFixed(1)}% confidence). Neuron decides: ${outputProb >= 0.5 ? 'FIRE (Class 1)' : 'REST (Class 0)'}!`,
+        invariant: isVi
+          ? 'Đầu ra được nén về đoạn [0, 1] biểu thị xác suất tin cậy của nơ-ron.'
+          : 'Output compressed to [0, 1] interval representing class firing probability.',
+      });
+
+      const total = steps.length;
+      return steps.map((s, idx) => ({ ...s, step: idx + 1, totalSteps: total }));
+    },
+  },
+  {
     id: 'modern-neuron',
-    title: 'The Modern Neuron vs. Perceptron (Activation & Gradients)',
+    title: '02. The Modern Neuron vs. Perceptron',
     category: 'Deep Learning & Neural Networks',
     difficulty: 'Beginner',
     badge: 'Activation & Calculus',
@@ -319,7 +555,7 @@ def linear_regression(X, y, lr=0.06, epochs=8):
       { label: 'Vanishing Gradient Saturation', value: 'activation: sigmoid, z: 4.8' },
     ],
     vi: {
-      title: 'Nơ-ron AI Hiện đại vs. Perceptron (Hàm Kích hoạt & Gradient)',
+      title: '02. Nơ-ron AI Hiện đại vs. Perceptron',
       category: 'Deep Learning & Mạng Nơ-ron',
       badge: 'Hàm Kích hoạt & Đạo hàm',
       summary: 'Cú hích lịch sử khai sinh học sâu: thay thế hàm bước nhảy cụt ngủn của Perceptron bằng các hàm kích hoạt khả vi (Sigmoid & ReLU) để thuật toán Gradient Descent có thể tối ưu trọng số.',
@@ -561,246 +797,10 @@ def modern_neuron(z, activation="sigmoid"):
     },
   },
 
-  {
-    id: 'single-neuron',
-    title: 'The Artificial Neuron (Perceptron)',
-    category: 'Deep Learning & Neural Networks',
-    difficulty: 'Beginner',
-    badge: 'Neural Building Block',
-    visualType: 'single-neuron',
-    formula: 'z = \\sum_{i=1}^n w_i x_i + b = \\mathbf{w}^T \\mathbf{x} + b, \\quad a = \\sigma(z) = \\frac{1}{1 + e^{-z}}',
-    summary: 'The foundational atomic unit of deep learning: aggregates weighted inputs, adds a threshold bias, and fires via an activation function.',
-    description: 'Inspired by biological neurons (dendrites, soma, axon), Frank Rosenblatt’s Perceptron computes a linear combination z = w^T x + b followed by an activation function a = f(z). Traces how inputs scale through synaptic weights to produce binary or probability decisions.',
-    inputVariants: [
-      { label: 'AND Gate (x=[1, 1])', value: 'x1: 1.0, x2: 1.0' },
-      { label: 'OR Gate (x=[0, 1])', value: 'x1: 0.0, x2: 1.0' },
-      { label: 'Below Threshold (x=[0, 0])', value: 'x1: 0.0, x2: 0.0' },
-      { label: 'Continuous (x=[0.8, -0.5])', value: 'x1: 0.8, x2: -0.5' },
-    ],
-    vi: {
-      title: 'Nơ-ron Nhân tạo (Perceptron)',
-      category: 'Deep Learning & Mạng Nơ-ron',
-      badge: 'Viên gạch Nơ-ron',
-      summary: 'Đơn vị nguyên tử nền tảng của học sâu: tổng hợp đầu vào có trọng số, cộng bias ngưỡng và kích hoạt qua hàm phi tuyến để ra quyết định.',
-      description: 'Lấy cảm hứng từ nơ-ron sinh học (sợi nhánh, thân tế bào, sợi trục), Perceptron của Frank Rosenblatt tính tổ hợp tuyến tính z = w^T x + b và kích hoạt phi tuyến a = f(z). Mô phỏng từng luồng tín hiệu từ đầu vào qua trọng số đến quyết định kích hoạt.',
-      variants: [
-        { label: 'Cổng AND (x=[1, 1])', value: 'x1: 1.0, x2: 1.0' },
-        { label: 'Cổng OR (x=[0, 1])', value: 'x1: 0.0, x2: 1.0' },
-        { label: 'Dưới ngưỡng (x=[0, 0])', value: 'x1: 0.0, x2: 0.0' },
-        { label: 'Liên tục (x=[0.8, -0.5])', value: 'x1: 0.8, x2: -0.5' },
-      ],
-      sections: [
-        {
-          title: '1. Cấu trúc Nơ-ron Nhân tạo (Từ Sinh học đến Toán học)',
-          content: 'Lấy cảm hứng từ nơ-ron sinh học: Sợi nhánh (Dendrites) nhận tín hiệu đầu vào x_i, Khớp thần kinh (Synapses) khuếch đại hoặc làm suy giảm tín hiệu qua trọng số w_i, Thân tế bào (Soma) cộng dồn toàn bộ z = ∑ w_i x_i + b, và Sợi trục (Axon) phát xung đầu ra a = f(z).',
-          formula: 'z = \\mathbf{w}^T \\mathbf{x} + b = w_1 x_1 + w_2 x_2 + \\dots + w_n x_n + b',
-          keyTakeaway: 'Weights (w) quyết định tầm quan trọng của từng đặc trưng; Bias (b) điều chỉnh ngưỡng kích hoạt nơ-ron dễ hay khó phát xung.',
-        },
-        {
-          title: '2. Các Hàm Kích hoạt: Step Function, Sigmoid và ReLU',
-          content: 'Perceptron ban đầu của Rosenblatt sử dụng hàm bước nhảy (Step function) nhị phân 0 hoặc 1. Mạng nơ-ron hiện đại chuyển sang các hàm kích hoạt mượt mà có đạo hàm như Sigmoid (1 / (1 + e^-z)) hoặc ReLU (max(0, z)) để phục vụ việc tính gradient khi huấn luyện.',
-          formula: '\\sigma(z) = \\frac{1}{1 + e^{-z}}, \\quad \\text{ReLU}(z) = \\max(0, z)',
-          keyTakeaway: 'Tính khả vi (differentiable) của các hàm kích hoạt mượt cho phép thuật toán Gradient Descent tính đạo hàm và tinh chỉnh trọng số.',
-        },
-        {
-          title: '3. Giới hạn Ranh giới Quyết định Tuyến tính & Bài toán XOR',
-          content: 'Một nơ-ron đơn lẻ chỉ có thể tạo ra một siêu phẳng tuyến tính w1*x1 + w2*x2 + b = 0 chia không gian thành hai nửa. Nó có thể học được cổng logic AND và OR, nhưng thất bại hoàn toàn trước cổng XOR (Minsky & Papert, 1969).',
-          keyTakeaway: 'Hạn chế này thúc đẩy sự ra đời của Mạng nơ-ron Đa tầng (MLP) với các tầng ẩn để giải quyết các bài toán phi tuyến phức tạp.',
-        },
-      ],
-    },
-    sections: [
-      {
-        title: '1. Anatomy of an Artificial Neuron (Biology to Math)',
-        content: 'Inspired by biological neurons: Dendrites receive input signals x_i, Synapses apply signal strength via weights w_i, the Cell Body (Soma) computes the weighted sum z = ∑ w_i x_i + b, and the Axon fires an activation signal a = f(z).',
-        formula: 'z = \\mathbf{w}^T \\mathbf{x} + b = w_1 x_1 + w_2 x_2 + \\dots + w_n x_n + b',
-        keyTakeaway: 'Weights (w) scale feature importance; Bias (b) shifts the threshold for how easily the neuron fires.',
-      },
-      {
-        title: '2. Activation Functions: From Step Function to Sigmoid & ReLU',
-        content: 'Rosenblatt’s historical perceptron used a discrete step function (0 or 1). Modern deep learning requires smooth, differentiable activations like Sigmoid or ReLU so gradients can be propagated backward during gradient descent training.',
-        formula: '\\sigma(z) = \\frac{1}{1 + e^{-z}}, \\quad \\text{ReLU}(z) = \\max(0, z)',
-        keyTakeaway: 'Smooth differentiable activations allow infinitesimal weight nudges to produce measurable loss changes.',
-      },
-      {
-        title: '3. The Linear Decision Boundary & The XOR Limit',
-        content: 'A single neuron defines a linear decision boundary w1*x1 + w2*x2 + b = 0 dividing space into two half-planes. It easily solves AND and OR gates, but is mathematically incapable of separating the non-linear XOR function (Minsky & Papert, 1969).',
-        keyTakeaway: 'Overcoming the single neuron’s linear boundary limit directly necessitated Multi-Layer Perceptrons (MLPs).',
-      },
-    ],
-    timeComplexity: 'O(n) inputs dot-product',
-    spaceComplexity: 'O(n) parameters',
-    tags: ['Perceptron', 'Neural Network', 'Activation', 'Sigmoid', 'PyTorch'],
-    defaultInput: 'x1: 1.0, x2: 1.0',
-    pythonCode: `import numpy as np
-
-def single_neuron(x, w, b, activation="sigmoid"):
-    # 1. Linear Weighted Sum + Bias
-    z = np.dot(x, w) + b
-    
-    # 2. Non-linear Activation
-    if activation == "sigmoid":
-        a = 1 / (1 + np.exp(-z))
-    elif activation == "relu":
-        a = np.maximum(0, z)
-    elif activation == "step":
-        a = 1.0 if z >= 0 else 0.0
-    return z, a
-
-# Logic AND gate weights configuration
-w = np.array([1.5, 1.5])
-b = -2.0
-x = np.array([1.0, 1.0])
-z, output = single_neuron(x, w, b, activation="sigmoid")
-print(f"z = {z:.2f}, Output probability = {output:.4f}")`,
-    code: `import numpy as np
-
-def neuron(x, w, b):
-    # 1. Weighted sum
-    z = np.dot(x, w) + b
-    # 2. Sigmoid activation
-    a = 1 / (1 + np.exp(-z))
-    return z, a`,
-    generateTraces: (inputStr?: string, lang: Language = 'en'): TraceStep[] => {
-      const isVi = lang === 'vi';
-      let x1 = 1.0;
-      let x2 = 1.0;
-
-      if (inputStr) {
-        const m1 = inputStr.match(/x1:\s*(-?[0-9.]+)/i);
-        const m2 = inputStr.match(/x2:\s*(-?[0-9.]+)/i);
-        if (m1) x1 = Number(m1[1]);
-        if (m2) x2 = Number(m2[1]);
-      }
-
-      const w1 = 1.5;
-      const w2 = 1.5;
-      const b = -2.0;
-      const weightedSum = Number((w1 * x1 + w2 * x2 + b).toFixed(2));
-      const outputProb = Number((1 / (1 + Math.exp(-weightedSum))).toFixed(3));
-
-      const steps: TraceStep[] = [];
-
-      // Step 0: Input Signal Reception
-      steps.push({
-        step: 0,
-        totalSteps: 0,
-        line: 4,
-        action: 'init',
-        targets: [0, 1],
-        state: {
-          neuronState: {
-            inputs: [
-              { label: 'x₁', val: x1 },
-              { label: 'x₂', val: x2 },
-            ],
-            weights: [w1, w2],
-            bias: b,
-            weightedSum: 0,
-            activationName: 'Pending',
-            outputVal: 0,
-          },
-        },
-        explanation: isVi
-          ? `Đầu vào x = [${x1}, ${x2}] được tiếp nhận bởi sợi nhánh (dendrites). Trọng số khớp thần kinh: w₁ = ${w1}, w₂ = ${w2}, bias ngưỡng b = ${b}.`
-          : `Inputs x = [${x1}, ${x2}] received at dendrites. Synaptic weights: w₁ = ${w1}, w₂ = ${w2}, threshold bias b = ${b}.`,
-        invariant: isVi
-          ? 'Tín hiệu đầu vào sẵn sàng truyền qua các kết nối synap.'
-          : 'Input signals ready for synaptic scaling.',
-      });
-
-      // Step 1: Synaptic Weighting (w1*x1 and w2*x2)
-      steps.push({
-        step: 1,
-        totalSteps: 0,
-        line: 5,
-        action: 'compute',
-        targets: [0, 1],
-        state: {
-          neuronState: {
-            inputs: [
-              { label: 'x₁', val: x1 },
-              { label: 'x₂', val: x2 },
-            ],
-            weights: [w1, w2],
-            bias: b,
-            weightedSum: Number((w1 * x1 + w2 * x2).toFixed(2)),
-            activationName: 'Scaling',
-            outputVal: 0,
-          },
-        },
-        explanation: isVi
-          ? `Tín hiệu khuếch đại qua synap: w₁·x₁ = ${w1}·${x1} = ${(w1 * x1).toFixed(2)}, w₂·x₂ = ${w2}·${x2} = ${(w2 * x2).toFixed(2)}.`
-          : `Synaptic transmission: w₁·x₁ = ${w1}·${x1} = ${(w1 * x1).toFixed(2)}, w₂·x₂ = ${w2}·${x2} = ${(w2 * x2).toFixed(2)}.`,
-        invariant: isVi
-          ? 'Phép nhân trọng số điều chỉnh cường độ đóng góp của từng đặc trưng.'
-          : 'Synaptic scaling weights feature importance.',
-      });
-
-      // Step 2: Summation and Bias in Soma (z = w^T x + b)
-      steps.push({
-        step: 2,
-        totalSteps: 0,
-        line: 5,
-        action: 'forward',
-        targets: [2],
-        state: {
-          neuronState: {
-            inputs: [
-              { label: 'x₁', val: x1 },
-              { label: 'x₂', val: x2 },
-            ],
-            weights: [w1, w2],
-            bias: b,
-            weightedSum,
-            activationName: 'z = ∑ + b',
-            outputVal: 0,
-          },
-        },
-        explanation: isVi
-          ? `Thân nơ-ron (Soma) tính tổng và cộng bias: z = (${(w1 * x1).toFixed(2)} + ${(w2 * x2).toFixed(2)}) + (${b}) = ${weightedSum}. ${weightedSum >= 0 ? 'Giá trị vượt ngưỡng kích hoạt (z ≥ 0)!' : 'Giá trị dưới ngưỡng kích hoạt (z < 0).'}`
-          : `Soma aggregates inputs and adds bias: z = (${(w1 * x1).toFixed(2)} + ${(w2 * x2).toFixed(2)}) + (${b}) = ${weightedSum}. ${weightedSum >= 0 ? 'Above activation threshold (z ≥ 0)!' : 'Below threshold (z < 0).'}`,
-        invariant: isVi
-          ? 'Tổ hợp tuyến tính z đo khoảng cách đại số tới ranh giới quyết định.'
-          : 'Affine combination z measures signed distance to decision boundary.',
-      });
-
-      // Step 3: Activation Function Firing (Sigmoid)
-      steps.push({
-        step: 3,
-        totalSteps: 0,
-        line: 7,
-        action: 'done',
-        targets: [3],
-        state: {
-          neuronState: {
-            inputs: [
-              { label: 'x₁', val: x1 },
-              { label: 'x₂', val: x2 },
-            ],
-            weights: [w1, w2],
-            bias: b,
-            weightedSum,
-            activationName: 'Sigmoid',
-            outputVal: outputProb,
-          },
-        },
-        explanation: isVi
-          ? `Hàm kích hoạt Sigmoid phát xung đầu ra: a = σ(${weightedSum}) = ${outputProb} (xác suất ${(outputProb * 100).toFixed(1)}%). Nơ-ron đưa ra quyết định ${outputProb >= 0.5 ? 'KÍCH HOẠT (Output = 1)' : 'KHÔNG KÍCH HOẠT (Output = 0)'}!`
-          : `Sigmoid activation fires: a = σ(${weightedSum}) = ${outputProb} (${(outputProb * 100).toFixed(1)}% confidence). Neuron decides: ${outputProb >= 0.5 ? 'FIRE (Class 1)' : 'REST (Class 0)'}!`,
-        invariant: isVi
-          ? 'Đầu ra được nén về đoạn [0, 1] biểu thị xác suất tin cậy của nơ-ron.'
-          : 'Output compressed to [0, 1] interval representing class firing probability.',
-      });
-
-      const total = steps.length;
-      return steps.map((s, idx) => ({ ...s, step: idx + 1, totalSteps: total }));
-    },
-  },
 
   {
     id: 'neural-network-mlp',
-    title: 'Multi-Layer Perceptron (MLP) Forward Pass',
+    title: '03. Multi-Layer Perceptron (MLP) Forward Pass',
     category: 'Deep Learning & Neural Networks',
     difficulty: 'Intermediate',
     badge: 'Feedforward',
@@ -815,7 +815,7 @@ def neuron(x, w, b):
       { label: 'Zero In', value: 'x1: 0.0, x2: 0.0' },
     ],
     vi: {
-      title: 'Multi-Layer Perceptron (MLP) Forward Pass',
+      title: '03. Mạng Nơ-ron Đa tầng (MLP) Forward Pass',
       category: 'Deep Learning & Mạng Nơ-ron',
       badge: 'Forward Pass',
       summary: 'Lan truyền activations qua các hidden layers với hàm phi tuyến ReLU để tính toán output dự đoán.',
@@ -1068,7 +1068,7 @@ def forward_mlp(x, W1, b1, W2, b2):
 
   {
     id: 'cnn-feature-map',
-    title: 'Convolutional Neural Network (CNN) 2D Feature Map',
+    title: '04. Convolutional Neural Network (CNN) 2D Feature Map',
     category: 'Deep Learning & Neural Networks',
     difficulty: 'Intermediate',
     badge: 'Computer Vision',
@@ -1083,7 +1083,7 @@ def forward_mlp(x, W1, b1, W2, b2):
       { label: 'Identity Filter', value: 'identity' },
     ],
     vi: {
-      title: 'Mạng Nơ-ron Tích chập (CNN) & Bản đồ Đặc trưng (Feature Map)',
+      title: '04. Mạng Nơ-ron Tích chập (CNN) & Bản đồ Đặc trưng (Feature Map)',
       category: 'Deep Learning & Mạng Nơ-ron',
       badge: 'Computer Vision',
       summary: 'Trượt kernel lọc 3x3 qua ma trận ảnh đầu vào để trích xuất các đặc trưng thị giác cục bộ như đường biên và họa tiết.',
@@ -1332,7 +1332,7 @@ def conv2d(image, kernel, bias=0.0):
   // ==========================================
   {
     id: 'self-attention',
-    title: 'Self-Attention Mechanism (Q, K, V)',
+    title: '01. Self-Attention Mechanism (Q, K, V)',
     category: 'Transformers & Modern LLMs',
     difficulty: 'Advanced',
     badge: 'Core Transformer',
@@ -1346,7 +1346,7 @@ def conv2d(image, kernel, bias=0.0):
       { label: 'Code Tokens', value: 'def, forward, layer, loss' },
     ],
     vi: {
-      title: 'Cơ chế Self-Attention (Q, K, V)',
+      title: '01. Cơ chế Self-Attention (Q, K, V)',
       category: 'Transformer & Mô hình LLM',
       badge: 'Transformer Core',
       summary: 'Tính toán điểm attention liên quan ngữ cảnh động giữa tất cả các cặp tokens trong câu.',
