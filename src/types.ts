@@ -2,6 +2,16 @@ export type ThemeMode = 'sketch' | 'studio';
 
 export type ViewMode = 'desktop-3pane' | 'mobile-story';
 
+export type AppView = 'catalog' | 'visualizer';
+
+export type AlgorithmCategory =
+  | 'Foundations & Sorting'
+  | 'Search & Pointers'
+  | 'Trees & Graphs'
+  | 'Modern AI & LLMs';
+
+export type DifficultyLevel = 'Beginner' | 'Intermediate' | 'Advanced';
+
 export type StepAction =
   | 'init'
   | 'compare'
@@ -35,6 +45,8 @@ export interface StepState {
   i?: number;
   j?: number;
   swapped?: boolean;
+  curr?: number;
+  visited?: number[];
   [key: string]: PrimitiveStateValue;
 }
 
@@ -48,7 +60,7 @@ export interface TraceStep {
   totalSteps: number;
   line: number; // 1-based active line in code
   action: StepAction;
-  targets: number[]; // indices or node keys currently highlighted/manipulated
+  targets: number[]; // indices or keys currently highlighted/manipulated
   state: StepState;
   explanation: string;
   invariant?: string;
@@ -58,12 +70,15 @@ export interface TraceStep {
 export interface AlgorithmPreset {
   id: string;
   title: string;
-  category: 'Algorithms' | 'Data Structures' | 'Modern AI';
+  category: AlgorithmCategory;
+  difficulty: DifficultyLevel;
   badge: string;
+  summary: string;
   description: string;
   timeComplexity: string;
   spaceComplexity: string;
   defaultInput: string;
+  tags: string[];
   code: string;
   generateTraces: (inputStr: string) => TraceStep[];
 }

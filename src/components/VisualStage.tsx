@@ -33,8 +33,8 @@ export const VisualStage: React.FC<VisualStageProps> = ({
 
     if (arr && arr.length > 0) {
       const maxVal = Math.max(...arr, 1);
-      const width = svg.clientWidth || 640;
-      const height = svg.clientHeight || 340;
+      const width = 700;
+      const height = 360;
       const barMargin = 12;
       const availableWidth = width - 80;
       const barWidth = Math.min(64, Math.max(28, availableWidth / arr.length - barMargin));
@@ -143,11 +143,16 @@ export const VisualStage: React.FC<VisualStageProps> = ({
           <div className="w-full h-full relative flex items-end justify-center pb-6">
             {isSketch ? (
               // Sketch Canvas (RoughJS SVGs + Handwritten labels)
-              <svg ref={svgRef} className="w-full h-full absolute inset-0 overflow-visible">
+              <svg
+                ref={svgRef}
+                viewBox="0 0 700 360"
+                preserveAspectRatio="xMidYMid meet"
+                className="w-full h-full max-h-[340px]"
+              >
                 {arr.map((val, idx) => {
                   const maxVal = Math.max(...arr, 1);
-                  const width = 640;
-                  const height = 340;
+                  const width = 700;
+                  const height = 360;
                   const barMargin = 12;
                   const availableWidth = width - 80;
                   const barWidth = Math.min(64, Math.max(28, availableWidth / arr.length - barMargin));

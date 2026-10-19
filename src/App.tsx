@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { ThemeMode, ViewMode, AlgorithmPreset, TraceStep } from './types';
+import type { ThemeMode, ViewMode, AlgorithmPreset, TraceStep, AppView } from './types';
 import { ALGORITHM_PRESETS } from './algorithms/presets';
 import { Header } from './components/Header';
 import { PlayerControls } from './components/PlayerControls';
@@ -7,17 +7,59 @@ import { VisualStage } from './components/VisualStage';
 import { CodePane } from './components/CodePane';
 import { DiagnosticsPane } from './components/DiagnosticsPane';
 import { MobileStoryMode } from './components/MobileStoryMode';
+import { CatalogView } from './components/CatalogView';
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeMode>('sketch');
   const [viewMode, setViewMode] = useState<ViewMode>('desktop-3pane');
-  const [selectedPreset, setSelectedPreset] = useState<AlgorithmPreset>(
-    ALGORITHM_PRESETS[0]
-  );
+  const [appRoute, setAppRoute] = useState<AppView>(() => {
+    if (typeof window !== 'undefined' && window.location.hash.startsWith('#visualizer')) {
+      return 'visualizer';
+    }
+    return 'catalog';
+  });
+
+  const [selectedPreset, setSelectedPreset] = useState<AlgorithmPreset>(() => {
+    if (typeof window !== 'undefined' && window.location.hash.includes('id=')) {
+      const match = window.location.hash.match(/id=([a-zA-Z0-9_-]+)/);
+      if (match) {
+        const found = ALGORITHM_PRESETS.find((p) => p.id === match[1]);
+        if (found) return found;
+      }
+    }
+    return ALGORITHM_PRESETS[0];
+  });
+
   const [inputStr, setInputStr] = useState<string>(selectedPreset.defaultInput);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
+
+  // Sync hash changes (browser back/forward button)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#visualizer')) {
+        setAppRoute('visualizer');
+        const match = hash.match(/id=([a-zA-Z0-9_-]+)/);
+        if (match) {
+          const found = ALGORITHM_PRESETS.find((p) => p.id === match[1]);
+          if (found && found.id !== selectedPreset.id) {
+            setSelectedPreset(found);
+            setInputStr(found.defaultInput);
+            setCurrentStepIndex(0);
+            setIsPlaying(false);
+          }
+        }
+      } else {
+        setAppRoute('catalog');
+        setIsPlaying(false);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [selectedPreset.id]);
 
   // Generate trace steps memoized
   const traces: TraceStep[] = useMemo(() => {
@@ -101,6 +143,22 @@ export const App: React.FC = () => {
     setInputStr(preset.defaultInput);
     setCurrentStepIndex(0);
     setIsPlaying(false);
+    window.location.hash = `#visualizer?id=${preset.id}`;
+  }, []);
+
+  const handleOpenFromCatalog = useCallback((preset: AlgorithmPreset) => {
+    setSelectedPreset(preset);
+    setInputStr(preset.defaultInput);
+    setCurrentStepIndex(0);
+    setIsPlaying(false);
+    setAppRoute('visualizer');
+    window.location.hash = `#visualizer?id=${preset.id}`;
+  }, []);
+
+  const handleBackToCatalog = useCallback(() => {
+    setIsPlaying(false);
+    setAppRoute('catalog');
+    window.location.hash = '#catalog';
   }, []);
 
   // Timer loop for autoplay
@@ -121,10 +179,11 @@ export const App: React.FC = () => {
     return () => clearInterval(timer);
   }, [isPlaying, speed, totalSteps]);
 
-  // Global keyboard shortcuts
+  // Global keyboard shortcuts (only in visualizer view)
   useEffect(() => {
+    if (appRoute !== 'visualizer') return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
@@ -154,11 +213,22 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleTogglePlay, handleNext, handlePrev, handleFirst, handleLast, handleReset]);
+  }, [appRoute, handleTogglePlay, handleNext, handlePrev, handleFirst, handleLast, handleReset]);
 
-  // Theme application class on root wrapper
   const isSketch = theme === 'sketch';
 
+  // If on Catalog Route, render the rich categorized Curriculum / Catalog View
+  if (appRoute === 'catalog') {
+    return (
+      <CatalogView
+        theme={theme}
+        onSelectAlgorithm={handleOpenFromCatalog}
+        onToggleTheme={() => setTheme(isSketch ? 'studio' : 'sketch')}
+      />
+    );
+  }
+
+  // Otherwise, render the Interactive Studio
   return (
     <div
       className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
@@ -185,6 +255,7 @@ export const App: React.FC = () => {
           setCurrentStepIndex(0);
         }}
         onReset={handleReset}
+        onBackToCatalog={handleBackToCatalog}
       />
 
       {/* Main Workspace Body */}
@@ -208,7 +279,7 @@ export const App: React.FC = () => {
         ) : (
           // Synchronized 3-Pane Desktop Studio Layout
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
-            {/* Left Column: Code Pane (3 cols) */}
+            {/* Left Column: Code Pane (4 cols) */}
             <div className="hidden lg:block lg:col-span-4 h-full overflow-hidden">
               <CodePane
                 theme={theme}

@@ -6,7 +6,8 @@ import {
   Smartphone, 
   Monitor, 
   RotateCcw,
-  Cpu
+  Cpu,
+  ArrowLeft
 } from 'lucide-react';
 import type { ThemeMode, ViewMode, AlgorithmPreset } from '../types';
 import { ALGORITHM_PRESETS } from '../algorithms/presets';
@@ -21,6 +22,7 @@ interface HeaderProps {
   inputStr: string;
   onChangeInput: (newInput: string) => void;
   onReset: () => void;
+  onBackToCatalog: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -33,6 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
   inputStr,
   onChangeInput,
   onReset,
+  onBackToCatalog,
 }) => {
   const isSketch = theme === 'sketch';
 
@@ -79,6 +82,20 @@ export const Header: React.FC<HeaderProps> = ({
               Interactive Execution Tracing for Algorithms & Modern AI
             </p>
           </div>
+
+          {/* Back to Catalog Button */}
+          <button
+            onClick={onBackToCatalog}
+            title="Back to Topics Catalog"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ml-1 ${
+              isSketch
+                ? 'bg-[#ebdbb2] border border-[#3c3836]/40 hover:bg-[#d5c4a1] text-[#282828] font-sketch text-sm'
+                : 'bg-[#151c2d] border border-[#2a3752] text-slate-200 hover:text-cyan-400 hover:border-cyan-500/50'
+            }`}
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Topics</span>
+          </button>
         </div>
 
         {/* Algorithm Picker & Input */}
