@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { ThemeMode, ViewMode, AlgorithmPreset, TraceStep, AppView, StudioTab, AICategory, Language } from './types';
 import { ALGORITHM_PRESETS } from './algorithms/presets';
 import { NavRail } from './components/NavRail';
@@ -16,7 +16,43 @@ export const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('desktop-3pane');
   const [studioTab, setStudioTab] = useState<StudioTab>('trace');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(290);
   const [language, setLanguage] = useState<Language>('vi');
+  const [isResizingSidebar, setIsResizingSidebar] = useState<boolean>(false);
+
+  const isDraggingSidebar = useRef<boolean>(false);
+  const startXRef = useRef<number>(0);
+  const startWidthRef = useRef<number>(290);
+
+  const handleStartResizeSidebar = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isDraggingSidebar.current = true;
+    setIsResizingSidebar(true);
+    startXRef.current = e.clientX;
+    startWidthRef.current = sidebarWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      if (!isDraggingSidebar.current) return;
+      const deltaX = moveEvent.clientX - startXRef.current;
+      const newW = Math.min(520, Math.max(220, startWidthRef.current + deltaX));
+      setSidebarWidth(newW);
+    };
+
+    const onMouseUp = () => {
+      isDraggingSidebar.current = false;
+      setIsResizingSidebar(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }, [sidebarWidth]);
   const [appRoute, setAppRoute] = useState<AppView>(() => {
     if (typeof window !== 'undefined' && window.location.hash.startsWith('#visualizer')) {
       return 'visualizer';
@@ -258,18 +294,29 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* 2. Docked Curriculum Lesson Sidebar with smooth slide transition */}
+      {/* 2. Docked Curriculum Lesson Sidebar with draggable width resize */}
       <div
-        className={`transition-all duration-300 ease-in-out overflow-hidden flex shrink-0 ${
-          sidebarOpen ? 'w-64 opacity-100' : 'w-0 opacity-0 pointer-events-none'
-        }`}
+        style={{ width: sidebarOpen ? `${sidebarWidth}px` : '0px' }}
+        className={`flex shrink-0 relative overflow-hidden ${
+          isResizingSidebar ? 'transition-none select-none' : 'transition-[width] duration-200 ease-in-out'
+        } ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       >
         <LessonSidebar
           theme={theme}
           selectedPreset={selectedPreset}
           onSelectPreset={handleSelectPreset}
           language={language}
+          width={sidebarWidth}
         />
+        {sidebarOpen && (
+          <div
+            onMouseDown={handleStartResizeSidebar}
+            title="Kéo chuột để mở rộng/thu nhỏ sidebar"
+            className="absolute top-0 -right-1 w-3 h-full cursor-col-resize hover:bg-blue-500/40 active:bg-blue-600 transition-colors z-40 group flex items-center justify-center"
+          >
+            <div className="w-0.5 h-12 bg-slate-300 dark:bg-slate-700 group-hover:bg-blue-500 group-active:bg-blue-600 rounded-full transition-colors" />
+          </div>
+        )}
       </div>
 
       {/* 3. Main Center Workspace + TopBar + Right Panels */}

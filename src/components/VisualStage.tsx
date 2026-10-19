@@ -75,11 +75,46 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const isDark = theme === 'studio';
   const t = getLocalizedText(language);
-  // Graph sizing & zoom state
+  // Graph sizing, pan & zoom state
   const [zoom, setZoom] = useState<number>(1);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState<boolean>(false);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
 
+  const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const hasMovedRef = useRef<boolean>(false);
+
+  const handleWheel = (e: React.WheelEvent) => {
+    const delta = e.deltaY < 0 ? 0.08 : -0.08;
+    setZoom((z) => Math.max(0.5, Math.min(2.5, Number((z + delta).toFixed(2)))));
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    setIsPanning(true);
+    hasMovedRef.current = false;
+    panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isPanning) return;
+    const dx = e.clientX - panStartRef.current.x;
+    const dy = e.clientY - panStartRef.current.y;
+    if (Math.abs(dx - pan.x) > 3 || Math.abs(dy - pan.y) > 3) {
+      hasMovedRef.current = true;
+    }
+    setPan({ x: dx, y: dy });
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  const handleResetView = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
   const arr = step.state.arr;
   const points = step.state.points;
   const layers = step.state.layers;
@@ -130,7 +165,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   const toSvgY = (y: number) => PAD.top + plotH - (y / coordLimits.maxY) * plotH;
   // Interactive Click to Add Point
   const handleSvgClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!onChangeInput || !points) return;
+    if (!onChangeInput || !points || hasMovedRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const clickSvgX = ((e.clientX - rect.left) / rect.width) * SVG_W;
     const clickSvgY = ((e.clientY - rect.top) / rect.height) * SVG_H;
@@ -223,41 +258,46 @@ export const VisualStage: React.FC<VisualStageProps> = ({
           )}
 
           {/* Zoom & Size Controls */}
+          {/* Redesigned Floating Modern Zoom & View Controls */}
           <div
-            className={`flex items-center p-0.5 rounded-xl border text-xs ${
+            className={`flex items-center gap-0.5 p-1 rounded-2xl border text-xs shadow-sm backdrop-blur-md transition-all ${
               isDark
-                ? 'bg-[#151c2d] border-[#222f46]'
-                : 'bg-white border-slate-200 shadow-xs'
+                ? 'bg-[#151c2d]/90 border-[#222f46] text-slate-200'
+                : 'bg-white/95 border-slate-200 text-slate-700'
             }`}
           >
             <button
-              onClick={() => setZoom((z) => Math.max(0.75, Number((z - 0.15).toFixed(2))))}
-              title="Zoom Out Graph"
-              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10"
+              onClick={() => setZoom((z) => Math.max(0.5, Number((z - 0.15).toFixed(2))))}
+              title="Zoom Out (Scroll Down)"
+              className="p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
-            <span className="px-1.5 text-[10px] font-mono font-bold opacity-75">
-              {Math.round(zoom * 100)}%
-            </span>
             <button
-              onClick={() => setZoom((z) => Math.min(1.4, Number((z + 0.15).toFixed(2))))}
-              title="Zoom In Graph"
-              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10"
+              onClick={handleResetView}
+              title="Click to reset zoom to 100%"
+              className="px-2 py-0.5 rounded-lg font-mono text-[11px] font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+            <button
+              onClick={() => setZoom((z) => Math.min(2.5, Number((z + 0.15).toFixed(2))))}
+              title="Zoom In (Scroll Up)"
+              className="p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => setZoom(1)}
-              title="Reset Zoom"
-              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 opacity-60 hover:opacity-100"
+              onClick={handleResetView}
+              title="Reset View & Pan (Home)"
+              className="p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 opacity-60 hover:opacity-100 transition-colors"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setIsExpanded((e) => !e)}
               title={isExpanded ? 'Collapse Height' : 'Expand Height'}
-              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 ml-0.5"
+              className="p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-0.5"
             >
               {isExpanded ? (
                 <Minimize2 className="w-3.5 h-3.5 text-cyan-400" />
@@ -306,11 +346,31 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         </div>
       </div>
 
-      {/* Main Stage Visual Content with Dynamic Zoom */}
+      {/* Main Stage Visual Content with Dynamic Mouse Pan & Wheel Zoom */}
       <div
-        style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
-        className="relative flex-1 w-full flex items-center justify-center my-1 overflow-hidden transition-transform duration-200"
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        className={`relative flex-1 w-full flex items-center justify-center my-1 overflow-hidden select-none ${
+          isPanning ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
       >
+        {/* Mouse Drag & Scroll Hint */}
+        <div className="absolute bottom-2 left-4 z-10 hidden sm:flex items-center gap-1.5 text-[10px] font-mono opacity-40 pointer-events-none">
+          <span>🖱️ Drag to pan</span>
+          <span>•</span>
+          <span>⚲ Scroll wheel to zoom</span>
+        </div>
+
+        <div
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: 'center center',
+          }}
+          className="w-full h-full flex items-center justify-center transition-transform duration-75"
+        >
         {/* ========================================================= */}
         {/* 1. DYNAMIC REGRESSION PLOT (Auto-scaled, Clickable, Clean) */}
         {/* ========================================================= */}
@@ -1672,7 +1732,8 @@ export const VisualStage: React.FC<VisualStageProps> = ({
             </svg>
           </div>
         )}
-      </div>
+          </div>
+        </div>
 
       {/* Stage Footer Status with Live Formula & Insight */}
       <div

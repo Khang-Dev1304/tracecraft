@@ -17,13 +17,14 @@ interface LessonSidebarProps {
   selectedPreset: AlgorithmPreset;
   onSelectPreset: (preset: AlgorithmPreset) => void;
   language: Language;
+  width?: number;
 }
-
 export const LessonSidebar: React.FC<LessonSidebarProps> = ({
   theme,
   selectedPreset,
   onSelectPreset,
   language,
+  width,
 }) => {
   const isDark = theme === 'studio';
   const t = getLocalizedText(language);
@@ -72,7 +73,8 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
 
   return (
     <div
-      className={`w-64 shrink-0 flex flex-col h-full border-r transition-colors select-none ${
+      style={{ width: width ? `${width}px` : undefined }}
+      className={`w-full shrink-0 flex flex-col h-full border-r transition-colors select-none ${
         isDark
           ? 'bg-[#0b0f19] border-[#1e293b] text-slate-300'
           : 'bg-[#fafafa] border-[#e2e8f0] text-slate-700'
