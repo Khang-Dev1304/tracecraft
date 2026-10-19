@@ -7,7 +7,9 @@ import {
   Binary,
   Shuffle
 } from 'lucide-react';
-import type { ThemeMode, TraceStep, AlgorithmPreset } from '../types';
+import type { ThemeMode, TraceStep, AlgorithmPreset, Language } from '../types';
+import { getPresetVariants } from '../algorithms/presets';
+import { getLocalizedText } from '../i18n/translations';
 
 interface RightPanelsProps {
   theme: ThemeMode;
@@ -16,6 +18,7 @@ interface RightPanelsProps {
   activeLine: number;
   inputStr: string;
   onChangeInput: (newInput: string) => void;
+  language: Language;
 }
 
 const DATA_PRESETS = [
@@ -32,10 +35,12 @@ export const RightPanels: React.FC<RightPanelsProps> = ({
   activeLine,
   inputStr,
   onChangeInput,
+  language,
 }) => {
   const isDark = theme === 'studio';
+  const t = getLocalizedText(language);
   const lines = preset.code.split('\n');
-  const variants = preset.inputVariants && preset.inputVariants.length > 0 ? preset.inputVariants : DATA_PRESETS;
+  const variants = getPresetVariants(preset, language) || DATA_PRESETS;
   // Generate random data
   const handleRandomize = () => {
     if (preset.visualType === 'regression-plot') {
@@ -69,7 +74,7 @@ export const RightPanels: React.FC<RightPanelsProps> = ({
         >
           <div className="flex items-center gap-2">
             <Code2 className="w-3.5 h-3.5 text-blue-500 dark:text-cyan-400" />
-            <span className="font-bold">Code</span>
+            <span className="font-bold">{t.code}</span>
           </div>
           <span
             className={`text-[11px] font-mono px-2 py-0.5 rounded font-medium ${
@@ -122,7 +127,7 @@ export const RightPanels: React.FC<RightPanelsProps> = ({
         <div className="flex items-center justify-between text-xs font-bold">
           <div className="flex items-center gap-1.5">
             <Sliders className="w-3.5 h-3.5 text-amber-500" />
-            <span>Inputs</span>
+            <span>{t.inputs}</span>
           </div>
           <button
             onClick={handleRandomize}
@@ -136,7 +141,7 @@ export const RightPanels: React.FC<RightPanelsProps> = ({
         {/* Variant Presets */}
         <div>
           <span className="text-[10px] font-bold uppercase tracking-wider opacity-50 block mb-1.5">
-            Preset Variant
+            {t.presetVariant}
           </span>
           <div className="grid grid-cols-2 gap-1.5">
             {variants.map((p) => (
@@ -162,7 +167,7 @@ export const RightPanels: React.FC<RightPanelsProps> = ({
         {/* Custom Data Input Box */}
         <div>
           <span className="text-[10px] font-bold uppercase tracking-wider opacity-50 block mb-1">
-            Data Values
+            {t.dataValues}
           </span>
           <div
             className={`flex items-center px-2.5 py-1.5 rounded-xl border text-xs font-mono transition-colors ${
@@ -194,7 +199,7 @@ export const RightPanels: React.FC<RightPanelsProps> = ({
         <div className="flex items-center justify-between text-xs font-bold border-b pb-2 border-inherit">
           <div className="flex items-center gap-1.5">
             <ListOrdered className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Execution Log</span>
+            <span>{t.executionLog}</span>
           </div>
           <span
             className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-md ${
@@ -221,7 +226,7 @@ export const RightPanels: React.FC<RightPanelsProps> = ({
           >
             <Binary className="w-3.5 h-3.5 text-blue-500 dark:text-cyan-400 shrink-0 mt-0.5" />
             <span className="leading-relaxed">
-              <strong>Invariant:</strong> {step.invariant}
+              <strong>{t.invariant}:</strong> {step.invariant}
             </span>
           </div>
         )}

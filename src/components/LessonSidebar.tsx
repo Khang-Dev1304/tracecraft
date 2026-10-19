@@ -8,21 +8,25 @@ import {
   BrainCircuit, 
   Sparkles
 } from 'lucide-react';
-import type { ThemeMode, AlgorithmPreset, AICategory } from '../types';
-import { ALGORITHM_PRESETS } from '../algorithms/presets';
+import type { ThemeMode, AlgorithmPreset, AICategory, Language } from '../types';
+import { ALGORITHM_PRESETS, getPresetTitle } from '../algorithms/presets';
+import { getLocalizedText } from '../i18n/translations';
 
 interface LessonSidebarProps {
   theme: ThemeMode;
   selectedPreset: AlgorithmPreset;
   onSelectPreset: (preset: AlgorithmPreset) => void;
+  language: Language;
 }
 
 export const LessonSidebar: React.FC<LessonSidebarProps> = ({
   theme,
   selectedPreset,
   onSelectPreset,
+  language,
 }) => {
   const isDark = theme === 'studio';
+  const t = getLocalizedText(language);
   const [search, setSearch] = useState('');
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     'Classical Machine Learning': true,
@@ -86,10 +90,9 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
           <Search className="w-3.5 h-3.5 opacity-50 mr-2 shrink-0" />
           <input
             type="text"
-            placeholder="Search lessons..."
+            placeholder={t.searchLessons}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-transparent outline-none font-sans text-xs placeholder:text-slate-400"
           />
         </div>
       </div>
@@ -113,7 +116,7 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
                 >
                   <div className="flex items-center gap-2 truncate">
                     {getCategoryIcon(category)}
-                    <span className="truncate">{category}</span>
+                    <span className="truncate">{t.categories[category] || category}</span>
                   </div>
                   {isOpen ? (
                     <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
@@ -142,7 +145,7 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
                                 : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900'
                           }`}
                         >
-                          <span className="truncate">{preset.title}</span>
+                          <span className="truncate">{getPresetTitle(preset, language)}</span>
                           {isSelected && (
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-cyan-400 shrink-0 ml-1.5" />
                           )}
@@ -160,7 +163,7 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
         <div className="pt-2 border-t border-inherit/40 space-y-1">
           <div className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider opacity-50 flex items-center gap-1.5">
             <Sparkles className="w-3 h-3 text-amber-500" />
-            <span>Upcoming Topics</span>
+            <span>{t.upcomingTopics}</span>
           </div>
           {['Diffusion Models & Noise Sampling', 'LoRA Fine-Tuning Internals', 'Vision Transformers (ViT)'].map(
             (locked) => (
@@ -169,7 +172,7 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
                 className="px-3 py-1.5 text-xs opacity-40 flex items-center justify-between cursor-not-allowed"
               >
                 <span className="truncate">{locked}</span>
-                <span className="text-[10px] font-mono">Soon</span>
+                <span className="text-[10px] font-mono">{t.soon}</span>
               </div>
             )
           )}

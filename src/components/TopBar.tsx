@@ -9,8 +9,10 @@ import {
   RotateCcw,
   ChevronRight
 } from 'lucide-react';
-import type { ThemeMode, ViewMode, AlgorithmPreset, StudioTab } from '../types';
-
+import type { ThemeMode, ViewMode, AlgorithmPreset, StudioTab, Language } from '../types';
+import { getPresetTitle, getPresetCategory, getPresetBadge } from '../algorithms/presets';
+import { getLocalizedText } from '../i18n/translations';
+import { LanguageSwitch } from './LanguageSwitch';
 interface TopBarProps {
   theme: ThemeMode;
   onToggleTheme: () => void;
@@ -20,6 +22,8 @@ interface TopBarProps {
   studioTab: StudioTab;
   onSelectStudioTab: (tab: StudioTab) => void;
   onReset: () => void;
+  language: Language;
+  onSelectLanguage: (lang: Language) => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -31,9 +35,11 @@ export const TopBar: React.FC<TopBarProps> = ({
   studioTab,
   onSelectStudioTab,
   onReset,
+  language,
+  onSelectLanguage,
 }) => {
   const isDark = theme === 'studio';
-
+  const t = getLocalizedText(language);
   return (
     <header
       className={`h-14 px-4 border-b flex items-center justify-between transition-colors select-none shrink-0 ${
@@ -44,10 +50,10 @@ export const TopBar: React.FC<TopBarProps> = ({
     >
       {/* Left Breadcrumbs */}
       <div className="flex items-center gap-1.5 text-xs font-medium">
-        <span className="opacity-50">{selectedPreset.category}</span>
+        <span className="opacity-50">{getPresetCategory(selectedPreset, language)}</span>
         <ChevronRight className="w-3.5 h-3.5 opacity-40" />
         <span className="font-bold text-slate-900 dark:text-white truncate max-w-[200px] sm:max-w-xs">
-          {selectedPreset.title}
+          {getPresetTitle(selectedPreset, language)}
         </span>
         <span
           className={`ml-2 text-[10px] px-2 py-0.5 rounded-full font-bold ${
@@ -56,7 +62,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               : 'bg-blue-50 text-blue-700 border border-blue-200'
           }`}
         >
-          {selectedPreset.badge}
+          {getPresetBadge(selectedPreset, language)}
         </span>
       </div>
 
@@ -79,7 +85,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           }`}
         >
           <Play className="w-3.5 h-3.5 fill-current" />
-          <span>Visualize</span>
+          <span>{t.visualize}</span>
         </button>
 
         <button
@@ -93,12 +99,19 @@ export const TopBar: React.FC<TopBarProps> = ({
           }`}
         >
           <BookOpen className="w-3.5 h-3.5" />
-          <span>Explain</span>
+          <span>{t.explain}</span>
         </button>
       </div>
 
       {/* Right Actions */}
       <div className="flex items-center gap-2">
+        {/* Top Language Switcher */}
+        <LanguageSwitch
+          language={language}
+          onSelectLanguage={onSelectLanguage}
+          theme={theme}
+        />
+
         {/* Mobile Story vs Desktop toggle */}
         <button
           onClick={onToggleViewMode}

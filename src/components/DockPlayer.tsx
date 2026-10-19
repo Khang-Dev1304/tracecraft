@@ -7,7 +7,8 @@ import {
   RotateCcw,
   Sparkles
 } from 'lucide-react';
-import type { ThemeMode } from '../types';
+import type { ThemeMode, Language } from '../types';
+import { getLocalizedText } from '../i18n/translations';
 
 interface DockPlayerProps {
   theme: ThemeMode;
@@ -21,6 +22,7 @@ interface DockPlayerProps {
   onReset: () => void;
   onSeek: (step: number) => void;
   onChangeSpeed: (speed: number) => void;
+  language: Language;
 }
 
 export const DockPlayer: React.FC<DockPlayerProps> = ({
@@ -35,8 +37,10 @@ export const DockPlayer: React.FC<DockPlayerProps> = ({
   onReset,
   onSeek,
   onChangeSpeed,
+  language,
 }) => {
   const isDark = theme === 'studio';
+  const t = getLocalizedText(language);
   const speeds = [0.5, 1, 2];
 
   const cycleSpeed = () => {
@@ -90,7 +94,7 @@ export const DockPlayer: React.FC<DockPlayerProps> = ({
                   : 'bg-slate-100 border-slate-200 text-slate-700'
               }`}
             >
-              # Step {currentStep} / {totalSteps}
+              # {t.step} {currentStep} / {totalSteps}
             </span>
 
             {/* Quiz Chip */}
@@ -102,7 +106,7 @@ export const DockPlayer: React.FC<DockPlayerProps> = ({
               }`}
             >
               <Sparkles className="w-3 h-3 text-amber-500" />
-              <span>Interactive</span>
+              <span>{t.interactive}</span>
             </span>
           </div>
 
@@ -111,7 +115,7 @@ export const DockPlayer: React.FC<DockPlayerProps> = ({
             {/* Reset */}
             <button
               onClick={onReset}
-              title="Reset to Step 1"
+              title={t.reset}
               className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 opacity-60 hover:opacity-100 transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
@@ -121,7 +125,7 @@ export const DockPlayer: React.FC<DockPlayerProps> = ({
             <button
               onClick={onPrevStep}
               disabled={currentStep <= 1}
-              title="Previous Step"
+              title={t.previous}
               className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 opacity-80 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -130,7 +134,7 @@ export const DockPlayer: React.FC<DockPlayerProps> = ({
             {/* Play/Pause (VizLearn solid black button with white icon) */}
             <button
               onClick={onTogglePlay}
-              title={isPlaying ? 'Pause' : 'Play'}
+              title={isPlaying ? t.pause : t.play}
               className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-white transition-transform active:scale-95 shadow-sm ${
                 isDark
                   ? 'bg-cyan-500 text-slate-950 hover:bg-cyan-400'
@@ -148,7 +152,7 @@ export const DockPlayer: React.FC<DockPlayerProps> = ({
             <button
               onClick={onNextStep}
               disabled={currentStep >= totalSteps}
-              title="Next Step"
+              title={t.next}
               className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 opacity-80 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronRight className="w-5 h-5" />

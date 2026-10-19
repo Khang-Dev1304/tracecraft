@@ -16,8 +16,8 @@
   - **Algorithms:** Bubble Sort with early termination, Binary Search with $L, M, R$ pointer convergence.
 - **Mobile "Story Mode":** Resolves traditional desktop canvas scaling flaws by offering a dedicated vertical swipe/step card view for smartphones.
 - **Socratic AI Step-Explainer:** Context-aware breakdowns answering *why* state mutated and providing counterfactual algorithmic analysis.
-- **Full Playback Controls:** Play/Pause, single-step navigation, scrubber progress bar, speed toggling ($0.5\times$ to $4\times$), and full keyboard shortcuts (`Space`, `←`, `→`, `Home`, `End`, `R`).
-
+- **Full Playback Controls:** Play/Pause, single-step navigation, scrubber progress bar, speed toggling ($0.5\times$ to $2\times$), and full keyboard shortcuts (`Space`, `←`, `→`, `Home`, `End`, `R`).
+- **Bilingual Support (Tiếng Việt & English):** Complete localization across all lessons, mathematical theory, step execution logs, and interface controls.
 ---
 
 ## 🚀 Getting Started
@@ -30,7 +30,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/Khang-Dev1304/tracecraft.git
+git clone https://github.com/khangbuinoAI/tracecraft.git
 cd tracecraft
 
 # Install dependencies

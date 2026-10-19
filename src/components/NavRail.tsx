@@ -112,7 +112,7 @@ export const NavRail: React.FC<NavRailProps> = ({
 
         {/* GitHub link */}
         <a
-          href="https://github.com/Khang-Dev1304/tracecraft"
+          href="https://github.com/khangbuinoAI/tracecraft"
           target="_blank"
           rel="noreferrer"
           title="GitHub Repository"

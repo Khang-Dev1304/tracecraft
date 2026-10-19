@@ -1,5 +1,6 @@
 export type ThemeMode = 'sketch' | 'studio';
 
+export type Language = 'en' | 'vi';
 export type ViewMode = 'desktop-3pane' | 'mobile-story';
 
 export type AppView = 'catalog' | 'visualizer';
@@ -106,6 +107,16 @@ export interface LessonSection {
   keyTakeaway?: string;
 }
 
+export interface LocalizedPresetInfo {
+  title: string;
+  category: string;
+  badge: string;
+  summary: string;
+  description: string;
+  sections: LessonSection[];
+  variants?: { label: string; value: string }[];
+}
+
 export interface AlgorithmPreset {
   id: string;
   title: string;
@@ -124,5 +135,6 @@ export interface AlgorithmPreset {
   tags: string[];
   pythonCode: string;
   code: string; // for display in code pane
-  generateTraces: (inputStr: string) => TraceStep[];
+  vi?: LocalizedPresetInfo;
+  generateTraces: (inputStr?: string, lang?: Language) => TraceStep[];
 }

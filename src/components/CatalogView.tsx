@@ -14,22 +14,37 @@ import type {
   ThemeMode, 
   AlgorithmPreset, 
   AlgorithmCategory, 
-  DifficultyLevel 
+  DifficultyLevel,
+  Language,
+  AICategory
 } from '../types';
-import { ALGORITHM_PRESETS } from '../algorithms/presets';
+import { 
+  ALGORITHM_PRESETS,
+  getPresetTitle,
+  getPresetSummary,
+  getPresetBadge
+} from '../algorithms/presets';
 import { MathFormula } from './MathFormula';
+import { getLocalizedText } from '../i18n/translations';
+import { LanguageSwitch } from './LanguageSwitch';
+
 interface CatalogViewProps {
   theme: ThemeMode;
   onSelectAlgorithm: (preset: AlgorithmPreset) => void;
   onToggleTheme: () => void;
+  language: Language;
+  onSelectLanguage: (lang: Language) => void;
 }
 
 export const CatalogView: React.FC<CatalogViewProps> = ({
   theme,
   onSelectAlgorithm,
   onToggleTheme,
+  language,
+  onSelectLanguage,
 }) => {
   const isSketch = theme === 'sketch';
+  const t = getLocalizedText(language);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<AlgorithmCategory | 'All'>('All');
 
@@ -147,6 +162,13 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Top Language Switcher */}
+            <LanguageSwitch
+              language={language}
+              onSelectLanguage={onSelectLanguage}
+              theme={theme}
+            />
+
             <button
               onClick={onToggleTheme}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
@@ -171,7 +193,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
           }`}
         >
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Interactive Execution Tracing Platform</span>
+          <span>{t.tagline}</span>
         </div>
 
         <h1
@@ -181,7 +203,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               : 'text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-cyan-300'
           }`}
         >
-          Interactive AI & Machine Learning
+          {t.heroTitle}
         </h1>
 
         <p
@@ -189,9 +211,8 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             isSketch ? 'font-sketch text-lg sm:text-xl' : 'text-slate-300'
           }`}
         >
-          Master AI from first principles to modern Transformers. Step through gradient descent, neural layer activations, and self-attention heads with synchronized Python code.
+          {t.heroSubtitle}
         </p>
-
         {/* Search & Filter Bar */}
         <div className="max-w-3xl mx-auto mt-8 flex flex-col sm:flex-row items-center gap-3">
           <div
@@ -204,8 +225,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             <Search className="w-4 h-4 opacity-50 mr-2.5 shrink-0" />
             <input
               type="text"
-              placeholder="Search algorithms by name, concept, or tag..."
-              value={searchQuery}
+              placeholder={t.searchPlaceholder}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-transparent text-sm outline-none font-mono"
             />
@@ -226,7 +246,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                       : 'bg-[#151c2d] text-slate-400 border border-[#24314c] hover:text-white'
                 }`}
               >
-                {cat}
+                {cat === 'All' ? t.all : t.categories[cat as AICategory] || cat}
               </button>
             ))}
           </div>
@@ -284,7 +304,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                               preset.difficulty
                             )}`}
                           >
-                            {preset.difficulty}
+                            {t.difficulties[preset.difficulty] || preset.difficulty}
                           </span>
                           <span
                             className={`text-[11px] font-mono px-2 py-0.5 rounded font-semibold ${
@@ -293,7 +313,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                                 : 'bg-indigo-950/80 text-indigo-300 border border-indigo-800/40'
                             }`}
                           >
-                            {preset.badge}
+                            {getPresetBadge(preset, language)}
                           </span>
                         </div>
 
@@ -304,7 +324,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                               : 'text-white'
                           }`}
                         >
-                          {preset.title}
+                          {getPresetTitle(preset, language)}
                         </h3>
 
                         {/* Brief Summary */}
@@ -313,7 +333,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                             isSketch ? 'font-sketch text-base' : 'text-slate-300'
                           }`}
                         >
-                          {preset.summary}
+                          {getPresetSummary(preset, language)}
                         </p>
 
                         {/* Formula snippet */}
@@ -368,7 +388,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                         >
                           <span className="flex items-center gap-1.5">
                             <Play className="w-3.5 h-3.5 fill-current" />
-                            Launch Visualizer
+                            {t.launchVisualizer}
                           </span>
                           <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
                         </div>

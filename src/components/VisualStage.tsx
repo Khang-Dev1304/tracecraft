@@ -10,14 +10,15 @@ import {
   TrendingDown,
   BrainCircuit
 } from 'lucide-react';
-import type { ThemeMode, TraceStep } from '../types';
+import type { ThemeMode, TraceStep, Language } from '../types';
 import { MathFormula } from './MathFormula';
-
+import { getLocalizedText } from '../i18n/translations';
 interface VisualStageProps {
   theme: ThemeMode;
   step: TraceStep;
   category: string;
   onChangeInput?: (newInput: string) => void;
+  language?: Language;
 }
 
 // Ultra-smooth 60fps ease-out cubic interpolation hook
@@ -68,10 +69,11 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   step,
   category,
   onChangeInput,
+  language = 'en',
 }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const isDark = theme === 'studio';
-
+  const t = getLocalizedText(language);
   // Graph sizing & zoom state
   const [zoom, setZoom] = useState<number>(1);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -297,9 +299,8 @@ export const VisualStage: React.FC<VisualStageProps> = ({
             {/* Top Click-To-Add-Point Hint */}
             <div className="absolute top-1 left-4 z-10 flex items-center gap-1.5 text-[11px] opacity-60 font-sans pointer-events-none">
               <MousePointerClick className="w-3.5 h-3.5 text-blue-500 dark:text-cyan-400" />
-              <span>Click anywhere on graph to add a point</span>
+              <span>{t.clickToAddPoint}</span>
             </div>
-
             {/* Hover Tooltip for active data point */}
             {hoveredPoint !== null && points[hoveredPoint] && (
               <div
@@ -310,14 +311,14 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                 }`}
               >
                 <div className="font-bold flex items-center gap-2">
-                  <span>Point ({points[hoveredPoint].x}, {points[hoveredPoint].y})</span>
+                  <span>{t.point} ({points[hoveredPoint].x}, {points[hoveredPoint].y})</span>
                   <span>|</span>
                   <span className="text-blue-500 dark:text-cyan-300">
                     ŷ = {(rawW * points[hoveredPoint].x + rawB).toFixed(2)}
                   </span>
                   <span>|</span>
                   <span className="text-rose-500">
-                    Residual: {(points[hoveredPoint].y - (rawW * points[hoveredPoint].x + rawB)).toFixed(2)}
+                    {t.residual}: {(points[hoveredPoint].y - (rawW * points[hoveredPoint].x + rawB)).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -428,7 +429,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                 textAnchor="end"
                 className="font-sans text-xs font-bold"
               >
-                Feature X →
+                {t.featureX} →
               </text>
               <text
                 x={toSvgX(0)}
@@ -437,7 +438,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                 textAnchor="start"
                 className="font-sans text-xs font-bold"
               >
-                ↑ Target y
+                ↑ {t.targetY}
               </text>
 
               {/* Dynamic Ultra-Smooth Regression Line across both themes */}
@@ -1002,14 +1003,14 @@ export const VisualStage: React.FC<VisualStageProps> = ({
       >
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Active Invariant Model:</span>
+          <span>{t.activeInvariantModel}:</span>
           {points ? (
             <MathFormula
               math={`y = ${smoothW.toFixed(2)}x + ${smoothB.toFixed(2)}`}
               className="ml-1 font-bold text-blue-600 dark:text-cyan-300"
             />
           ) : (
-            <span className="font-bold">Execution Trace Synced</span>
+            <span className="font-bold">{t.traceActive}</span>
           )}
         </span>
         <span className="flex items-center gap-1 font-semibold">

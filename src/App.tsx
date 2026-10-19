@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { ThemeMode, ViewMode, AlgorithmPreset, TraceStep, AppView, StudioTab, AICategory } from './types';
+import type { ThemeMode, ViewMode, AlgorithmPreset, TraceStep, AppView, StudioTab, AICategory, Language } from './types';
 import { ALGORITHM_PRESETS } from './algorithms/presets';
 import { NavRail } from './components/NavRail';
 import { LessonSidebar } from './components/LessonSidebar';
@@ -16,7 +16,7 @@ export const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('desktop-3pane');
   const [studioTab, setStudioTab] = useState<StudioTab>('trace');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
-
+  const [language, setLanguage] = useState<Language>('vi');
   const [appRoute, setAppRoute] = useState<AppView>(() => {
     if (typeof window !== 'undefined' && window.location.hash.startsWith('#visualizer')) {
       return 'visualizer';
@@ -69,7 +69,7 @@ export const App: React.FC = () => {
   // Generate trace steps memoized
   const traces: TraceStep[] = useMemo(() => {
     try {
-      const generated = selectedPreset.generateTraces(inputStr);
+      const generated = selectedPreset.generateTraces(inputStr, language);
       return generated.length > 0
         ? generated
         : [
@@ -97,7 +97,7 @@ export const App: React.FC = () => {
         },
       ];
     }
-  }, [selectedPreset, inputStr]);
+  }, [selectedPreset, inputStr, language]);
 
   const currentStep = traces[currentStepIndex] || traces[0];
   const totalSteps = traces.length;
@@ -228,6 +228,8 @@ export const App: React.FC = () => {
         theme={theme}
         onSelectAlgorithm={handleSelectPreset}
         onToggleTheme={() => setTheme(isDark ? 'sketch' : 'studio')}
+        language={language}
+        onSelectLanguage={setLanguage}
       />
     );
   }
@@ -260,6 +262,7 @@ export const App: React.FC = () => {
           theme={theme}
           selectedPreset={selectedPreset}
           onSelectPreset={handleSelectPreset}
+          language={language}
         />
       )}
 
@@ -279,8 +282,9 @@ export const App: React.FC = () => {
           studioTab={studioTab}
           onSelectStudioTab={setStudioTab}
           onReset={handleReset}
+          language={language}
+          onSelectLanguage={setLanguage}
         />
-
         {/* Content Body */}
         {studioTab === 'theory' ? (
           // Explain / Lesson Guide Tab
@@ -289,6 +293,7 @@ export const App: React.FC = () => {
               theme={theme}
               preset={selectedPreset}
               onLaunchVisualizer={() => setStudioTab('trace')}
+              language={language}
             />
           </div>
         ) : viewMode === 'mobile-story' ? (
@@ -321,6 +326,7 @@ export const App: React.FC = () => {
                     setInputStr(val);
                     setCurrentStepIndex(0);
                   }}
+                  language={language}
                 />
               </div>
 
@@ -337,6 +343,7 @@ export const App: React.FC = () => {
                 onReset={handleReset}
                 onSeek={handleSeek}
                 onChangeSpeed={setSpeed}
+                language={language}
               />
             </div>
 
@@ -351,6 +358,7 @@ export const App: React.FC = () => {
                 setInputStr(val);
                 setCurrentStepIndex(0);
               }}
+              language={language}
             />
           </div>
         )}

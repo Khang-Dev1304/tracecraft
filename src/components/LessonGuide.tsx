@@ -5,22 +5,32 @@ import {
   Lightbulb, 
   Code2 
 } from 'lucide-react';
-import type { ThemeMode, AlgorithmPreset } from '../types';
+import type { ThemeMode, AlgorithmPreset, Language } from '../types';
+import { 
+  getPresetTitle, 
+  getPresetCategory, 
+  getPresetDescription, 
+  getPresetSections 
+} from '../algorithms/presets';
+import { getLocalizedText } from '../i18n/translations';
 import { MathFormula } from './MathFormula';
 
 interface LessonGuideProps {
   theme: ThemeMode;
   preset: AlgorithmPreset;
   onLaunchVisualizer: () => void;
+  language: Language;
 }
 
 export const LessonGuide: React.FC<LessonGuideProps> = ({
   theme,
   preset,
   onLaunchVisualizer,
+  language,
 }) => {
   const isSketch = theme === 'sketch';
-
+  const t = getLocalizedText(language);
+  const sections = getPresetSections(preset, language);
   return (
     <div
       className={`w-full max-w-4xl mx-auto p-4 sm:p-6 overflow-y-auto select-none transition-colors ${
@@ -44,7 +54,7 @@ export const LessonGuide: React.FC<LessonGuideProps> = ({
                   : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
               }`}
             >
-              {preset.category}
+              {getPresetCategory(preset, language)}
             </span>
             <span
               className={`text-xs font-mono px-2 py-0.5 rounded font-semibold ${
@@ -64,7 +74,7 @@ export const LessonGuide: React.FC<LessonGuideProps> = ({
             }`}
           >
             <Play className="w-4 h-4 fill-current" />
-            <span>Launch Interactive Trace</span>
+            <span>{t.launchTrace}</span>
           </button>
         </div>
 
@@ -73,7 +83,7 @@ export const LessonGuide: React.FC<LessonGuideProps> = ({
             isSketch ? 'font-sketch text-3xl sm:text-5xl text-[#282828]' : 'text-white'
           }`}
         >
-          {preset.title}
+          {getPresetTitle(preset, language)}
         </h1>
 
         <p
@@ -81,7 +91,7 @@ export const LessonGuide: React.FC<LessonGuideProps> = ({
             isSketch ? 'font-sketch text-lg text-[#3c3836]' : 'text-slate-300'
           }`}
         >
-          {preset.description}
+          {getPresetDescription(preset, language)}
         </p>
 
         {/* Mathematical Formula Box */}
@@ -95,7 +105,7 @@ export const LessonGuide: React.FC<LessonGuideProps> = ({
           >
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] uppercase font-bold tracking-wider opacity-60">
-                Formula:
+                {t.formula}:
               </span>
               <MathFormula math={preset.formula} className="text-sm font-semibold" />
             </div>
@@ -108,7 +118,7 @@ export const LessonGuide: React.FC<LessonGuideProps> = ({
 
       {/* Structured Lesson Sections */}
       <div className="space-y-6 mb-8">
-        {preset.sections.map((section, idx) => (
+        {sections.map((section, idx) => (
           <div
             key={idx}
             className={`p-5 rounded-2xl border transition-colors ${
@@ -155,7 +165,7 @@ export const LessonGuide: React.FC<LessonGuideProps> = ({
               >
                 <Lightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Key Takeaway:</strong> {section.keyTakeaway}
+                  <strong>{t.keyTakeaway}:</strong> {section.keyTakeaway}
                 </span>
               </div>
             )}
@@ -174,7 +184,7 @@ export const LessonGuide: React.FC<LessonGuideProps> = ({
         <div className="flex items-center justify-between mb-3 text-xs font-mono">
           <div className="flex items-center gap-2 font-bold">
             <Code2 className="w-4 h-4 text-cyan-400" />
-            <span>Python Reference Implementation</span>
+            <span>{t.pythonReference}</span>
           </div>
           <span className="opacity-60">NumPy / PyTorch</span>
         </div>
@@ -201,7 +211,7 @@ export const LessonGuide: React.FC<LessonGuideProps> = ({
           }`}
         >
           <Play className="w-4 h-4 fill-current" />
-          <span>Launch Interactive Visualization & Step Debugger</span>
+          <span>{t.launchTrace}</span>
         </button>
       </div>
     </div>
