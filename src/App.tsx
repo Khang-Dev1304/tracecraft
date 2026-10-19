@@ -224,20 +224,22 @@ export const App: React.FC = () => {
   // If on Catalog Route
   if (appRoute === 'catalog') {
     return (
-      <CatalogView
-        theme={theme}
-        onSelectAlgorithm={handleSelectPreset}
-        onToggleTheme={() => setTheme(isDark ? 'sketch' : 'studio')}
-        language={language}
-        onSelectLanguage={setLanguage}
-      />
+      <div className="animate-page-enter">
+        <CatalogView
+          theme={theme}
+          onSelectAlgorithm={handleSelectPreset}
+          onToggleTheme={() => setTheme(isDark ? 'sketch' : 'studio')}
+          language={language}
+          onSelectLanguage={setLanguage}
+        />
+      </div>
     );
   }
 
   // Unified VizLearn-aligned studio architecture
   return (
     <div
-      className={`h-screen w-screen flex overflow-hidden font-sans select-none transition-colors duration-200 ${
+      className={`h-screen w-screen flex overflow-hidden font-sans select-none transition-colors duration-300 animate-page-enter ${
         isDark
           ? 'bg-[#090d16] text-slate-100 dark bg-viz-dots-dark'
           : 'bg-[#fbfbfb] text-slate-800 bg-viz-dots'
@@ -256,15 +258,19 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* 2. Docked Curriculum Lesson Sidebar */}
-      {sidebarOpen && (
+      {/* 2. Docked Curriculum Lesson Sidebar with smooth slide transition */}
+      <div
+        className={`transition-all duration-300 ease-in-out overflow-hidden flex shrink-0 ${
+          sidebarOpen ? 'w-64 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+        }`}
+      >
         <LessonSidebar
           theme={theme}
           selectedPreset={selectedPreset}
           onSelectPreset={handleSelectPreset}
           language={language}
         />
-      )}
+      </div>
 
       {/* 3. Main Center Workspace + TopBar + Right Panels */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -285,10 +291,11 @@ export const App: React.FC = () => {
           language={language}
           onSelectLanguage={setLanguage}
         />
-        {/* Content Body */}
-        {studioTab === 'theory' ? (
-          // Explain / Lesson Guide Tab
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        {/* Content Body with smooth tab and stage transitions */}
+        <div key={studioTab} className="flex-1 flex flex-col overflow-hidden animate-tab-enter">
+          {studioTab === 'theory' ? (
+            // Explain / Lesson Guide Tab
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             <LessonGuide
               theme={theme}
               preset={selectedPreset}
@@ -317,7 +324,7 @@ export const App: React.FC = () => {
           <div className="flex-1 flex overflow-hidden">
             {/* Center Area: Stage + Bottom Dock Player */}
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-              <div className="flex-1 flex flex-col overflow-hidden">
+              <div key={selectedPreset.id} className="flex-1 flex flex-col overflow-hidden animate-stage-swap">
                 <VisualStage
                   theme={theme}
                   step={currentStep}
@@ -360,8 +367,9 @@ export const App: React.FC = () => {
               }}
               language={language}
             />
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
