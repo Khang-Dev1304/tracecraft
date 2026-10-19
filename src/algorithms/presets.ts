@@ -303,279 +303,257 @@ def linear_regression(X, y, lr=0.06, epochs=8):
   // Category 2: Deep Learning & Neural Networks
   // ==========================================
   {
-    id: 'the-neuron',
-    title: 'The Neuron: Action Potentials & Neural Firing',
+    id: 'modern-neuron',
+    title: 'The Modern Neuron vs. Perceptron (Activation & Gradients)',
     category: 'Deep Learning & Neural Networks',
     difficulty: 'Beginner',
-    badge: 'Neuroscience & AI',
-    visualType: 'biological-neuron',
-    formula: 'C_m \\frac{dV_m}{dt} = -g_{\\text{Na}}(V_m - E_{\\text{Na}}) - g_K(V_m - E_K) - g_L(V_m - E_L) + I_{\\text{syn}}',
-    summary: 'How biological neurons communicate: ion exchange, resting membrane potential (-70mV), threshold depolarization (-55mV), and the all-or-none action potential spike (+40mV).',
-    description: 'Before artificial networks, biological neurons established the principles of intelligence. Dendrites gather chemical neurotransmitters, the soma integrates membrane voltages, the axon hillock triggers an action potential spike if threshold is breached, and the axon transmits the electrical wave to downstream synapses.',
+    badge: 'Activation & Calculus',
+    visualType: 'modern-neuron',
+    formula: '\\text{Perceptron: } a = \\text{step}(z) \\quad \\longleftrightarrow \\quad \\text{Modern Neuron: } a = \\sigma(z), \\quad \\frac{da}{dz} = a(1 - a)',
+    summary: 'Reveals the revolution that unlocked deep learning: replacing the Perceptron’s rigid step function with smooth, differentiable activations (Sigmoid & ReLU) to enable Gradient Descent.',
+    description: 'Frank Rosenblatt’s 1957 Perceptron computed a linear weighted sum z = w^T x + b, but passed it through a discontinuous step function where da/dz = 0 everywhere. Modern neurons substitute continuous non-linearities (Sigmoid, Tanh, ReLU) with non-zero gradients, allowing Backpropagation to guide parameter updates.',
     inputVariants: [
-      { label: 'Action Potential (I=25pA)', value: 'I: 25.0 pA' },
-      { label: 'Sub-threshold (I=8pA)', value: 'I: 8.0 pA' },
-      { label: 'Burst Firing (I=50pA)', value: 'I: 50.0 pA' },
+      { label: 'Modern Sigmoid (Smooth Gradient)', value: 'activation: sigmoid, z: 1.2' },
+      { label: 'Modern ReLU (Deep Learning Standard)', value: 'activation: relu, z: 1.5' },
+      { label: 'Classic Perceptron (Zero Gradient)', value: 'activation: step, z: 1.2' },
+      { label: 'Vanishing Gradient Saturation', value: 'activation: sigmoid, z: 4.8' },
     ],
     vi: {
-      title: 'Nơ-ron Sinh học & Điện thế Hoạt động (Action Potential)',
+      title: 'Nơ-ron AI Hiện đại vs. Perceptron (Hàm Kích hoạt & Gradient)',
       category: 'Deep Learning & Mạng Nơ-ron',
-      badge: 'Khoa học Thần kinh & AI',
-      summary: 'Cơ chế giao tiếp của nơ-ron sinh học: trao đổi ion qua màng, điện thế nghỉ (-70mV), ngưỡng kích thích (-55mV) và xung điện thế hoạt động (+40mV).',
-      description: 'Trước khi có mạng nơ-ron nhân tạo, nơ-ron sinh học đã định hình các nguyên lý của trí thông minh. Sợi nhánh thu nhận chất dẫn truyền thần kinh, thân tế bào tích phân điện thế màng, gò sợi trục kích hoạt xung điện thế hoạt động khi vượt ngưỡng và sợi trục truyền sóng điện đến các synap tiếp theo.',
+      badge: 'Hàm Kích hoạt & Đạo hàm',
+      summary: 'Cú hích lịch sử khai sinh học sâu: thay thế hàm bước nhảy cụt ngủn của Perceptron bằng các hàm kích hoạt khả vi (Sigmoid & ReLU) để thuật toán Gradient Descent có thể tối ưu trọng số.',
+      description: 'Perceptron (1957) tính tổng trọng số z = w^T x + b nhưng đi qua hàm bước nhảy có đạo hàm da/dz = 0 ở mọi nơi, khiến máy tính không thể học bằng đạo hàm. Nơ-ron hiện đại thay thế bằng các hàm phi tuyến liên tục (Sigmoid, Tanh, ReLU) có gradient sống, mở đường cho thuật toán Lan truyền ngược (Backpropagation).',
       variants: [
-        { label: 'Xung kích hoạt (I=25pA)', value: 'I: 25.0 pA' },
-        { label: 'Dưới ngưỡng (I=8pA)', value: 'I: 8.0 pA' },
-        { label: 'Xung liên tục (I=50pA)', value: 'I: 50.0 pA' },
+        { label: 'Modern Sigmoid (Gradient Mượt)', value: 'activation: sigmoid, z: 1.2' },
+        { label: 'Modern ReLU (Chuẩn Deep Learning)', value: 'activation: relu, z: 1.5' },
+        { label: 'Classic Perceptron (Gradient Bằng 0)', value: 'activation: step, z: 1.2' },
+        { label: 'Triệt tiêu Gradient (Saturation)', value: 'activation: sigmoid, z: 4.8' },
       ],
       sections: [
         {
-          title: '1. Điện thế Màng Tế bào: Trạng thái Nghỉ (-70mV)',
-          content: 'Màng lipid của nơ-ron duy trì sự chênh lệch nồng độ ion giữa trong và ngoài tế bào thông qua bơm Natri-Kali (3 ion Na+ ra ngoài, 2 ion K+ vào trong). Trạng thái cân bằng này tạo nên điện thế nghỉ phân cực -70mV.',
-          formula: 'V_{\\text{rest}} = -70\\text{ mV}, \\quad \\Delta V = V_m - V_{\\text{rest}}',
-          keyTakeaway: 'Điện tích âm bên trong tế bào hoạt động như một viên pin sinh học tích điện sẵn sàng giải phóng năng lượng.',
+          title: '1. Lỗ hổng Chí mạng của Perceptron: Bài toán Gradient Bằng 0',
+          content: 'Hàm bước nhảy Heaviside (a = 1 nếu z ≥ 0, ngược lại 0) hoàn toàn nằm ngang ở mọi điểm trừ z = 0. Đạo hàm da/dz = 0 ở khắp nơi! Khi tính gradient để tối ưu trọng số theo Chain Rule: ∂L/∂w = (∂L/∂a) * (da/dz) * (∂z/∂w) = (∂L/∂a) * 0 * x = 0. Dòng gradient hoàn toàn bị chặn đứng! Máy tính không thể dùng vi tích phân hay Gradient Descent để huấn luyện mạng Perceptron.',
+          formula: '\\frac{da}{dz} = 0 \\quad (\\forall z \\ne 0) \\implies \\frac{\\partial L}{\\partial w} = 0 \\quad (\\text{Không thể học bằng Gradient Descent!})',
+          keyTakeaway: 'Đạo hàm bằng 0 làm đóng băng quá trình học: thay đổi trọng số một chút không tạo ra bất kỳ phản hồi độ dốc nào.',
         },
         {
-          title: '2. Quy luật Tất-hoặc-Không (All-or-None) & Xung Điện thế (+40mV)',
-          content: 'Khi các tín hiệu kích thích từ sợi nhánh đẩy điện thế màng chạm ngưỡng tới hạn -55mV (Threshold), các kênh ion Na+ cảm ứng điện thế mở bung tức thì. Dòng ion Na+ ồ ạt tràn vào tế bào tạo nên cú phóng điện cực nhanh lên +40mV (Action Potential). Nếu không chạm ngưỡng -55mV, nơ-ron sẽ không phát xung.',
-          formula: 'V_m \\ge -55\\text{ mV} \\implies \\text{Action Potential Spike } (+40\\text{ mV})',
-          keyTakeaway: 'Nơ-ron sinh học hoạt động như bộ xử lý sự kiện nhị phân: Hoặc phát xung hoàn toàn, hoặc không có gì (nguồn cảm hứng cho hàm kích hoạt AI).',
+          title: '2. Giải pháp Đột phá: Hàm Kích hoạt Khả vi (Sigmoid & Tanh)',
+          content: 'Năm 1986, Rumelhart, Hinton và Williams thay thế hàm bước nhảy bằng hàm Logistic Sigmoid liên tục: a = σ(z) = 1 / (1 + e^-z). Đạo hàm của Sigmoid có dạng đối xứng hình chuông tuyệt đẹp: da/dz = a * (1 - a). Nhờ đó, gradient luôn lớn hơn 0 trên miền hoạt động, cho phép thuật toán Lan truyền ngược (Backpropagation) hoạt động trơn tru.',
+          formula: '\\sigma(z) = \\frac{1}{1 + e^{-z}}, \\quad \\frac{d\\sigma}{dz} = \\sigma(z)(1 - \\sigma(z)) = a(1 - a)',
+          keyTakeaway: 'Hàm kích hoạt mượt mà cung cấp độ dốc (gradient) dẫn đường cho Gradient Descent trượt dốc xuống đáy mất mát tối thiểu.',
         },
         {
-          title: '3. Bản đồ Đối chiếu: Từ Nơ-ron Sinh học sang Mạng AI',
-          content: 'Học sâu là sự trừu tượng hóa toán học của cơ chế sinh học: Sợi nhánh tương ứng với Features đầu vào x, Khớp synap tương ứng với Weights w, Thân tế bào tương ứng với Tổng có trọng số ∑ w*x, Ngưỡng phát xung tương ứng với Bias b và Hàm kích hoạt, còn cơ chế dẻo synap (Plasticity - "Neurons fire together, wire together") tương ứng với việc cập nhật Weights trong quá trình học.',
-          keyTakeaway: 'Deep Learning trừu tượng hóa các dòng ion điện hóa thành các phép nhân ma trận tensor trên GPU.',
+          title: '3. Kỷ nguyên Hiện đại: Từ Sigmoid sang ReLU (Trị dứt điểm Triệt tiêu Gradient)',
+          content: 'Dù giải quyết được bài toán đạo hàm bằng 0, đạo hàm Sigmoid chỉ đạt tối đa 0.25 tại z=0 và tiến về 0 khi |z| > 4 (bão hòa). Khi nhân dồn chuỗi số thập phân này qua 10 lớp, gradient biến mất (0.25^10 ≈ 10^-6). Mạng sâu hiện đại chuyển sang ReLU (Rectified Linear Unit): a = max(0, z). Đạo hàm của ReLU là hằng số 1.0 cho mọi z > 0, cho phép mạng nơ-ron sâu hàng trăm tầng huấn luyện ổn định mà không bị suy hao tín hiệu.',
+          formula: '\\text{ReLU}(z) = \\max(0, z), \\quad \\frac{d}{dz}\\text{ReLU} = 1.0 \\quad (z > 0)',
+          keyTakeaway: 'Đạo hàm hằng số 1.0 của ReLU chính là động cơ cốt lõi vận hành toàn bộ kỷ nguyên Deep Learning và các mô hình Transformer hiện đại.',
         },
       ],
     },
     sections: [
       {
-        title: '1. The Electrochemical Membrane: Resting Potential (-70mV)',
-        content: 'The lipid bilayer of a neuron maintains an electrical polarization via sodium-potassium active pumps (expelling 3 Na+ ions for every 2 K+ admitted). In its quiescent state, the interior of the cell rests at -70 millivolts.',
-        formula: 'V_{\\text{rest}} = -70\\text{ mV}, \\quad \\Delta V = V_m - V_{\\text{rest}}',
-        keyTakeaway: 'The negative electrical charge across the membrane functions like a charged biological battery ready to discharge.',
+        title: '1. The Perceptron’s Fatal Flaw: The Zero-Gradient Problem',
+        content: 'The Heaviside step function (a = 1 if z ≥ 0 else 0) is flat everywhere. Its derivative da/dz = 0 for all z ≠ 0. When computing parameter gradients via the Chain Rule: ∂L/∂w = (∂L/∂a) * (da/dz) * (∂z/∂w) = (∂L/∂a) * 0 * x = 0. The gradient signal is entirely dead! Calculus and Gradient Descent cannot train a network of step-function perceptrons.',
+        formula: '\\frac{da}{dz} = 0 \\quad (\\forall z \\ne 0) \\implies \\frac{\\partial L}{\\partial w} = 0 \\quad (\\text{Dead Gradient Flow})',
+        keyTakeaway: 'A zero derivative freezes the learning process: small weight tweaks produce zero feedback.',
       },
       {
-        title: '2. The All-or-None Law & Action Potential Spike (+40mV)',
-        content: 'When excitatory signals depolarize the membrane past the critical threshold of -55mV at the axon hillock, voltage-gated Na+ channels snap open simultaneously. Sodium ions flood the cell, triggering an explosive depolarization spike to +40mV. If the threshold is not reached, no signal fires.',
-        formula: 'V_m \\ge -55\\text{ mV} \\implies \\text{Action Potential Spike } (+40\\text{ mV})',
-        keyTakeaway: 'Neurons are all-or-none binary event processors, the direct biological inspiration for artificial threshold activation functions.',
+        title: '2. The Modern Solution: Smooth Differentiable Activations (Sigmoid & Tanh)',
+        content: 'In 1986, Rumelhart, Hinton, and Williams replaced the step function with the smooth logistic Sigmoid: a = σ(z) = 1 / (1 + e^-z). Its derivative is mathematically elegant: da/dz = a * (1 - a). Now, the gradient is non-zero, allowing infinitesimal weight changes to continuously steer the model toward lower loss.',
+        formula: '\\sigma(z) = \\frac{1}{1 + e^{-z}}, \\quad \\frac{d\\sigma}{dz} = \\sigma(z)(1 - \\sigma(z)) = a(1 - a)',
+        keyTakeaway: 'Smooth differentiable curves provide the continuous slope (gradient) that guides Gradient Descent downhill toward zero loss.',
       },
       {
-        title: '3. The Rosetta Stone: Biological Neurons to AI Architecture',
-        content: 'Artificial neural networks are mathematical abstractions of this biological engine: Dendrites map to Input Features x, Synaptic strength maps to Weights w, Membrane voltage summation in the Soma maps to Weighted Sum ∑ w*x, Firing Threshold maps to Bias b & Activation Functions, and Synaptic Plasticity maps to Gradient Descent learning.',
-        keyTakeaway: 'Deep learning abstracts continuous electrochemical ion flows into tensor matrix multiplications running on GPUs.',
+        title: '3. From Sigmoid to ReLU: Overcoming Vanishing Gradients in Deep Nets',
+        content: 'While Sigmoid revived neural networks, its derivative peaks at only 0.25 and approaches 0 when |z| > 4 (saturation). Multiplying these fractions across 10 layers causes gradients to vanish (0.25^10 ≈ 10^-6). Modern deep learning adopted ReLU: a = max(0, z). Its derivative is a clean constant 1.0 for all positive inputs, allowing networks with hundreds of layers to train without signal degradation.',
+        formula: '\\text{ReLU}(z) = \\max(0, z), \\quad \\frac{d}{dz}\\text{ReLU} = 1.0 \\quad (z > 0)',
+        keyTakeaway: 'ReLU’s constant gradient of 1.0 is the engine powering modern Deep Learning and Transformer architectures.',
       },
     ],
-    timeComplexity: 'O(1) integration step',
-    spaceComplexity: 'O(1) state variables',
-    tags: ['Neuroscience', 'Action Potential', 'Ion Channels', 'Biology to AI', 'Hodgkin-Huxley'],
-    defaultInput: 'I: 25.0 pA',
+    timeComplexity: 'O(1) forward & gradient step',
+    spaceComplexity: 'O(1) activations',
+    tags: ['Activation Function', 'Gradient Flow', 'Sigmoid', 'ReLU', 'Perceptron vs Neuron'],
+    defaultInput: 'activation: sigmoid, z: 1.2',
     pythonCode: `import numpy as np
 
-# Leaky Integrate-and-Fire (LIF) Biological Neuron Model
-def lif_neuron_step(V, I_syn, V_rest=-70.0, V_thresh=-55.0, V_peak=40.0, V_reset=-80.0, tau=10.0, dt=0.5):
-    # Membrane voltage integration: dV/dt = -(V - V_rest)/tau + I_syn
-    dV = (-(V - V_rest) + I_syn) * (dt / tau)
-    V_next = V + dV
-    spike = False
-    
-    if V_next >= V_thresh:
-        spike = True
-        V_next = V_peak  # Action potential firing!
-    elif V == V_peak:
-        V_next = V_reset # Refractory hyperpolarization
-        
-    return V_next, spike
+# Comparing Perceptron vs Modern Neuron Activations and Gradients
+def activation_and_gradient(z, kind="sigmoid"):
+    if kind == "step":
+        # Classic Perceptron: flat derivative, gradient = 0
+        a = 1.0 if z >= 0 else 0.0
+        grad = 0.0  # Zero gradient! Breaks backprop
+    elif kind == "sigmoid":
+        # Modern Sigmoid: smooth differentiable curve
+        a = 1.0 / (1.0 + np.exp(-z))
+        grad = a * (1.0 - a)  # Continuous gradient!
+    elif kind == "relu":
+        # Modern ReLU: avoids vanishing gradient
+        a = max(0.0, z)
+        grad = 1.0 if z > 0 else 0.0
+    elif kind == "tanh":
+        a = np.tanh(z)
+        grad = 1.0 - a**2
+    return a, grad
 
-# Simulate firing response over time
-V = -70.0 # Resting potential
-I_syn = 25.0 # Synaptic current in pA
-for step in range(8):
-    V, fired = lif_neuron_step(V, I_syn)
-    print(f"t={step*0.5:.1f}ms: Membrane V={V:.1f}mV | Action Potential: {fired}")`,
+# Example comparison at z = 1.2
+z = 1.2
+for mode in ["step", "sigmoid", "relu"]:
+    out, grad = activation_and_gradient(z, mode)
+    print(f"[{mode.upper():7s}] Output a = {out:.4f} | Gradient da/dz = {grad:.4f}")`,
     code: `import numpy as np
 
-def lif_neuron(V_m, I_stim, V_rest=-70.0, V_thresh=-55.0):
-    # 1. Membrane voltage leak & integration
-    dV = (-(V_m - V_rest) + I_stim) * 0.1
-    V_next = V_m + dV
-    # 2. Threshold check & Action Potential spike
-    if V_next >= V_thresh:
-        return 40.0, True   # +40mV Spike fired!
-    return V_next, False`,
+def modern_neuron(z, activation="sigmoid"):
+    # 1. Activation computation
+    if activation == "sigmoid":
+        a = 1 / (1 + np.exp(-z))
+        grad = a * (1 - a)     # Smooth gradient!
+    elif activation == "relu":
+        a = np.maximum(0, z)
+        grad = 1.0 if z > 0 else 0.0
+    elif activation == "step": # Classic Perceptron
+        a = 1.0 if z >= 0 else 0.0
+        grad = 0.0             # Zero gradient!
+    return a, grad`,
     generateTraces: (inputStr?: string, lang: Language = 'en'): TraceStep[] => {
       const isVi = lang === 'vi';
-      let I = 25.0;
+      let z = 1.2;
+      let actType: 'step' | 'sigmoid' | 'relu' | 'tanh' = 'sigmoid';
+
       if (inputStr) {
-        const m = inputStr.match(/I:\s*([0-9.]+)/i);
-        if (m) I = Number(m[1]);
+        if (inputStr.includes('relu')) actType = 'relu';
+        else if (inputStr.includes('step')) actType = 'step';
+        else if (inputStr.includes('tanh')) actType = 'tanh';
+
+        const m = inputStr.match(/z:\s*(-?[0-9.]+)/i);
+        if (m) z = Number(m[1]);
       }
 
-      const steps: TraceStep[] = [];
-      const isThresholdMet = I >= 15.0;
+      const stepA = z >= 0 ? 1.0 : 0.0;
+      const stepGrad = 0.0;
 
-      // Step 0: Resting Potential
+      const sigA = Number((1 / (1 + Math.exp(-z))).toFixed(3));
+      const sigGrad = Number((sigA * (1 - sigA)).toFixed(3));
+
+      const reluA = Number((Math.max(0, z)).toFixed(3));
+      const reluGrad = z > 0 ? 1.0 : 0.0;
+
+      const steps: TraceStep[] = [];
+
+      // Step 0: Linear Combination z = w^T x + b
       steps.push({
         step: 0,
         totalSteps: 0,
-        line: 3,
+        line: 4,
         action: 'init',
         targets: [0],
         state: {
-          bioNeuronState: {
-            membraneVoltage: -70.0,
-            phase: 'resting',
-            naChannels: 'closed',
-            kChannels: 'closed',
-            dendriteInputs: [0, 0, 0],
-            stimulusCurrent: I,
-            history: [{ t: 0, mv: -70.0 }],
+          modernNeuronState: {
+            inputs: [
+              { label: 'x₁', val: 0.8 },
+              { label: 'x₂', val: 0.4 },
+            ],
+            weights: [1.2, 0.5],
+            bias: 0.04,
+            zVal: z,
+            activationType: 'step',
+            outputVal: 0,
+            gradientVal: 0,
           },
         },
         explanation: isVi
-          ? 'Nơ-ron ở trạng thái nghỉ cân bằng (Resting Potential = -70 mV). Bơm ion Na+/K+ duy trì điện thế phân cực bên trong tế bào âm hơn bên ngoài. Các kênh ion đều đóng.'
-          : 'Neuron in polarized resting state (Resting Potential = -70 mV). Sodium-potassium active pumps maintain negative intracellular charge. All voltage-gated ion channels closed.',
+          ? `Tổng hợp tuyến tính: z = w₁·x₁ + w₂·x₂ + b = (1.2·0.8 + 0.5·0.4) + 0.04 = ${z.toFixed(2)}. Giá trị z sẵn sàng đưa qua các hàm kích hoạt để so sánh.`
+          : `Linear combination computed: z = w₁·x₁ + w₂·x₂ + b = (1.2·0.8 + 0.5·0.4) + 0.04 = ${z.toFixed(2)}. Value z ready for activation comparison.`,
         invariant: isVi
-          ? 'Điện thế nghỉ cân bằng: V_rest = -70 mV.'
-          : 'Membrane equilibrium potential: V_rest = -70 mV.',
+          ? 'Cả Perceptron và Nơ-ron hiện đại đều dùng chung phép biến đổi tuyến tính z = w^T x + b.'
+          : 'Both Perceptrons and Modern Neurons share the identical affine linear sum z = w^T x + b.',
       });
 
-      // Step 1: Dendrite Signal Influx & Depolarization toward threshold
-      const v1 = isThresholdMet ? -55.0 : -62.0;
+      // Step 1: The Classic Perceptron (Step Function) Evaluation
       steps.push({
         step: 1,
         totalSteps: 0,
-        line: 5,
-        action: 'compute',
+        line: 10,
+        action: 'compare',
         targets: [1],
         state: {
-          bioNeuronState: {
-            membraneVoltage: v1,
-            phase: 'depolarization',
-            naChannels: isThresholdMet ? 'open' : 'closed',
-            kChannels: 'closed',
-            dendriteInputs: [I, I * 0.8, I * 0.5],
-            stimulusCurrent: I,
-            history: [
-              { t: 0, mv: -70.0 },
-              { t: 1, mv: v1 },
+          modernNeuronState: {
+            inputs: [
+              { label: 'x₁', val: 0.8 },
+              { label: 'x₂', val: 0.4 },
             ],
+            weights: [1.2, 0.5],
+            bias: 0.04,
+            zVal: z,
+            activationType: 'step',
+            outputVal: stepA,
+            gradientVal: stepGrad,
           },
         },
         explanation: isVi
-          ? isThresholdMet
-            ? `Dòng kích thích synap I = ${I} pA tràn vào sợi nhánh. Điện thế màng tăng vọt lên -55 mV, CHẠM ĐÚNG NGƯỠNG KÍCH HOẠT (Threshold)! Các kênh Na+ bắt đầu mở.`
-            : `Dòng kích thích I = ${I} pA yếu (dưới 15 pA). Điện thế màng chỉ tăng nhẹ lên ${v1} mV, CHƯA ĐẠT NGƯỠNG (-55 mV). Tín hiệu tiêu biến (Leaky).`
-          : isThresholdMet
-            ? `Synaptic current I = ${I} pA enters dendrites. Membrane depolarizes to -55 mV, BREACHING THRESHOLD! Voltage-gated Na+ channels snap open.`
-            : `Synaptic current I = ${I} pA is sub-threshold. Membrane only depolarizes to ${v1} mV (threshold -55 mV not met). Signal dissipates.`,
+          ? `Mô hình Perceptron Cổ điển (1957): Sử dụng hàm bước nhảy Heaviside. Với z = ${z.toFixed(2)} ≥ 0, Output a = ${stepA}. Đạo hàm da/dz = 0.000! Gradient bị triệt tiêu hoàn toàn (Zero-Gradient Problem), khiến thuật toán Gradient Descent bất lực.`
+          : `Classic Perceptron (1957): Employs the Heaviside step function. For z = ${z.toFixed(2)} ≥ 0, Output a = ${stepA}. Derivative da/dz = 0.000! Dead gradient freezes Backpropagation.`,
         invariant: isVi
-          ? 'Ngưỡng kích hoạt điện thế màng: V_thresh = -55 mV.'
-          : 'Critical threshold for action potential: V_thresh = -55 mV.',
+          ? 'Perceptron: Đạo hàm da/dz = 0 ở mọi nơi; không thể tối ưu hóa bằng vi tích phân.'
+          : 'Classic Perceptron: da/dz = 0 everywhere; calculus-based learning is impossible.',
       });
 
-      // Step 2: Action Potential Spike (+40mV) or Sub-threshold decay
-      const v2 = isThresholdMet ? 40.0 : -68.0;
+      // Step 2: The Modern Neuron (Sigmoid Activation)
       steps.push({
         step: 2,
         totalSteps: 0,
-        line: 8,
-        action: isThresholdMet ? 'forward' : 'loss',
+        line: 6,
+        action: 'forward',
         targets: [2],
         state: {
-          bioNeuronState: {
-            membraneVoltage: v2,
-            phase: isThresholdMet ? 'peak' : 'resting',
-            naChannels: isThresholdMet ? 'open' : 'closed',
-            kChannels: isThresholdMet ? 'open' : 'closed',
-            dendriteInputs: [I, I * 0.8, I * 0.5],
-            stimulusCurrent: I,
-            history: [
-              { t: 0, mv: -70.0 },
-              { t: 1, mv: v1 },
-              { t: 2, mv: v2 },
+          modernNeuronState: {
+            inputs: [
+              { label: 'x₁', val: 0.8 },
+              { label: 'x₂', val: 0.4 },
             ],
+            weights: [1.2, 0.5],
+            bias: 0.04,
+            zVal: z,
+            activationType: 'sigmoid',
+            outputVal: sigA,
+            gradientVal: sigGrad,
           },
         },
         explanation: isVi
-          ? isThresholdMet
-            ? 'ĐIỆN THẾ HOẠT ĐỘNG PHÁT XUNG (+40 mV)! Ion Na+ ồ ạt tràn vào làm đảo cực màng tế bào. Xung điện thế lan truyền cực nhanh dọc theo sợi trục qua các bao Myelin!'
-            : 'Dưới ngưỡng kích hoạt: Không có xung điện nào được tạo ra (Quy luật Tất-hoặc-Không). Điện thế màng rò rỉ trở lại trạng thái nghỉ.'
-          : isThresholdMet
-            ? 'ACTION POTENTIAL SPIKE FIRES (+40 mV)! Massive Na+ influx inverts membrane polarity. Saltatory electrical wave propagates down myelinated axon!'
-            : 'Sub-threshold stimulus: No action potential generated (All-or-None Law). Membrane leaks back toward resting potential.',
+          ? `Nơ-ron Hiện đại (Sigmoid): Đường cong mượt biến đổi z = ${z.toFixed(2)} thành xác suất liên tục a = ${sigA}. Đạo hàm da/dz = a(1 - a) = ${sigGrad} > 0! Gradient sống cho phép Backpropagation tính toán cập nhật trọng số.`
+          : `Modern Neuron (Sigmoid): Smooth S-curve transforms z = ${z.toFixed(2)} into continuous probability a = ${sigA}. Derivative da/dz = a(1 - a) = ${sigGrad} > 0! Non-zero slope enables Gradient Descent.`,
         invariant: isVi
-          ? 'Đỉnh xung điện thế: V_peak = +40 mV.'
-          : 'Action potential peak amplitude: V_peak = +40 mV.',
+          ? 'Sigmoid: Tính khả vi (Differentiable) mở đường cho thuật toán Lan truyền ngược (Backpropagation).'
+          : 'Sigmoid: Differentiable continuity unlocks Backpropagation and weight updates.',
       });
 
-      // Step 3: Repolarization & Hyperpolarization Refractory Period (-80mV)
-      const v3 = isThresholdMet ? -80.0 : -70.0;
+      // Step 3: Modern Deep Learning Standard (ReLU)
       steps.push({
         step: 3,
         totalSteps: 0,
-        line: 9,
-        action: 'backward',
+        line: 8,
+        action: 'done',
         targets: [3],
         state: {
-          bioNeuronState: {
-            membraneVoltage: v3,
-            phase: isThresholdMet ? 'refractory' : 'resting',
-            naChannels: 'inactivated',
-            kChannels: 'open',
-            dendriteInputs: [0, 0, 0],
-            stimulusCurrent: 0,
-            history: [
-              { t: 0, mv: -70.0 },
-              { t: 1, mv: v1 },
-              { t: 2, mv: v2 },
-              { t: 3, mv: v3 },
+          modernNeuronState: {
+            inputs: [
+              { label: 'x₁', val: 0.8 },
+              { label: 'x₂', val: 0.4 },
             ],
+            weights: [1.2, 0.5],
+            bias: 0.04,
+            zVal: z,
+            activationType: actType === 'relu' ? 'relu' : 'sigmoid',
+            outputVal: actType === 'relu' ? reluA : sigA,
+            gradientVal: actType === 'relu' ? reluGrad : sigGrad,
           },
         },
         explanation: isVi
-          ? isThresholdMet
-            ? 'Tái phân cực & Thời kỳ trơ (-80 mV): Kênh Na+ bất hoạt, kênh K+ mở đưa ion K+ ra ngoài. Điện thế tụt xuống -80 mV, ngăn chặn xung thần kinh chạy ngược chiều!'
-            : 'Điện thế hồi phục hoàn toàn về mức nghỉ -70 mV.'
-          : isThresholdMet
-            ? 'Repolarization & Refractory Period (-80 mV): Na+ channels inactivate, K+ channels open. Voltage undershoots to -80 mV, enforcing unidirectional axon firing!'
-            : 'Membrane fully restored to resting state -70 mV.',
+          ? `Chuẩn Học sâu Hiện đại (ReLU): a = max(0, ${z.toFixed(2)}) = ${reluA}. Đạo hàm da/dz = ${reluGrad}.0 (Hằng số cực đại)! Không bị bão hòa, giải quyết triệt để vấn đề Triệt tiêu Gradient (Vanishing Gradient) trong các mạng sâu hàng trăm lớp.`
+          : `Modern Deep Learning Engine (ReLU): a = max(0, ${z.toFixed(2)}) = ${reluA}. Constant gradient da/dz = ${reluGrad}.0! Completely eliminates Vanishing Gradients, allowing hundreds of deep layers to learn.`,
         invariant: isVi
-          ? 'Thời kỳ trơ bảo vệ: Ngăn nơ-ron phát xung liên tục không kiểm soát.'
-          : 'Refractory period enforces unidirectional forward signal transmission.',
-      });
-
-      // Step 4: Done - Restoration
-      steps.push({
-        step: 4,
-        totalSteps: 0,
-        line: 10,
-        action: 'done',
-        targets: [4],
-        state: {
-          bioNeuronState: {
-            membraneVoltage: -70.0,
-            phase: 'resting',
-            naChannels: 'closed',
-            kChannels: 'closed',
-            dendriteInputs: [0, 0, 0],
-            stimulusCurrent: 0,
-            history: [
-              { t: 0, mv: -70.0 },
-              { t: 1, mv: v1 },
-              { t: 2, mv: v2 },
-              { t: 3, mv: v3 },
-              { t: 4, mv: -70.0 },
-            ],
-          },
-        },
-        explanation: isVi
-          ? 'Bơm Na+/K+ khôi phục nồng độ ion ban đầu về -70 mV. Nơ-ron hoàn tất một chu kỳ phát xung và sẵn sàng tiếp nhận kích thích tiếp theo.'
-          : 'Active pumps restore resting equilibrium (-70 mV). Neuron completes firing cycle and is primed for subsequent synaptic inputs.',
-        invariant: isVi
-          ? 'Chu trình điện thế nơ-ron sinh học hoàn tất. Tương ứng với một lần nơ-ron nhân tạo firing.'
-          : 'Biological neural cycle complete. Direct biological analogue of artificial activation firing.',
+          ? 'Khai sinh Deep Learning: Thay thế hàm bước nhảy bằng hàm kích hoạt khả vi đã biến Perceptron thành Nơ-ron AI hiện đại.'
+          : 'Foundation of Deep Learning: Swapping step functions for differentiable activations transformed Perceptrons into Modern Neurons.',
       });
 
       const total = steps.length;

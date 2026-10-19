@@ -84,7 +84,9 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   const points = step.state.points;
   const layers = step.state.layers;
   const neuronState = step.state.neuronState;
-  const bioNeuronState = step.state.bioNeuronState;
+  const modernNeuronState = step.state.modernNeuronState;
+  const smoothZ = useSmoothValue(modernNeuronState?.zVal ?? 0, 360);
+  const smoothA = useSmoothValue(modernNeuronState?.outputVal ?? 0, 360);
   const tokens = step.state.tokens;
   const probabilities = step.state.probabilities;
   const inputMatrix = step.state.inputMatrix;
@@ -103,7 +105,6 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   const smoothW = useSmoothValue(rawW, 360);
   const smoothB = useSmoothValue(rawB, 360);
   const smoothLoss = useSmoothValue(rawLoss, 360);
-  const smoothVoltage = useSmoothValue(bioNeuronState?.membraneVoltage ?? -70, 360);
   // Dynamic scale limits based on data points to ensure NO point is EVER clipped
   const coordLimits = useMemo(() => {
     if (!points || points.length === 0) return { maxX: 6, maxY: 10, yStep: 2 };
@@ -290,15 +291,15 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                 w: {smoothW.toFixed(2)} | b: {smoothB.toFixed(2)}
               </span>
             )}
-            {bioNeuronState && (
+            {modernNeuronState && (
               <span
                 className={`px-2.5 py-1 rounded-xl font-bold transition-all shadow-xs ${
-                  isDark
-                    ? 'bg-cyan-950 text-cyan-300 border border-cyan-800'
-                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+                  modernNeuronState.gradientVal === 0
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                 }`}
               >
-                V_m: {smoothVoltage.toFixed(1)} mV ({bioNeuronState.phase.toUpperCase()})
+                da/dz: {modernNeuronState.gradientVal.toFixed(3)} ({modernNeuronState.activationType.toUpperCase()})
               </span>
             )}
           </div>
@@ -951,203 +952,179 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         {/* ========================================================= */}
         {/* 2.6. BIOLOGICAL NEURON & ACTION POTENTIAL OSCILLOSCOPE     */}
         {/* ========================================================= */}
-        {bioNeuronState && (
-          <div className="w-full h-full relative flex flex-col items-center justify-between p-2 max-w-4xl max-h-[350px]">
-            {/* 1. Anatomical Biological Neuron Diagram */}
+        {modernNeuronState && (
+          <div className="w-full h-full relative flex items-center justify-between p-2 max-w-4xl max-h-[350px]">
+            {/* Left Column: Neuron Architecture (Width: 360) */}
             <svg
-              viewBox="0 0 740 180"
+              viewBox="0 0 360 340"
               preserveAspectRatio="xMidYMid meet"
-              className="w-full h-44 select-none"
+              className="w-1/2 h-full select-none"
             >
-              <defs>
-                <linearGradient id="axonPulse" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#0284c7" />
-                  <stop offset="50%" stopColor="#38bdf8" />
-                  <stop offset="100%" stopColor="#10b981" />
-                </linearGradient>
-              </defs>
+              <text x="180" y="25" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-sans text-xs font-bold uppercase tracking-wider">
+                Neuron Architecture
+              </text>
 
-              {/* Dendrite Branching Arbors */}
-              {[
-                { x1: 50, y1: 50, x2: 120, y2: 80 },
-                { x1: 40, y1: 95, x2: 120, y2: 95 },
-                { x1: 50, y1: 140, x2: 120, y2: 110 },
-              ].map((d, idx) => {
-                const isActive = step.line >= 5;
+              {/* Synapses from Inputs to Center Soma */}
+              {modernNeuronState.inputs.map((inp, idx) => {
+                const inY = idx === 0 ? 100 : 220;
+                const isSynActive = step.line >= 4;
+                const wVal = modernNeuronState.weights[idx] ?? 1.2;
+
                 return (
-                  <g key={`dend-${idx}`}>
+                  <g key={`mod-syn-${inp.label}`}>
                     <path
-                      d={`M ${d.x1} ${d.y1} Q ${(d.x1 + d.x2) / 2} ${(d.y1 + d.y2) / 2 - 10} ${d.x2} ${d.y2}`}
+                      d={`M 65 ${inY} Q 120 ${inY} 175 160`}
                       fill="none"
-                      stroke={isActive ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#334155' : '#cbd5e1')}
-                      strokeWidth={isActive ? 3 : 2}
-                      strokeLinecap="round"
-                      className={isActive ? 'animate-pulse' : undefined}
+                      stroke={isSynActive ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#334155' : '#cbd5e1')}
+                      strokeWidth={2.2}
+                      strokeDasharray="5 3"
                     />
-                    <circle cx={d.x1} cy={d.y1} r={4.5} fill={isActive ? '#38bdf8' : '#94a3b8'} />
-                  </g>
-                );
-              })}
-              <text x="65" y="32" fill={isDark ? '#94a3b8' : '#64748b'} className="font-sans text-[11px] font-bold">
-                Dendrites (x_i)
-              </text>
-
-              {/* Soma (Cell Body) at X=155, Y=95 */}
-              {(() => {
-                const isSpike = bioNeuronState.phase === 'peak';
-                const isDepol = bioNeuronState.phase === 'depolarization';
-                const somaFill = isSpike
-                  ? (isDark ? '#064e3b' : '#dcfce7')
-                  : isDepol
-                    ? (isDark ? '#422006' : '#fef3c7')
-                    : (isDark ? '#1e293b' : '#e0f2fe');
-                const somaStroke = isSpike ? '#10b981' : isDepol ? '#f59e0b' : '#0284c7';
-
-                return (
-                  <g className="cursor-pointer">
-                    <ellipse
-                      cx={155}
-                      cy={95}
-                      rx={38}
-                      ry={32}
-                      fill={somaFill}
-                      stroke={somaStroke}
-                      strokeWidth={2.5}
-                      className="drop-shadow-md transition-all duration-300"
-                    />
-                    <circle cx={155} cy={95} r={12} fill={somaStroke} opacity={0.3} />
-                    <text x={155} y={99} textAnchor="middle" fill={somaStroke} className="font-display font-bold text-xs">
-                      Soma
+                    <rect x={85} y={idx === 0 ? 90 : 205} width={45} height={18} rx={9} fill={isDark ? '#0f172a' : '#ffffff'} stroke={isDark ? '#334155' : '#cbd5e1'} strokeWidth={1} />
+                    <text x={107} y={idx === 0 ? 103 : 218} textAnchor="middle" fill={isDark ? '#38bdf8' : '#0284c7'} className="font-mono text-[9px] font-bold">
+                      w={wVal}
                     </text>
                   </g>
                 );
-              })()}
+              })}
 
-              {/* Axon Hillock (Threshold Gate at X=200) */}
-              <path
-                d="M 193 90 L 225 93 L 225 97 L 193 100 Z"
-                fill={bioNeuronState.membraneVoltage >= -55 ? '#ef4444' : (isDark ? '#475569' : '#94a3b8')}
+              {/* Input Nodes x1, x2 */}
+              {modernNeuronState.inputs.map((inp, idx) => {
+                const inY = idx === 0 ? 100 : 220;
+                return (
+                  <g key={`mod-in-${inp.label}`}>
+                    <circle cx={45} cy={inY} r={20} fill={isDark ? '#1e293b' : '#e0f2fe'} stroke={isDark ? '#06b6d4' : '#0284c7'} strokeWidth={1.8} />
+                    <text x={45} y={inY + 4} textAnchor="middle" fill={isDark ? '#e2e8f0' : '#0369a1'} className="font-display font-bold text-xs">{inp.label}</text>
+                    <text x={45} y={inY + 32} textAnchor="middle" fill={isDark ? '#94a3b8' : '#64748b'} className="font-mono text-[10px] font-bold">{inp.val}</text>
+                  </g>
+                );
+              })}
+
+              {/* Soma Cell Body (Centered at X=195, Y=160) */}
+              <circle
+                cx={195}
+                cy={160}
+                r={44}
+                fill={isDark ? '#111827' : '#ffffff'}
+                stroke={isDark ? '#06b6d4' : '#0284c7'}
+                strokeWidth={2.5}
+                className="drop-shadow-md"
               />
-              <text x={220} y={75} textAnchor="middle" fill={bioNeuronState.membraneVoltage >= -55 ? '#ef4444' : '#64748b'} className="font-mono text-[10px] font-bold">
-                Hillock (-55mV)
-              </text>
+              <line x1={195} y1={118} x2={195} y2={202} stroke={isDark ? '#334155' : '#e2e8f0'} strokeWidth={1.2} strokeDasharray="3 3" />
+              <text x={175} y={150} textAnchor="middle" fill={isDark ? '#94a3b8' : '#64748b'} className="font-sans text-[10px] font-bold">z</text>
+              <text x={175} y={172} textAnchor="middle" fill={isDark ? '#38bdf8' : '#0284c7'} className="font-mono text-xs font-bold">{smoothZ.toFixed(2)}</text>
+              <text x={215} y={150} textAnchor="middle" fill={isDark ? '#94a3b8' : '#64748b'} className="font-sans text-[10px] font-bold">f(z)</text>
+              <text x={215} y={172} textAnchor="middle" fill="#10b981" className="font-mono text-xs font-bold">{smoothA.toFixed(2)}</text>
 
-              {/* Long Axon with Myelin Sheaths and Nodes of Ranvier */}
-              <line x1={225} y1={95} x2={570} y2={95} stroke={isDark ? '#334155' : '#cbd5e1'} strokeWidth={3} />
+              {/* Axon to Output Node */}
+              <line x1={240} y1={160} x2={305} y2={160} stroke={isDark ? '#10b981' : '#16a34a'} strokeWidth={2.5} strokeDasharray="5 3" />
 
-              {/* Schwann Cell Myelin Sheaths */}
-              {[240, 320, 400, 480].map((mx, idx) => {
-                return (
-                  <g key={`myelin-${idx}`}>
-                    <rect
-                      x={mx}
-                      y={83}
-                      width={62}
-                      height={24}
-                      rx={8}
-                      fill={isDark ? '#3b2f15' : '#fef9c3'}
-                      stroke={isDark ? '#ca8a04' : '#eab308'}
-                      strokeWidth={1.8}
-                      className="drop-shadow-xs"
-                    />
-                    <text x={mx + 31} y={99} textAnchor="middle" fill={isDark ? '#fef08a' : '#854d0e'} className="font-mono text-[9px] font-bold">
-                      Myelin
-                    </text>
-                  </g>
-                );
-              })}
+              {/* Output Activation Node */}
+              <circle cx={325} cy={160} r={24} fill={isDark ? '#064e3b' : '#dcfce7'} stroke={isDark ? '#10b981' : '#16a34a'} strokeWidth={2} />
+              <text x={325} y={165} textAnchor="middle" fill={isDark ? '#6ee7b7' : '#15803d'} className="font-display font-bold text-xs">{smoothA.toFixed(2)}</text>
 
-              {/* Saltatory Action Potential Electric Wave Traveling down Axon */}
-              {bioNeuronState.phase === 'peak' && (
-                <path
-                  d="M 230 95 L 560 95"
-                  stroke="url(#axonPulse)"
-                  strokeWidth={5}
-                  strokeLinecap="round"
-                  className="animate-pulse drop-shadow-[0_0_10px_rgba(16,185,129,0.9)]"
-                />
-              )}
-
-              {/* Axon Terminal Bulbs */}
-              {[
-                { x1: 560, y1: 95, x2: 630, y2: 65 },
-                { x1: 560, y1: 95, x2: 640, y2: 95 },
-                { x1: 560, y1: 95, x2: 630, y2: 125 },
-              ].map((tNode, idx) => {
-                const isSpike = bioNeuronState.phase === 'peak';
-                return (
-                  <g key={`term-${idx}`}>
-                    <line x1={tNode.x1} y1={tNode.y1} x2={tNode.x2} y2={tNode.y2} stroke={isSpike ? '#10b981' : (isDark ? '#475569' : '#cbd5e1')} strokeWidth={2} />
-                    <circle cx={tNode.x2} cy={tNode.y2} r={6} fill={isSpike ? '#10b981' : '#94a3b8'} className={isSpike ? 'animate-ping' : undefined} />
-                    <circle cx={tNode.x2} cy={tNode.y2} r={5} fill={isSpike ? '#10b981' : (isDark ? '#334155' : '#e2e8f0')} />
-                  </g>
-                );
-              })}
-              <text x="635" y="42" fill={isDark ? '#94a3b8' : '#64748b'} className="font-sans text-[11px] font-bold">
-                Synapses
+              {/* Bottom Gradient Callout */}
+              <rect x={110} y={245} width={170} height={26} rx={13} fill={modernNeuronState.gradientVal === 0 ? (isDark ? '#3b1d24' : '#fee2e2') : (isDark ? '#064e3b' : '#dcfce7')} stroke={modernNeuronState.gradientVal === 0 ? '#ef4444' : '#10b981'} strokeWidth={1.5} />
+              <text x={195} y={262} textAnchor="middle" fill={modernNeuronState.gradientVal === 0 ? '#ef4444' : '#15803d'} className="font-mono text-[11px] font-bold">
+                {modernNeuronState.gradientVal === 0 ? 'da/dz = 0.000 (Dead!)' : `da/dz = ${modernNeuronState.gradientVal.toFixed(3)} (Alive!)`}
               </text>
             </svg>
 
-            {/* 2. Real-Time Action Potential Oscilloscope */}
-            <div
-              className={`w-full p-2.5 rounded-2xl border transition-colors ${
-                isDark ? 'bg-[#0f1523] border-[#1e293b]' : 'bg-white border-slate-200 shadow-xs'
-              }`}
-            >
-              <div className="flex items-center justify-between text-[11px] font-mono font-bold mb-1 opacity-70">
+            {/* Right Column: Live Mathematical Activation Curve & Tangent Gradient (Width: 360) */}
+            <div className={`w-1/2 h-full p-3 rounded-2xl border flex flex-col justify-between ${
+              isDark ? 'bg-[#0f1523] border-[#1e293b]' : 'bg-white border-slate-200 shadow-xs'
+            }`}>
+              <div className="flex items-center justify-between text-xs font-mono font-bold">
                 <span className="flex items-center gap-1.5">
                   <Activity className="w-3.5 h-3.5 text-blue-500 dark:text-cyan-400" />
-                  <span>Membrane Voltage Oscilloscope (mV vs Time)</span>
+                  <span>Activation Curve ({modernNeuronState.activationType.toUpperCase()})</span>
                 </span>
-                <span className="text-blue-500 dark:text-cyan-300 font-mono">
-                  V_m = {smoothVoltage.toFixed(1)} mV
+                <span className={modernNeuronState.gradientVal === 0 ? 'text-rose-500' : 'text-emerald-500'}>
+                  ∇ = {modernNeuronState.gradientVal.toFixed(3)}
                 </span>
               </div>
 
-              {/* Oscilloscope Grid & Voltage Spike Curve */}
-              <div className="w-full h-24 relative">
-                <svg viewBox="0 0 700 100" preserveAspectRatio="none" className="w-full h-full">
-                  {/* +40mV Line */}
-                  <line x1="50" y1="15" x2="680" y2="15" stroke="#10b981" strokeDasharray="3 3" opacity={0.5} />
-                  <text x="45" y="18" textAnchor="end" fill="#10b981" className="font-mono text-[9px] font-bold">+40mV</text>
+              {/* Curve SVG */}
+              <div className="w-full h-44 relative my-1">
+                <svg viewBox="0 0 340 180" className="w-full h-full select-none">
+                  {/* X Axis at Y=140 */}
+                  <line x1="25" y1="140" x2="320" y2="140" stroke={isDark ? '#334155' : '#cbd5e1'} strokeWidth="1.5" />
+                  {/* Y Axis at X=170 (z=0) */}
+                  <line x1="170" y1="15" x2="170" y2="160" stroke={isDark ? '#334155' : '#cbd5e1'} strokeWidth="1.5" />
 
-                  {/* -55mV Threshold Line */}
-                  <line x1="50" y1="65" x2="680" y2="65" stroke="#ef4444" strokeDasharray="3 3" opacity={0.6} />
-                  <text x="45" y="68" textAnchor="end" fill="#ef4444" className="font-mono text-[9px] font-bold">-55mV</text>
+                  <text x="315" y="155" fill={isDark ? '#94a3b8' : '#64748b'} textAnchor="end" className="font-mono text-[9px] font-bold">z →</text>
+                  <text x="165" y="22" fill={isDark ? '#94a3b8' : '#64748b'} textAnchor="end" className="font-mono text-[9px] font-bold">a ↑</text>
 
-                  {/* -70mV Resting Line */}
-                  <line x1="50" y1="78" x2="680" y2="78" stroke="#0284c7" strokeDasharray="3 3" opacity={0.5} />
-                  <text x="45" y="81" textAnchor="end" fill="#0284c7" className="font-mono text-[9px] font-bold">-70mV</text>
+                  {/* Horizontal Guideline a=1.0 at Y=40 */}
+                  <line x1="25" y1="40" x2="320" y2="40" stroke={isDark ? '#1e293b' : '#f1f5f9'} strokeDasharray="3 3" />
+                  <text x="20" y="43" fill="#94a3b8" textAnchor="end" className="font-mono text-[8px]">1.0</text>
 
-                  {/* Dynamic Action Potential Curve */}
+                  {/* Curve Drawing based on active activationType */}
                   {(() => {
-                    const toOscX = (tVal: number) => 60 + tVal * 135;
-                    const toOscY = (mv: number) => 10 + (1 - (mv - (-85)) / (45 - (-85))) * 80;
-                    const pts = bioNeuronState.history.map((h) => `${toOscX(h.t)},${toOscY(h.mv)}`).join(' L ');
+                    const toPlotX = (zVal: number) => 170 + zVal * 32;
+                    const toPlotY = (aVal: number) => 140 - aVal * 100;
+
+                    let curvePath = '';
+                    if (modernNeuronState.activationType === 'step') {
+                      curvePath = `M ${toPlotX(-4)} ${toPlotY(0)} L ${toPlotX(0)} ${toPlotY(0)} L ${toPlotX(0)} ${toPlotY(1)} L ${toPlotX(4)} ${toPlotY(1)}`;
+                    } else if (modernNeuronState.activationType === 'relu') {
+                      curvePath = `M ${toPlotX(-4)} ${toPlotY(0)} L ${toPlotX(0)} ${toPlotY(0)} L ${toPlotX(3)} ${toPlotY(3)}`;
+                    } else {
+                      const pts: string[] = [];
+                      for (let zI = -4; zI <= 4; zI += 0.25) {
+                        const aI = 1 / (1 + Math.exp(-zI));
+                        pts.push(`${toPlotX(zI)},${toPlotY(aI)}`);
+                      }
+                      curvePath = `M ${pts.join(' L ')}`;
+                    }
+
+                    const orbX = toPlotX(smoothZ);
+                    const orbY = toPlotY(smoothA);
 
                     return (
                       <g>
                         <path
-                          d={`M ${pts}`}
+                          d={curvePath}
                           fill="none"
                           stroke={isDark ? '#38bdf8' : '#0284c7'}
-                          strokeWidth="2.5"
+                          strokeWidth={2.8}
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
+                        {/* Tangent slope line representing the gradient da/dz */}
+                        <line
+                          x1={orbX - 25}
+                          y1={orbY + (modernNeuronState.activationType === 'step' ? 0 : 25 * modernNeuronState.gradientVal)}
+                          x2={orbX + 25}
+                          y2={orbY - (modernNeuronState.activationType === 'step' ? 0 : 25 * modernNeuronState.gradientVal)}
+                          stroke={modernNeuronState.gradientVal === 0 ? '#ef4444' : '#10b981'}
+                          strokeWidth={2}
+                          strokeDasharray={modernNeuronState.gradientVal === 0 ? '3 2' : undefined}
+                        />
+                        {/* Smooth Sliding Orb at current (z, a) coordinate */}
                         <circle
-                          cx={toOscX(bioNeuronState.history[bioNeuronState.history.length - 1]?.t ?? 0)}
-                          cy={toOscY(smoothVoltage)}
-                          r="5"
-                          fill="#ef4444"
+                          cx={orbX}
+                          cy={orbY}
+                          r={6.5}
+                          fill="#f59e0b"
                           stroke="#ffffff"
-                          strokeWidth="2"
-                          className="animate-pulse"
+                          strokeWidth={2}
+                          className="drop-shadow-md animate-pulse"
                         />
                       </g>
                     );
                   })()}
                 </svg>
+              </div>
+
+              {/* Bottom Insight explanation */}
+              <div className={`p-2 rounded-xl text-[10px] font-mono border ${
+                modernNeuronState.gradientVal === 0
+                  ? (isDark ? 'bg-rose-950/40 border-rose-800/40 text-rose-300' : 'bg-rose-50 border-rose-200 text-rose-800')
+                  : (isDark ? 'bg-cyan-950/40 border-cyan-800/40 text-cyan-300' : 'bg-blue-50 border-blue-200 text-blue-900')
+              }`}>
+                {modernNeuronState.gradientVal === 0
+                  ? '⚠️ Perceptron Step Function: Độ dốc (gradient) = 0. Thuật toán Gradient Descent bị đóng băng.'
+                  : '✅ Modern Activation: Độ dốc (gradient) > 0. Cho phép Backpropagation cập nhật trọng số liên tục.'}
               </div>
             </div>
           </div>
@@ -1716,9 +1693,9 @@ export const VisualStage: React.FC<VisualStageProps> = ({
               math={`z = \\mathbf{w}^T\\mathbf{x} + b = ${neuronState.weightedSum} \\implies a = ${neuronState.outputVal}`}
               className="ml-1 font-bold text-blue-600 dark:text-cyan-300"
             />
-          ) : bioNeuronState ? (
+          ) : modernNeuronState ? (
             <MathFormula
-              math={`V_m = ${smoothVoltage.toFixed(1)}\\text{ mV} \\quad (V_{\\text{thresh}} = -55\\text{ mV})`}
+              math={`z = ${smoothZ.toFixed(2)} \\implies a = ${smoothA.toFixed(3)} \\quad (\\nabla = ${modernNeuronState.gradientVal.toFixed(3)})`}
               className="ml-1 font-bold text-blue-600 dark:text-cyan-300"
             />
           ) : (

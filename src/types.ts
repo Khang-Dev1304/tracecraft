@@ -19,7 +19,7 @@ export type VisualType =
   | 'regression-plot'
   | 'neural-network'
   | 'single-neuron'
-  | 'biological-neuron'
+  | 'modern-neuron'
   | 'attention-matrix'
   | 'cnn-convolution'
   | 'array-bars';
@@ -74,6 +74,16 @@ export interface BioNeuronState {
   stimulusCurrent: number; // in pA
   history: { t: number; mv: number }[];
 }
+
+export interface ModernNeuronState {
+  inputs: { label: string; val: number }[];
+  weights: number[];
+  bias: number;
+  zVal: number;
+  activationType: 'step' | 'sigmoid' | 'relu' | 'tanh';
+  outputVal: number;
+  gradientVal: number; // da/dz
+}
 export type PrimitiveStateValue =
   | string
   | number
@@ -88,6 +98,7 @@ export type PrimitiveStateValue =
   | DataPoint[]
   | NeuralLayer[]
   | SingleNeuronState
+  | ModernNeuronState
   | BioNeuronState
   | { token: string; prob: number }[];
 
@@ -111,6 +122,7 @@ export interface StepState {
   featureMap?: (number | null)[][];
   kernelPos?: { r: number; c: number };
   neuronState?: SingleNeuronState;
+  modernNeuronState?: ModernNeuronState;
   bioNeuronState?: BioNeuronState;
   [key: string]: PrimitiveStateValue;
 }
