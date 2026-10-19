@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import rough from 'roughjs';
 import { 
   ZoomIn, 
   ZoomOut, 
@@ -21,24 +20,29 @@ interface VisualStageProps {
   onChangeInput?: (newInput: string) => void;
 }
 
-// Ultra-smooth 60fps ease-out cubic interpolation hook for Clean Studio mode
-function useSmoothValue(target: number, durationMs = 360): number {
+// Ultra-smooth 60fps ease-out cubic interpolation hook
+function useSmoothValue(target: number, durationMs = 500): number {
   const [val, setVal] = useState(target);
-  const startRef = useRef(target);
-  const targetRef = useRef(target);
+  const currentValRef = useRef(target);
+  const startValRef = useRef(target);
+  const targetValRef = useRef(target);
   const startTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    startRef.current = val;
-    targetRef.current = target;
+    startValRef.current = currentValRef.current;
+    targetValRef.current = target;
     startTimeRef.current = null;
     let frameId: number;
 
     const animate = (timestamp: number) => {
       if (!startTimeRef.current) startTimeRef.current = timestamp;
-      const progress = Math.min(1, (timestamp - startTimeRef.current) / durationMs);
+      const elapsed = timestamp - startTimeRef.current;
+      const progress = Math.min(1, elapsed / durationMs);
       const ease = 1 - Math.pow(1 - progress, 3);
-      setVal(startRef.current + (targetRef.current - startRef.current) * ease);
+      const next = startValRef.current + (targetValRef.current - startValRef.current) * ease;
+
+      currentValRef.current = next;
+      setVal(next);
 
       if (progress < 1) {
         frameId = requestAnimationFrame(animate);
@@ -136,124 +140,6 @@ export const VisualStage: React.FC<VisualStageProps> = ({
     }
   };
 
-  // Rough.js dynamic sketching for Sketch Mode
-  useEffect(() => {
-    if (isDark || !svgRef.current) return;
-
-    const svg = svgRef.current;
-    const oldRough = svg.querySelectorAll('.rough-element');
-    oldRough.forEach((el) => el.remove());
-
-    const rc = rough.svg(svg);
-
-    // 1. Regression Plot in Sketch Mode with DYNAMIC coordinates
-    if (points && points.length > 0) {
-      const originX = toSvgX(0);
-      const originY = toSvgY(0);
-
-      // Axes
-      const xAxis = rc.line(originX, originY, toSvgX(coordLimits.maxX), originY, {
-        stroke: '#3c3836',
-        strokeWidth: 2,
-        roughness: 1.3,
-      });
-      xAxis.classList.add('rough-element');
-      svg.appendChild(xAxis);
-
-      const yAxis = rc.line(originX, originY, originX, toSvgY(coordLimits.maxY), {
-        stroke: '#3c3836',
-        strokeWidth: 2,
-        roughness: 1.3,
-      });
-      yAxis.classList.add('rough-element');
-      svg.appendChild(yAxis);
-
-      // Dynamic Regression Line
-      const p1X = toSvgX(0.2);
-      const p1Y = toSvgY(rawW * 0.2 + rawB);
-      const p2X = toSvgX(coordLimits.maxX - 0.2);
-      const p2Y = toSvgY(rawW * (coordLimits.maxX - 0.2) + rawB);
-
-      const regLine = rc.line(p1X, p1Y, p2X, p2Y, {
-        stroke: '#d65d0e',
-        strokeWidth: 3,
-        roughness: 1.2,
-      });
-      regLine.classList.add('rough-element');
-      svg.appendChild(regLine);
-
-      // Data points and residual error stems
-      points.forEach((p) => {
-        const px = toSvgX(p.x);
-        const py = toSvgY(p.y);
-        const pyPred = toSvgY(rawW * p.x + rawB);
-
-        // Residual stem
-        const stem = rc.line(px, py, px, pyPred, {
-          stroke: '#cc241d',
-          strokeWidth: 1.6,
-          roughness: 1.2,
-          strokeLineDash: [4, 4],
-        });
-        stem.classList.add('rough-element');
-        svg.appendChild(stem);
-
-        // Point circle
-        const circle = rc.circle(px, py, 16, {
-          fill: '#fabd2f',
-          fillStyle: 'solid',
-          stroke: '#3c3836',
-          strokeWidth: 1.8,
-          roughness: 1.1,
-        });
-        circle.classList.add('rough-element');
-        svg.appendChild(circle);
-      });
-    }
-
-    // 2. Classical Array in Sketch Mode
-    if (arr && arr.length > 0) {
-      const maxVal = Math.max(...arr, 1);
-      const width = 700;
-      const height = 360;
-      const barMargin = 12;
-      const availableWidth = width - 80;
-      const barWidth = Math.min(64, Math.max(28, availableWidth / arr.length - barMargin));
-      const startX = (width - (arr.length * (barWidth + barMargin) - barMargin)) / 2;
-
-      arr.forEach((val, idx) => {
-        const barHeight = Math.max(30, (val / maxVal) * (height - 130));
-        const x = startX + idx * (barWidth + barMargin);
-        const y = height - 60 - barHeight;
-
-        const isTarget = step.targets.includes(idx);
-        const isSwap = step.action === 'swap' && isTarget;
-
-        let fillColor = '#e0f2fe';
-        let strokeColor = '#0284c7';
-        if (isSwap) {
-          fillColor = '#fee2e2';
-          strokeColor = '#dc2626';
-        } else if (isTarget) {
-          fillColor = '#fef3c7';
-          strokeColor = '#d97706';
-        } else if (step.action === 'done') {
-          fillColor = '#dcfce7';
-          strokeColor = '#16a34a';
-        }
-
-        const rect = rc.rectangle(x, y, barWidth, barHeight, {
-          fill: fillColor,
-          fillStyle: 'solid',
-          stroke: strokeColor,
-          strokeWidth: 1.8,
-          roughness: 1.2,
-        });
-        rect.classList.add('rough-element');
-        svg.appendChild(rect);
-      });
-    }
-  }, [isDark, points, arr, step, rawW, rawB, coordLimits]);
 
   // Generate tick lists
   const xTicks = useMemo(() => {
