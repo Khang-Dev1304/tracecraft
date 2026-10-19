@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import rough from 'roughjs';
 import { 
   ZoomIn, 
@@ -6,7 +6,9 @@ import {
   Maximize2, 
   Minimize2, 
   Database,
-  RotateCcw
+  RotateCcw,
+  MousePointerClick,
+  TrendingDown
 } from 'lucide-react';
 import type { ThemeMode, TraceStep } from '../types';
 import { MathFormula } from './MathFormula';
@@ -63,11 +65,12 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   onChangeInput,
 }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const isSketch = theme === 'sketch';
+  const isDark = theme === 'studio';
 
   // Graph sizing & zoom state
   const [zoom, setZoom] = useState<number>(1);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
 
   const arr = step.state.arr;
   const points = step.state.points;
@@ -85,9 +88,56 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   const smoothB = useSmoothValue(rawB, 360);
   const smoothLoss = useSmoothValue(rawLoss, 360);
 
+  // Dynamic scale limits based on data points to ensure NO point is EVER clipped
+  const coordLimits = useMemo(() => {
+    if (!points || points.length === 0) return { maxX: 6, maxY: 10, yStep: 2 };
+    const allX = points.map((p) => p.x);
+    const allY = points.map((p) => p.y);
+    const maxDataX = Math.max(...allX, 5);
+    const maxDataY = Math.max(...allY, 7);
+
+    const maxX = Math.max(6, Math.ceil(maxDataX + 0.8));
+    const maxY = Math.max(10, Math.ceil(Math.max(maxDataY, rawW * maxX + rawB) + 1.8));
+    const yStep = maxY > 14 ? 4 : 2;
+    return { maxX, maxY, yStep };
+  }, [points, rawW, rawB]);
+
+  // Coordinate projection mapping
+  const SVG_W = 740;
+  const SVG_H = 370;
+  const PAD = { left: 65, right: 45, top: 40, bottom: 50 };
+  const plotW = SVG_W - PAD.left - PAD.right;
+  const plotH = SVG_H - PAD.top - PAD.bottom;
+
+  const toSvgX = (x: number) => PAD.left + (x / coordLimits.maxX) * plotW;
+  const toSvgY = (y: number) => PAD.top + plotH - (y / coordLimits.maxY) * plotH;
+  const toMathX = (svgX: number) => Number((Math.max(0, ((svgX - PAD.left) / plotW) * coordLimits.maxX)).toFixed(1));
+  const toMathY = (svgY: number) => Number((Math.max(0, ((PAD.top + plotH - svgY) / plotH) * coordLimits.maxY)).toFixed(1));
+
+  // Interactive Click to Add Point
+  const handleSvgClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!onChangeInput || !points) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickSvgX = ((e.clientX - rect.left) / rect.width) * SVG_W;
+    const clickSvgY = ((e.clientY - rect.top) / rect.height) * SVG_H;
+
+    if (
+      clickSvgX >= PAD.left &&
+      clickSvgX <= PAD.left + plotW &&
+      clickSvgY >= PAD.top &&
+      clickSvgY <= PAD.top + plotH
+    ) {
+      const newX = Math.max(0.5, Math.min(coordLimits.maxX - 0.5, toMathX(clickSvgX)));
+      const newY = Math.max(0.5, Math.min(coordLimits.maxY, toMathY(clickSvgY)));
+      const newPoints = [...points, { x: newX, y: newY }].sort((a, b) => a.x - b.x);
+      const newStr = newPoints.map((p) => `(${p.x}, ${p.y})`).join(', ');
+      onChangeInput(newStr);
+    }
+  };
+
   // Rough.js dynamic sketching for Sketch Mode
   useEffect(() => {
-    if (!isSketch || !svgRef.current) return;
+    if (isDark || !svgRef.current) return;
 
     const svg = svgRef.current;
     const oldRough = svg.querySelectorAll('.rough-element');
@@ -95,43 +145,33 @@ export const VisualStage: React.FC<VisualStageProps> = ({
 
     const rc = rough.svg(svg);
 
-    // 1. Regression Plot in Sketch Mode
+    // 1. Regression Plot in Sketch Mode with DYNAMIC coordinates
     if (points && points.length > 0) {
-      const originX = 70;
-      const originY = 300;
-      const scaleX = 110;
-      const scaleY = 38;
+      const originX = toSvgX(0);
+      const originY = toSvgY(0);
 
-      // Draw Axes
-      const xAxis = rc.line(originX, originY, originX + 580, originY, {
+      // Axes
+      const xAxis = rc.line(originX, originY, toSvgX(coordLimits.maxX), originY, {
         stroke: '#3c3836',
         strokeWidth: 2,
-        roughness: 1.5,
+        roughness: 1.3,
       });
       xAxis.classList.add('rough-element');
       svg.appendChild(xAxis);
 
-      const yAxis = rc.line(originX, originY, originX, originY - 240, {
+      const yAxis = rc.line(originX, originY, originX, toSvgY(coordLimits.maxY), {
         stroke: '#3c3836',
         strokeWidth: 2,
-        roughness: 1.5,
+        roughness: 1.3,
       });
       yAxis.classList.add('rough-element');
       svg.appendChild(yAxis);
 
-      // Regression Line y = w*x + b
-      const w = rawW;
-      const b = rawB;
-
-      const xStart = 0.5;
-      const xEnd = 5.5;
-      const yStartVal = w * xStart + b;
-      const yEndVal = w * xEnd + b;
-
-      const p1X = originX + xStart * scaleX;
-      const p1Y = originY - yStartVal * scaleY;
-      const p2X = originX + xEnd * scaleX;
-      const p2Y = originY - yEndVal * scaleY;
+      // Dynamic Regression Line
+      const p1X = toSvgX(0.2);
+      const p1Y = toSvgY(rawW * 0.2 + rawB);
+      const p2X = toSvgX(coordLimits.maxX - 0.2);
+      const p2Y = toSvgY(rawW * (coordLimits.maxX - 0.2) + rawB);
 
       const regLine = rc.line(p1X, p1Y, p2X, p2Y, {
         stroke: '#d65d0e',
@@ -141,29 +181,29 @@ export const VisualStage: React.FC<VisualStageProps> = ({
       regLine.classList.add('rough-element');
       svg.appendChild(regLine);
 
-      // Data points and residuals
+      // Data points and residual error stems
       points.forEach((p) => {
-        const px = originX + p.x * scaleX;
-        const py = originY - p.y * scaleY;
-        const pyPred = originY - (p.yPred ?? (w * p.x + b)) * scaleY;
+        const px = toSvgX(p.x);
+        const py = toSvgY(p.y);
+        const pyPred = toSvgY(rawW * p.x + rawB);
 
-        // Residual error stem
+        // Residual stem
         const stem = rc.line(px, py, px, pyPred, {
           stroke: '#cc241d',
-          strokeWidth: 1.5,
-          roughness: 1.4,
+          strokeWidth: 1.6,
+          roughness: 1.2,
           strokeLineDash: [4, 4],
         });
         stem.classList.add('rough-element');
         svg.appendChild(stem);
 
         // Point circle
-        const circle = rc.circle(px, py, 18, {
+        const circle = rc.circle(px, py, 16, {
           fill: '#fabd2f',
           fillStyle: 'solid',
           stroke: '#3c3836',
           strokeWidth: 1.8,
-          roughness: 1.2,
+          roughness: 1.1,
         });
         circle.classList.add('rough-element');
         svg.appendChild(circle);
@@ -188,51 +228,63 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         const isTarget = step.targets.includes(idx);
         const isSwap = step.action === 'swap' && isTarget;
 
-        let fillColor = '#fbf7ee';
-        let strokeColor = '#3c3836';
+        let fillColor = '#e0f2fe';
+        let strokeColor = '#0284c7';
         if (isSwap) {
-          fillColor = '#cc241d';
-          strokeColor = '#9d0006';
+          fillColor = '#fee2e2';
+          strokeColor = '#dc2626';
         } else if (isTarget) {
-          fillColor = '#fabd2f';
-          strokeColor = '#b57614';
+          fillColor = '#fef3c7';
+          strokeColor = '#d97706';
         } else if (step.action === 'done') {
-          fillColor = '#98971a';
-          strokeColor = '#79740e';
+          fillColor = '#dcfce7';
+          strokeColor = '#16a34a';
         }
 
         const rect = rc.rectangle(x, y, barWidth, barHeight, {
           fill: fillColor,
-          fillStyle: 'hachure',
+          fillStyle: 'solid',
           stroke: strokeColor,
-          strokeWidth: isTarget ? 2.5 : 1.8,
-          fillWeight: 1.2,
-          roughness: 1.6,
+          strokeWidth: 1.8,
+          roughness: 1.2,
         });
         rect.classList.add('rough-element');
         svg.appendChild(rect);
       });
     }
-  }, [isSketch, points, arr, step, rawW, rawB]);
+  }, [isDark, points, arr, step, rawW, rawB, coordLimits]);
+
+  // Generate tick lists
+  const xTicks = useMemo(() => {
+    const list: number[] = [];
+    for (let i = 1; i < coordLimits.maxX; i++) list.push(i);
+    return list;
+  }, [coordLimits.maxX]);
+
+  const yTicks = useMemo(() => {
+    const list: number[] = [];
+    for (let i = coordLimits.yStep; i < coordLimits.maxY; i += coordLimits.yStep) list.push(i);
+    return list;
+  }, [coordLimits.maxY, coordLimits.yStep]);
 
   return (
     <div
       className={`relative w-full h-full flex flex-col justify-between p-4 overflow-hidden select-none transition-all duration-300 ${
-        isExpanded ? 'min-h-[520px]' : 'min-h-[380px]'
+        isExpanded ? 'min-h-[540px]' : 'min-h-[380px]'
       } ${
-        isSketch
-          ? 'bg-sketch-dots text-[#282828]'
-          : 'bg-studio-dots text-white'
+        isDark
+          ? 'bg-viz-dots-dark text-white'
+          : 'bg-viz-dots text-slate-800'
       }`}
     >
       {/* Stage Header Info & Flexible Controls */}
       <div className="flex flex-wrap items-center justify-between gap-2 z-10 shrink-0">
         <div className="flex items-center gap-2">
           <span
-            className={`text-xs uppercase font-mono tracking-wider px-2 py-0.5 rounded font-semibold ${
-              isSketch
-                ? 'bg-[#ebdbb2] text-[#3c3836] border border-[#3c3836]/30'
-                : 'bg-slate-800/90 text-cyan-400 border border-slate-700/80'
+            className={`text-xs uppercase font-mono tracking-wider px-2.5 py-1 rounded-xl font-bold shadow-xs ${
+              isDark
+                ? 'bg-slate-800 text-cyan-400 border border-slate-700'
+                : 'bg-white text-slate-700 border border-slate-200'
             }`}
           >
             {category} Stage
@@ -249,20 +301,20 @@ export const VisualStage: React.FC<VisualStageProps> = ({
             <div className="hidden sm:flex items-center gap-1">
               <Database className="w-3.5 h-3.5 opacity-60" />
               <div
-                className={`flex items-center p-0.5 rounded-md border text-[11px] font-mono ${
-                  isSketch
-                    ? 'bg-[#ebdbb2] border-[#3c3836]/30'
-                    : 'bg-[#151c2d] border-[#222f46]'
+                className={`flex items-center p-0.5 rounded-xl border text-[11px] font-semibold ${
+                  isDark
+                    ? 'bg-[#151c2d] border-[#222f46]'
+                    : 'bg-white border-slate-200 shadow-xs'
                 }`}
               >
                 {DATA_PRESETS.map((preset) => (
                   <button
                     key={preset.label}
                     onClick={() => onChangeInput(preset.value)}
-                    className={`px-1.5 py-0.5 rounded transition-colors ${
-                      isSketch
-                        ? 'hover:bg-[#d5c4a1] text-[#282828]'
-                        : 'hover:bg-slate-700 text-slate-300'
+                    className={`px-2 py-0.5 rounded-lg transition-colors ${
+                      isDark
+                        ? 'hover:bg-slate-700 text-slate-300'
+                        : 'hover:bg-slate-100 text-slate-700'
                     }`}
                   >
                     {preset.label}
@@ -274,10 +326,10 @@ export const VisualStage: React.FC<VisualStageProps> = ({
 
           {/* Zoom & Size Controls */}
           <div
-            className={`flex items-center p-0.5 rounded-lg border text-xs ${
-              isSketch
-                ? 'bg-[#ebdbb2] border-[#3c3836]/30'
-                : 'bg-[#151c2d] border-[#222f46]'
+            className={`flex items-center p-0.5 rounded-xl border text-xs ${
+              isDark
+                ? 'bg-[#151c2d] border-[#222f46]'
+                : 'bg-white border-slate-200 shadow-xs'
             }`}
           >
             <button
@@ -321,25 +373,25 @@ export const VisualStage: React.FC<VisualStageProps> = ({
           <div className="flex items-center gap-1.5 text-xs font-mono">
             {step.state.loss !== undefined && (
               <span
-                className={`px-2 py-0.5 rounded font-bold transition-all ${
-                  isSketch
-                    ? 'bg-[#cc241d]/20 text-[#cc241d] border border-[#cc241d]/40'
-                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
+                className={`px-2.5 py-1 rounded-xl font-bold transition-all shadow-xs ${
+                  isDark
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                    : 'bg-rose-50 text-rose-700 border border-rose-200'
                 }`}
               >
-                Loss: {isSketch ? rawLoss : smoothLoss.toFixed(3)}
+                Loss: {isDark ? smoothLoss.toFixed(3) : rawLoss}
               </span>
             )}
             {step.state.weight !== undefined && (
               <span
-                className={`px-2 py-0.5 rounded font-bold transition-all ${
-                  isSketch
-                    ? 'bg-[#ebdbb2] text-[#3c3836]'
-                    : 'bg-cyan-950 text-cyan-300 border border-cyan-800'
+                className={`px-2.5 py-1 rounded-xl font-bold transition-all shadow-xs ${
+                  isDark
+                    ? 'bg-cyan-950 text-cyan-300 border border-cyan-800'
+                    : 'bg-blue-50 text-blue-700 border border-blue-200'
                 }`}
               >
-                w: {isSketch ? rawW : smoothW.toFixed(2)} | b:{' '}
-                {isSketch ? rawB : smoothB.toFixed(2)}
+                w: {isDark ? smoothW.toFixed(2) : rawW} | b:{' '}
+                {isDark ? smoothB.toFixed(2) : rawB}
               </span>
             )}
           </div>
@@ -349,171 +401,240 @@ export const VisualStage: React.FC<VisualStageProps> = ({
       {/* Main Stage Visual Content with Dynamic Zoom */}
       <div
         style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
-        className="relative flex-1 w-full flex items-center justify-center my-2 overflow-hidden transition-transform duration-200"
+        className="relative flex-1 w-full flex items-center justify-center my-1 overflow-hidden transition-transform duration-200"
       >
         {/* ========================================================= */}
-        {/* 1. REGRESSION PLOT VISUALIZER (Ultra-Smooth in Clean Mode) */}
+        {/* 1. DYNAMIC REGRESSION PLOT (Auto-scaled, Clickable, Clean) */}
         {/* ========================================================= */}
         {points && points.length > 0 && (
           <div className="w-full h-full relative flex items-center justify-center">
-            {isSketch ? (
-              // Sketch Mode 2D Plot
-              <svg
-                ref={svgRef}
-                viewBox="0 0 700 360"
-                preserveAspectRatio="xMidYMid meet"
-                className="w-full h-full max-h-[340px]"
+            {/* Top Click-To-Add-Point Hint */}
+            <div className="absolute top-1 left-4 z-10 flex items-center gap-1.5 text-[11px] opacity-60 font-sans pointer-events-none">
+              <MousePointerClick className="w-3.5 h-3.5 text-blue-500 dark:text-cyan-400" />
+              <span>Click anywhere on graph to add a point</span>
+            </div>
+
+            {/* Hover Tooltip for active data point */}
+            {hoveredPoint !== null && points[hoveredPoint] && (
+              <div
+                className={`absolute top-1 right-4 z-20 px-3 py-1.5 rounded-xl border text-xs font-mono shadow-md transition-all ${
+                  isDark
+                    ? 'bg-slate-900 border-cyan-500/50 text-cyan-200'
+                    : 'bg-white border-blue-200 text-slate-800'
+                }`}
               >
-                {points.map((p, idx) => {
-                  const originX = 70;
-                  const originY = 300;
-                  const scaleX = 110;
-                  const scaleY = 38;
-                  const px = originX + p.x * scaleX;
-                  const py = originY - p.y * scaleY;
-                  return (
+                <div className="font-bold flex items-center gap-2">
+                  <span>Point ({points[hoveredPoint].x}, {points[hoveredPoint].y})</span>
+                  <span>|</span>
+                  <span className="text-blue-500 dark:text-cyan-300">
+                    ŷ = {(rawW * points[hoveredPoint].x + rawB).toFixed(2)}
+                  </span>
+                  <span>|</span>
+                  <span className="text-rose-500">
+                    Residual: {(points[hoveredPoint].y - (rawW * points[hoveredPoint].x + rawB)).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Main Interactive SVG Cartesian Chart */}
+            <svg
+              ref={svgRef}
+              viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+              preserveAspectRatio="xMidYMid meet"
+              onClick={handleSvgClick}
+              className="w-full h-full max-h-[350px] cursor-crosshair select-none"
+            >
+              <defs>
+                <linearGradient id="regGradSmooth" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#0284c7" />
+                  <stop offset="100%" stopColor="#6366f1" />
+                </linearGradient>
+                <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#0284c7" floodOpacity="0.6" />
+                </filter>
+              </defs>
+
+              {/* Numbered Grid Lines & Ticks */}
+              {xTicks.map((xVal) => (
+                <g key={`x-grid-${xVal}`}>
+                  <line
+                    x1={toSvgX(xVal)}
+                    y1={PAD.top}
+                    x2={toSvgX(xVal)}
+                    y2={toSvgY(0)}
+                    stroke={isDark ? '#1e293b' : '#f1f5f9'}
+                    strokeDasharray="4 4"
+                  />
+                  <line
+                    x1={toSvgX(xVal)}
+                    y1={toSvgY(0)}
+                    x2={toSvgX(xVal)}
+                    y2={toSvgY(0) + 5}
+                    stroke={isDark ? '#475569' : '#cbd5e1'}
+                    strokeWidth="1.5"
+                  />
+                  <text
+                    x={toSvgX(xVal)}
+                    y={toSvgY(0) + 18}
+                    fill={isDark ? '#94a3b8' : '#64748b'}
+                    textAnchor="middle"
+                    className="font-mono text-[11px] font-semibold"
+                  >
+                    {xVal}
+                  </text>
+                </g>
+              ))}
+
+              {yTicks.map((yVal) => (
+                <g key={`y-grid-${yVal}`}>
+                  <line
+                    x1={toSvgX(0)}
+                    y1={toSvgY(yVal)}
+                    x2={toSvgX(coordLimits.maxX)}
+                    y2={toSvgY(yVal)}
+                    stroke={isDark ? '#1e293b' : '#f1f5f9'}
+                    strokeDasharray="4 4"
+                  />
+                  <line
+                    x1={toSvgX(0) - 5}
+                    y1={toSvgY(yVal)}
+                    x2={toSvgX(0)}
+                    y2={toSvgY(yVal)}
+                    stroke={isDark ? '#475569' : '#cbd5e1'}
+                    strokeWidth="1.5"
+                  />
+                  <text
+                    x={toSvgX(0) - 10}
+                    y={toSvgY(yVal) + 4}
+                    fill={isDark ? '#94a3b8' : '#64748b'}
+                    textAnchor="end"
+                    className="font-mono text-[11px] font-semibold"
+                  >
+                    {yVal}
+                  </text>
+                </g>
+              ))}
+
+              {/* Main Axes */}
+              <line
+                x1={toSvgX(0)}
+                y1={toSvgY(0)}
+                x2={toSvgX(coordLimits.maxX)}
+                y2={toSvgY(0)}
+                stroke={isDark ? '#475569' : '#94a3b8'}
+                strokeWidth="2"
+              />
+              <line
+                x1={toSvgX(0)}
+                y1={toSvgY(0)}
+                x2={toSvgX(0)}
+                y2={PAD.top - 10}
+                stroke={isDark ? '#475569' : '#94a3b8'}
+                strokeWidth="2"
+              />
+
+              {/* Axis Labels */}
+              <text
+                x={toSvgX(coordLimits.maxX)}
+                y={toSvgY(0) + 32}
+                fill={isDark ? '#94a3b8' : '#475569'}
+                textAnchor="end"
+                className="font-sans text-xs font-bold"
+              >
+                Feature X →
+              </text>
+              <text
+                x={toSvgX(0)}
+                y={PAD.top - 18}
+                fill={isDark ? '#94a3b8' : '#475569'}
+                textAnchor="start"
+                className="font-sans text-xs font-bold"
+              >
+                ↑ Target y
+              </text>
+
+              {/* Dynamic Ultra-Smooth Regression Line */}
+              {(() => {
+                const p1X = toSvgX(0.2);
+                const p1Y = toSvgY((isDark ? smoothW : rawW) * 0.2 + (isDark ? smoothB : rawB));
+                const p2X = toSvgX(coordLimits.maxX - 0.2);
+                const p2Y = toSvgY((isDark ? smoothW : rawW) * (coordLimits.maxX - 0.2) + (isDark ? smoothB : rawB));
+
+                return (
+                  <path
+                    d={`M ${p1X} ${p1Y} L ${p2X} ${p2Y}`}
+                    stroke={isDark ? 'url(#regGradSmooth)' : '#0284c7'}
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    filter={isDark ? 'url(#neonGlow)' : undefined}
+                  />
+                );
+              })()}
+
+              {/* Data Points, Predicted Points on Line, and Residual Error Stems */}
+              {points.map((p, idx) => {
+                const px = toSvgX(p.x);
+                const py = toSvgY(p.y);
+                const currentW = isDark ? smoothW : rawW;
+                const currentB = isDark ? smoothB : rawB;
+                const pyPred = toSvgY(currentW * p.x + currentB);
+                const isHovered = hoveredPoint === idx;
+
+                return (
+                  <g
+                    key={`point-${idx}-${p.x}-${p.y}`}
+                    onMouseEnter={() => setHoveredPoint(idx)}
+                    onMouseLeave={() => setHoveredPoint(null)}
+                    className="cursor-pointer"
+                  >
+                    {/* Residual Red dashed error stem */}
+                    <line
+                      x1={px}
+                      y1={py}
+                      x2={px}
+                      y2={pyPred}
+                      stroke="#ef4444"
+                      strokeWidth={isHovered ? '2.5' : '1.8'}
+                      strokeDasharray="4 3"
+                      opacity={isHovered ? 1 : 0.8}
+                    />
+
+                    {/* Predicted Point (Hollow dot on line) */}
+                    <circle
+                      cx={px}
+                      cy={pyPred}
+                      r="4"
+                      fill={isDark ? '#0284c7' : '#ffffff'}
+                      stroke="#0284c7"
+                      strokeWidth="2"
+                    />
+
+                    {/* Actual Data Point (Pastel Amber dot) */}
+                    <circle
+                      cx={px}
+                      cy={py}
+                      r={isHovered ? 9 : 7}
+                      fill="#f59e0b"
+                      stroke="#ffffff"
+                      strokeWidth="2"
+                      className="transition-all duration-200 drop-shadow-sm"
+                    />
+
+                    {/* Coordinate text badge */}
                     <text
-                      key={idx}
                       x={px}
-                      y={py - 14}
+                      y={py - 12}
+                      fill={isDark ? '#f1f5f9' : '#1e293b'}
                       textAnchor="middle"
-                      className="font-sketch font-bold text-sm fill-[#282828]"
+                      className="font-mono text-[11px] font-bold select-none pointer-events-none"
                     >
                       ({p.x}, {p.y})
                     </text>
-                  );
-                })}
-                <text x="640" y="320" className="font-sketch font-bold text-base fill-[#3c3836]">
-                  Feature X
-                </text>
-                <text x="40" y="60" className="font-sketch font-bold text-base fill-[#3c3836]">
-                  Target y
-                </text>
-              </svg>
-            ) : (
-              // Clean Pro Studio Mode: Ultra-smooth SVG path morphing with 60fps interpolation
-              <div className="w-full h-full relative max-w-2xl max-h-[330px]">
-                <svg
-                  viewBox="0 0 700 360"
-                  preserveAspectRatio="xMidYMid meet"
-                  className="w-full h-full"
-                >
-                  <defs>
-                    <linearGradient id="regGradSmooth" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#06b6d4" />
-                      <stop offset="100%" stopColor="#6366f1" />
-                    </linearGradient>
-                    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
-                      <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#06b6d4" floodOpacity="0.8" />
-                    </filter>
-                  </defs>
-
-                  {/* Subtle Grid Lines */}
-                  {[1, 2, 3, 4, 5, 6].map((gridX) => (
-                    <line
-                      key={`gx-${gridX}`}
-                      x1={70 + gridX * 90}
-                      y1="40"
-                      x2={70 + gridX * 90}
-                      y2="300"
-                      stroke="#1e293b"
-                      strokeDasharray="4 4"
-                    />
-                  ))}
-                  {[1, 2, 3, 4, 5, 6, 7].map((gridY) => (
-                    <line
-                      key={`gy-${gridY}`}
-                      x1="70"
-                      y1={300 - gridY * 36}
-                      x2="650"
-                      y2={300 - gridY * 36}
-                      stroke="#1e293b"
-                      strokeDasharray="4 4"
-                    />
-                  ))}
-
-                  {/* Axes */}
-                  <line x1="70" y1="300" x2="650" y2="300" stroke="#475569" strokeWidth="2" />
-                  <line x1="70" y1="300" x2="70" y2="40" stroke="#475569" strokeWidth="2" />
-
-                  {/* Axis Text */}
-                  <text x="630" y="325" fill="#94a3b8" className="font-mono text-xs font-bold">
-                    Feature X
-                  </text>
-                  <text x="35" y="45" fill="#94a3b8" className="font-mono text-xs font-bold">
-                    Target y
-                  </text>
-
-                  {/* Ultra-Smooth Animated Regression Line using continuous smoothW and smoothB */}
-                  {(() => {
-                    const originX = 70;
-                    const originY = 300;
-                    const scaleX = 100;
-                    const scaleY = 36;
-                    const p1X = originX + 0.5 * scaleX;
-                    const p1Y = originY - (smoothW * 0.5 + smoothB) * scaleY;
-                    const p2X = originX + 5.5 * scaleX;
-                    const p2Y = originY - (smoothW * 5.5 + smoothB) * scaleY;
-
-                    return (
-                      <path
-                        d={`M ${p1X} ${p1Y} L ${p2X} ${p2Y}`}
-                        stroke="url(#regGradSmooth)"
-                        strokeWidth="3.5"
-                        strokeLinecap="round"
-                        filter="url(#neonGlow)"
-                      />
-                    );
-                  })()}
-
-                  {/* Data Points and Fluid Residual Stems */}
-                  {points.map((p, idx) => {
-                    const originX = 70;
-                    const originY = 300;
-                    const scaleX = 100;
-                    const scaleY = 36;
-                    const px = originX + p.x * scaleX;
-                    const py = originY - p.y * scaleY;
-                    const pyPred = originY - (smoothW * p.x + smoothB) * scaleY;
-
-                    return (
-                      <g key={idx}>
-                        {/* Red Residual Error dashed line with fluid vertical connection */}
-                        <line
-                          x1={px}
-                          y1={py}
-                          x2={px}
-                          y2={pyPred}
-                          stroke="#ef4444"
-                          strokeWidth="2"
-                          strokeDasharray="4 3"
-                          opacity="0.85"
-                        />
-                        {/* Target Data Point with neon hover effect */}
-                        <circle
-                          cx={px}
-                          cy={py}
-                          r="7.5"
-                          fill="#f59e0b"
-                          stroke="#fbbf24"
-                          strokeWidth="2"
-                          className="cursor-pointer transition-transform hover:scale-125 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]"
-                        />
-                        <text
-                          x={px}
-                          y={py - 12}
-                          fill="#f1f5f9"
-                          textAnchor="middle"
-                          className="font-mono text-[11px] font-semibold"
-                        >
-                          ({p.x}, {p.y})
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
-              </div>
-            )}
+                  </g>
+                );
+              })}
+            </svg>
           </div>
         )}
 
@@ -536,16 +657,16 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                       <div
                         key={node.label}
                         className={`flex items-center gap-2 px-3 py-2 rounded-xl font-mono text-xs border transition-all ${
-                          isSketch
+                          isDark
                             ? isActive
-                              ? 'bg-[#fabd2f] text-[#282828] sketch-border font-bold'
-                              : 'bg-[#fbf7ee] text-[#7c6f64] border-[#3c3836]/40'
-                            : isActive
                               ? 'bg-gradient-to-r from-indigo-600/40 to-cyan-500/40 text-cyan-200 border-cyan-400 shadow-lg shadow-cyan-500/20 font-bold'
                               : 'bg-slate-800/80 text-slate-400 border-slate-700'
+                            : isActive
+                              ? 'bg-blue-50 text-blue-800 border-blue-400 font-bold shadow-xs'
+                              : 'bg-white text-slate-500 border-slate-200'
                         }`}
                       >
-                        <span className="w-6 h-6 rounded-full flex items-center justify-center font-bold bg-black/10 dark:bg-white/10">
+                        <span className="w-6 h-6 rounded-full flex items-center justify-center font-bold bg-black/5 dark:bg-white/10">
                           {node.label}
                         </span>
                         <span>{node.value}</span>
@@ -576,18 +697,18 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                   return (
                     <div
                       key={idx}
-                      className={`relative flex flex-col items-center px-3.5 py-2 rounded-lg font-mono text-sm transition-all duration-300 ${
-                        isSketch
+                      className={`relative flex flex-col items-center px-3.5 py-2 rounded-xl font-mono text-sm transition-all duration-300 ${
+                        isDark
                           ? isLast
-                            ? 'bg-[#d65d0e] text-white sketch-border-subtle font-sketch text-lg'
-                            : isAttended
-                              ? 'bg-[#fabd2f] text-[#282828] sketch-border-subtle'
-                              : 'bg-[#fbf7ee] text-[#282828] border border-[#3c3836]/40'
-                          : isLast
                             ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30 border border-cyan-400'
                             : isAttended
                               ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md'
                               : 'bg-slate-800/80 text-slate-300 border border-slate-700'
+                          : isLast
+                            ? 'bg-blue-600 text-white shadow-md border border-blue-700'
+                            : isAttended
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                              : 'bg-white text-slate-800 border border-slate-200 shadow-xs'
                       }`}
                     >
                       <span className="font-bold">&ldquo;{token}&rdquo;</span>
@@ -605,10 +726,10 @@ export const VisualStage: React.FC<VisualStageProps> = ({
 
             {probabilities && probabilities.length > 0 && (
               <div
-                className={`w-full p-4 rounded-xl transition-colors ${
-                  isSketch
-                    ? 'bg-[#fbf7ee] sketch-border-subtle text-[#282828]'
-                    : 'bg-[#0f1626]/90 border border-[#222f46] text-white'
+                className={`w-full p-4 rounded-2xl border transition-colors ${
+                  isDark
+                    ? 'bg-[#111827] border-[#1e293b] text-white'
+                    : 'bg-white border-slate-200 text-slate-800 shadow-xs'
                 }`}
               >
                 <div className="flex items-center justify-between text-xs font-mono mb-3">
@@ -628,11 +749,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                       <div key={item.token} className="flex items-center gap-3 text-xs font-mono">
                         <span
                           className={`w-16 truncate font-medium ${
-                            isTop1
-                              ? isSketch
-                                ? 'text-[#d65d0e] font-bold'
-                                : 'text-cyan-400 font-bold'
-                              : 'opacity-70'
+                            isTop1 ? 'text-blue-600 dark:text-cyan-400 font-bold' : 'opacity-70'
                           }`}
                         >
                           &ldquo;{item.token}&rdquo;
@@ -640,30 +757,22 @@ export const VisualStage: React.FC<VisualStageProps> = ({
 
                         <div
                           className={`flex-1 h-3 rounded-full overflow-hidden ${
-                            isSketch ? 'bg-[#ebdbb2]' : 'bg-slate-800'
+                            isDark ? 'bg-slate-800' : 'bg-slate-100'
                           }`}
                         >
                           <div
                             style={{ width: `${pct}%` }}
                             className={`h-full rounded-full transition-all duration-500 ${
                               isTop1
-                                ? isSketch
-                                  ? 'bg-[#d65d0e]'
-                                  : 'bg-gradient-to-r from-cyan-400 to-indigo-500'
-                                : isSketch
-                                  ? 'bg-[#b57614]'
-                                  : 'bg-slate-600'
+                                ? 'bg-blue-600 dark:bg-gradient-to-r dark:from-cyan-400 dark:to-indigo-500'
+                                : 'bg-slate-400 dark:bg-slate-600'
                             }`}
                           />
                         </div>
 
                         <span
                           className={`w-12 text-right font-bold ${
-                            isTop1
-                              ? isSketch
-                                ? 'text-[#d65d0e]'
-                                : 'text-cyan-300'
-                              : 'opacity-60'
+                            isTop1 ? 'text-blue-600 dark:text-cyan-300' : 'opacity-60'
                           }`}
                         >
                           {pct}%
@@ -678,7 +787,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* 4. CLASSICAL ARRAYS                                      */}
+        {/* 4. CLASSICAL ARRAYS (Pastel Rounded VizLearn Bars)        */}
         {/* ========================================================= */}
         {arr && arr.length > 0 && (
           <div className="w-full h-full relative flex items-end justify-center pb-6">
@@ -700,21 +809,59 @@ export const VisualStage: React.FC<VisualStageProps> = ({
                 const barHeight = Math.max(30, (val / maxVal) * (height - 130));
                 const y = height - 60 - barHeight;
 
+                const isTarget = step.targets.includes(idx);
+                const isSwap = step.action === 'swap' && isTarget;
+                const isDone = step.action === 'done';
+
+                let fill = '#e0f2fe';
+                let stroke = '#0284c7';
+                let textColor = '#0369a1';
+
+                if (isDone) {
+                  fill = '#dcfce7';
+                  stroke = '#16a34a';
+                  textColor = '#15803d';
+                } else if (isSwap) {
+                  fill = '#fee2e2';
+                  stroke = '#dc2626';
+                  textColor = '#b91c1c';
+                } else if (isTarget) {
+                  fill = '#fef3c7';
+                  stroke = '#d97706';
+                  textColor = '#b45309';
+                }
+
                 return (
                   <g key={idx}>
+                    {/* Rounded Pastel Bar */}
+                    <rect
+                      x={x}
+                      y={y}
+                      width={barWidth}
+                      height={barHeight}
+                      rx="10"
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth="1.8"
+                      className="transition-all duration-300"
+                    />
+                    {/* Numerical value on top */}
                     <text
                       x={x + barWidth / 2}
                       y={y - 8}
                       textAnchor="middle"
-                      className="font-sketch font-bold text-lg fill-[#282828]"
+                      fill={textColor}
+                      className="font-display font-bold text-sm"
                     >
                       {val}
                     </text>
+                    {/* Index label below */}
                     <text
                       x={x + barWidth / 2}
                       y={height - 38}
                       textAnchor="middle"
-                      className="font-mono text-xs fill-[#7c6f64]"
+                      fill="#94a3b8"
+                      className="font-mono text-xs font-semibold"
                     >
                       [{idx}]
                     </text>
@@ -726,25 +873,28 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         )}
       </div>
 
-      {/* Stage Footer Status with Live Formula */}
+      {/* Stage Footer Status with Live Formula & Insight */}
       <div
         className={`pt-2 border-t text-xs font-mono flex items-center justify-between shrink-0 ${
-          isSketch ? 'border-[#3c3836]/20 text-[#7c6f64]' : 'border-slate-800 text-slate-400'
+          isDark ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'
         }`}
       >
         <span className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Active Equation:</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Active Invariant Model:</span>
           {points ? (
             <MathFormula
-              math={`y = ${isSketch ? rawW : smoothW.toFixed(2)}x + ${isSketch ? rawB : smoothB.toFixed(2)}`}
-              className="ml-1 font-bold text-cyan-300"
+              math={`y = ${(isDark ? smoothW : rawW).toFixed(2)}x + ${(isDark ? smoothB : rawB).toFixed(2)}`}
+              className="ml-1 font-bold text-blue-600 dark:text-cyan-300"
             />
           ) : (
-            <span>Interactive Lockstep Engine</span>
+            <span className="font-bold">Execution Trace Synced</span>
           )}
         </span>
-        <span>Action: {step.action.toUpperCase()}</span>
+        <span className="flex items-center gap-1 font-semibold">
+          <TrendingDown className="w-3.5 h-3.5 text-blue-500 dark:text-cyan-400" />
+          <span>Status: {step.action.toUpperCase()}</span>
+        </span>
       </div>
     </div>
   );
