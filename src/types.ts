@@ -19,6 +19,7 @@ export type VisualType =
   | 'regression-plot'
   | 'neural-network'
   | 'single-neuron'
+  | 'biological-neuron'
   | 'attention-matrix'
   | 'cnn-convolution'
   | 'array-bars';
@@ -64,6 +65,15 @@ export interface SingleNeuronState {
   outputVal: number;
 }
 
+export interface BioNeuronState {
+  membraneVoltage: number; // in mV, e.g. -70, -55, +40, -80, -70
+  phase: 'resting' | 'depolarization' | 'peak' | 'repolarization' | 'refractory';
+  naChannels: 'closed' | 'open' | 'inactivated';
+  kChannels: 'closed' | 'open';
+  dendriteInputs: number[];
+  stimulusCurrent: number; // in pA
+  history: { t: number; mv: number }[];
+}
 export type PrimitiveStateValue =
   | string
   | number
@@ -78,6 +88,7 @@ export type PrimitiveStateValue =
   | DataPoint[]
   | NeuralLayer[]
   | SingleNeuronState
+  | BioNeuronState
   | { token: string; prob: number }[];
 
 export interface StepState {
@@ -100,6 +111,7 @@ export interface StepState {
   featureMap?: (number | null)[][];
   kernelPos?: { r: number; c: number };
   neuronState?: SingleNeuronState;
+  bioNeuronState?: BioNeuronState;
   [key: string]: PrimitiveStateValue;
 }
 

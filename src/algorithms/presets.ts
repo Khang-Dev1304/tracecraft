@@ -303,6 +303,287 @@ def linear_regression(X, y, lr=0.06, epochs=8):
   // Category 2: Deep Learning & Neural Networks
   // ==========================================
   {
+    id: 'the-neuron',
+    title: 'The Neuron: Action Potentials & Neural Firing',
+    category: 'Deep Learning & Neural Networks',
+    difficulty: 'Beginner',
+    badge: 'Neuroscience & AI',
+    visualType: 'biological-neuron',
+    formula: 'C_m \\frac{dV_m}{dt} = -g_{\\text{Na}}(V_m - E_{\\text{Na}}) - g_K(V_m - E_K) - g_L(V_m - E_L) + I_{\\text{syn}}',
+    summary: 'How biological neurons communicate: ion exchange, resting membrane potential (-70mV), threshold depolarization (-55mV), and the all-or-none action potential spike (+40mV).',
+    description: 'Before artificial networks, biological neurons established the principles of intelligence. Dendrites gather chemical neurotransmitters, the soma integrates membrane voltages, the axon hillock triggers an action potential spike if threshold is breached, and the axon transmits the electrical wave to downstream synapses.',
+    inputVariants: [
+      { label: 'Action Potential (I=25pA)', value: 'I: 25.0 pA' },
+      { label: 'Sub-threshold (I=8pA)', value: 'I: 8.0 pA' },
+      { label: 'Burst Firing (I=50pA)', value: 'I: 50.0 pA' },
+    ],
+    vi: {
+      title: 'Nơ-ron Sinh học & Điện thế Hoạt động (Action Potential)',
+      category: 'Deep Learning & Mạng Nơ-ron',
+      badge: 'Khoa học Thần kinh & AI',
+      summary: 'Cơ chế giao tiếp của nơ-ron sinh học: trao đổi ion qua màng, điện thế nghỉ (-70mV), ngưỡng kích thích (-55mV) và xung điện thế hoạt động (+40mV).',
+      description: 'Trước khi có mạng nơ-ron nhân tạo, nơ-ron sinh học đã định hình các nguyên lý của trí thông minh. Sợi nhánh thu nhận chất dẫn truyền thần kinh, thân tế bào tích phân điện thế màng, gò sợi trục kích hoạt xung điện thế hoạt động khi vượt ngưỡng và sợi trục truyền sóng điện đến các synap tiếp theo.',
+      variants: [
+        { label: 'Xung kích hoạt (I=25pA)', value: 'I: 25.0 pA' },
+        { label: 'Dưới ngưỡng (I=8pA)', value: 'I: 8.0 pA' },
+        { label: 'Xung liên tục (I=50pA)', value: 'I: 50.0 pA' },
+      ],
+      sections: [
+        {
+          title: '1. Điện thế Màng Tế bào: Trạng thái Nghỉ (-70mV)',
+          content: 'Màng lipid của nơ-ron duy trì sự chênh lệch nồng độ ion giữa trong và ngoài tế bào thông qua bơm Natri-Kali (3 ion Na+ ra ngoài, 2 ion K+ vào trong). Trạng thái cân bằng này tạo nên điện thế nghỉ phân cực -70mV.',
+          formula: 'V_{\\text{rest}} = -70\\text{ mV}, \\quad \\Delta V = V_m - V_{\\text{rest}}',
+          keyTakeaway: 'Điện tích âm bên trong tế bào hoạt động như một viên pin sinh học tích điện sẵn sàng giải phóng năng lượng.',
+        },
+        {
+          title: '2. Quy luật Tất-hoặc-Không (All-or-None) & Xung Điện thế (+40mV)',
+          content: 'Khi các tín hiệu kích thích từ sợi nhánh đẩy điện thế màng chạm ngưỡng tới hạn -55mV (Threshold), các kênh ion Na+ cảm ứng điện thế mở bung tức thì. Dòng ion Na+ ồ ạt tràn vào tế bào tạo nên cú phóng điện cực nhanh lên +40mV (Action Potential). Nếu không chạm ngưỡng -55mV, nơ-ron sẽ không phát xung.',
+          formula: 'V_m \\ge -55\\text{ mV} \\implies \\text{Action Potential Spike } (+40\\text{ mV})',
+          keyTakeaway: 'Nơ-ron sinh học hoạt động như bộ xử lý sự kiện nhị phân: Hoặc phát xung hoàn toàn, hoặc không có gì (nguồn cảm hứng cho hàm kích hoạt AI).',
+        },
+        {
+          title: '3. Bản đồ Đối chiếu: Từ Nơ-ron Sinh học sang Mạng AI',
+          content: 'Học sâu là sự trừu tượng hóa toán học của cơ chế sinh học: Sợi nhánh tương ứng với Features đầu vào x, Khớp synap tương ứng với Weights w, Thân tế bào tương ứng với Tổng có trọng số ∑ w*x, Ngưỡng phát xung tương ứng với Bias b và Hàm kích hoạt, còn cơ chế dẻo synap (Plasticity - "Neurons fire together, wire together") tương ứng với việc cập nhật Weights trong quá trình học.',
+          keyTakeaway: 'Deep Learning trừu tượng hóa các dòng ion điện hóa thành các phép nhân ma trận tensor trên GPU.',
+        },
+      ],
+    },
+    sections: [
+      {
+        title: '1. The Electrochemical Membrane: Resting Potential (-70mV)',
+        content: 'The lipid bilayer of a neuron maintains an electrical polarization via sodium-potassium active pumps (expelling 3 Na+ ions for every 2 K+ admitted). In its quiescent state, the interior of the cell rests at -70 millivolts.',
+        formula: 'V_{\\text{rest}} = -70\\text{ mV}, \\quad \\Delta V = V_m - V_{\\text{rest}}',
+        keyTakeaway: 'The negative electrical charge across the membrane functions like a charged biological battery ready to discharge.',
+      },
+      {
+        title: '2. The All-or-None Law & Action Potential Spike (+40mV)',
+        content: 'When excitatory signals depolarize the membrane past the critical threshold of -55mV at the axon hillock, voltage-gated Na+ channels snap open simultaneously. Sodium ions flood the cell, triggering an explosive depolarization spike to +40mV. If the threshold is not reached, no signal fires.',
+        formula: 'V_m \\ge -55\\text{ mV} \\implies \\text{Action Potential Spike } (+40\\text{ mV})',
+        keyTakeaway: 'Neurons are all-or-none binary event processors, the direct biological inspiration for artificial threshold activation functions.',
+      },
+      {
+        title: '3. The Rosetta Stone: Biological Neurons to AI Architecture',
+        content: 'Artificial neural networks are mathematical abstractions of this biological engine: Dendrites map to Input Features x, Synaptic strength maps to Weights w, Membrane voltage summation in the Soma maps to Weighted Sum ∑ w*x, Firing Threshold maps to Bias b & Activation Functions, and Synaptic Plasticity maps to Gradient Descent learning.',
+        keyTakeaway: 'Deep learning abstracts continuous electrochemical ion flows into tensor matrix multiplications running on GPUs.',
+      },
+    ],
+    timeComplexity: 'O(1) integration step',
+    spaceComplexity: 'O(1) state variables',
+    tags: ['Neuroscience', 'Action Potential', 'Ion Channels', 'Biology to AI', 'Hodgkin-Huxley'],
+    defaultInput: 'I: 25.0 pA',
+    pythonCode: `import numpy as np
+
+# Leaky Integrate-and-Fire (LIF) Biological Neuron Model
+def lif_neuron_step(V, I_syn, V_rest=-70.0, V_thresh=-55.0, V_peak=40.0, V_reset=-80.0, tau=10.0, dt=0.5):
+    # Membrane voltage integration: dV/dt = -(V - V_rest)/tau + I_syn
+    dV = (-(V - V_rest) + I_syn) * (dt / tau)
+    V_next = V + dV
+    spike = False
+    
+    if V_next >= V_thresh:
+        spike = True
+        V_next = V_peak  # Action potential firing!
+    elif V == V_peak:
+        V_next = V_reset # Refractory hyperpolarization
+        
+    return V_next, spike
+
+# Simulate firing response over time
+V = -70.0 # Resting potential
+I_syn = 25.0 # Synaptic current in pA
+for step in range(8):
+    V, fired = lif_neuron_step(V, I_syn)
+    print(f"t={step*0.5:.1f}ms: Membrane V={V:.1f}mV | Action Potential: {fired}")`,
+    code: `import numpy as np
+
+def lif_neuron(V_m, I_stim, V_rest=-70.0, V_thresh=-55.0):
+    # 1. Membrane voltage leak & integration
+    dV = (-(V_m - V_rest) + I_stim) * 0.1
+    V_next = V_m + dV
+    # 2. Threshold check & Action Potential spike
+    if V_next >= V_thresh:
+        return 40.0, True   # +40mV Spike fired!
+    return V_next, False`,
+    generateTraces: (inputStr?: string, lang: Language = 'en'): TraceStep[] => {
+      const isVi = lang === 'vi';
+      let I = 25.0;
+      if (inputStr) {
+        const m = inputStr.match(/I:\s*([0-9.]+)/i);
+        if (m) I = Number(m[1]);
+      }
+
+      const steps: TraceStep[] = [];
+      const isThresholdMet = I >= 15.0;
+
+      // Step 0: Resting Potential
+      steps.push({
+        step: 0,
+        totalSteps: 0,
+        line: 3,
+        action: 'init',
+        targets: [0],
+        state: {
+          bioNeuronState: {
+            membraneVoltage: -70.0,
+            phase: 'resting',
+            naChannels: 'closed',
+            kChannels: 'closed',
+            dendriteInputs: [0, 0, 0],
+            stimulusCurrent: I,
+            history: [{ t: 0, mv: -70.0 }],
+          },
+        },
+        explanation: isVi
+          ? 'Nơ-ron ở trạng thái nghỉ cân bằng (Resting Potential = -70 mV). Bơm ion Na+/K+ duy trì điện thế phân cực bên trong tế bào âm hơn bên ngoài. Các kênh ion đều đóng.'
+          : 'Neuron in polarized resting state (Resting Potential = -70 mV). Sodium-potassium active pumps maintain negative intracellular charge. All voltage-gated ion channels closed.',
+        invariant: isVi
+          ? 'Điện thế nghỉ cân bằng: V_rest = -70 mV.'
+          : 'Membrane equilibrium potential: V_rest = -70 mV.',
+      });
+
+      // Step 1: Dendrite Signal Influx & Depolarization toward threshold
+      const v1 = isThresholdMet ? -55.0 : -62.0;
+      steps.push({
+        step: 1,
+        totalSteps: 0,
+        line: 5,
+        action: 'compute',
+        targets: [1],
+        state: {
+          bioNeuronState: {
+            membraneVoltage: v1,
+            phase: 'depolarization',
+            naChannels: isThresholdMet ? 'open' : 'closed',
+            kChannels: 'closed',
+            dendriteInputs: [I, I * 0.8, I * 0.5],
+            stimulusCurrent: I,
+            history: [
+              { t: 0, mv: -70.0 },
+              { t: 1, mv: v1 },
+            ],
+          },
+        },
+        explanation: isVi
+          ? isThresholdMet
+            ? `Dòng kích thích synap I = ${I} pA tràn vào sợi nhánh. Điện thế màng tăng vọt lên -55 mV, CHẠM ĐÚNG NGƯỠNG KÍCH HOẠT (Threshold)! Các kênh Na+ bắt đầu mở.`
+            : `Dòng kích thích I = ${I} pA yếu (dưới 15 pA). Điện thế màng chỉ tăng nhẹ lên ${v1} mV, CHƯA ĐẠT NGƯỠNG (-55 mV). Tín hiệu tiêu biến (Leaky).`
+          : isThresholdMet
+            ? `Synaptic current I = ${I} pA enters dendrites. Membrane depolarizes to -55 mV, BREACHING THRESHOLD! Voltage-gated Na+ channels snap open.`
+            : `Synaptic current I = ${I} pA is sub-threshold. Membrane only depolarizes to ${v1} mV (threshold -55 mV not met). Signal dissipates.`,
+        invariant: isVi
+          ? 'Ngưỡng kích hoạt điện thế màng: V_thresh = -55 mV.'
+          : 'Critical threshold for action potential: V_thresh = -55 mV.',
+      });
+
+      // Step 2: Action Potential Spike (+40mV) or Sub-threshold decay
+      const v2 = isThresholdMet ? 40.0 : -68.0;
+      steps.push({
+        step: 2,
+        totalSteps: 0,
+        line: 8,
+        action: isThresholdMet ? 'forward' : 'loss',
+        targets: [2],
+        state: {
+          bioNeuronState: {
+            membraneVoltage: v2,
+            phase: isThresholdMet ? 'peak' : 'resting',
+            naChannels: isThresholdMet ? 'open' : 'closed',
+            kChannels: isThresholdMet ? 'open' : 'closed',
+            dendriteInputs: [I, I * 0.8, I * 0.5],
+            stimulusCurrent: I,
+            history: [
+              { t: 0, mv: -70.0 },
+              { t: 1, mv: v1 },
+              { t: 2, mv: v2 },
+            ],
+          },
+        },
+        explanation: isVi
+          ? isThresholdMet
+            ? 'ĐIỆN THẾ HOẠT ĐỘNG PHÁT XUNG (+40 mV)! Ion Na+ ồ ạt tràn vào làm đảo cực màng tế bào. Xung điện thế lan truyền cực nhanh dọc theo sợi trục qua các bao Myelin!'
+            : 'Dưới ngưỡng kích hoạt: Không có xung điện nào được tạo ra (Quy luật Tất-hoặc-Không). Điện thế màng rò rỉ trở lại trạng thái nghỉ.'
+          : isThresholdMet
+            ? 'ACTION POTENTIAL SPIKE FIRES (+40 mV)! Massive Na+ influx inverts membrane polarity. Saltatory electrical wave propagates down myelinated axon!'
+            : 'Sub-threshold stimulus: No action potential generated (All-or-None Law). Membrane leaks back toward resting potential.',
+        invariant: isVi
+          ? 'Đỉnh xung điện thế: V_peak = +40 mV.'
+          : 'Action potential peak amplitude: V_peak = +40 mV.',
+      });
+
+      // Step 3: Repolarization & Hyperpolarization Refractory Period (-80mV)
+      const v3 = isThresholdMet ? -80.0 : -70.0;
+      steps.push({
+        step: 3,
+        totalSteps: 0,
+        line: 9,
+        action: 'backward',
+        targets: [3],
+        state: {
+          bioNeuronState: {
+            membraneVoltage: v3,
+            phase: isThresholdMet ? 'refractory' : 'resting',
+            naChannels: 'inactivated',
+            kChannels: 'open',
+            dendriteInputs: [0, 0, 0],
+            stimulusCurrent: 0,
+            history: [
+              { t: 0, mv: -70.0 },
+              { t: 1, mv: v1 },
+              { t: 2, mv: v2 },
+              { t: 3, mv: v3 },
+            ],
+          },
+        },
+        explanation: isVi
+          ? isThresholdMet
+            ? 'Tái phân cực & Thời kỳ trơ (-80 mV): Kênh Na+ bất hoạt, kênh K+ mở đưa ion K+ ra ngoài. Điện thế tụt xuống -80 mV, ngăn chặn xung thần kinh chạy ngược chiều!'
+            : 'Điện thế hồi phục hoàn toàn về mức nghỉ -70 mV.'
+          : isThresholdMet
+            ? 'Repolarization & Refractory Period (-80 mV): Na+ channels inactivate, K+ channels open. Voltage undershoots to -80 mV, enforcing unidirectional axon firing!'
+            : 'Membrane fully restored to resting state -70 mV.',
+        invariant: isVi
+          ? 'Thời kỳ trơ bảo vệ: Ngăn nơ-ron phát xung liên tục không kiểm soát.'
+          : 'Refractory period enforces unidirectional forward signal transmission.',
+      });
+
+      // Step 4: Done - Restoration
+      steps.push({
+        step: 4,
+        totalSteps: 0,
+        line: 10,
+        action: 'done',
+        targets: [4],
+        state: {
+          bioNeuronState: {
+            membraneVoltage: -70.0,
+            phase: 'resting',
+            naChannels: 'closed',
+            kChannels: 'closed',
+            dendriteInputs: [0, 0, 0],
+            stimulusCurrent: 0,
+            history: [
+              { t: 0, mv: -70.0 },
+              { t: 1, mv: v1 },
+              { t: 2, mv: v2 },
+              { t: 3, mv: v3 },
+              { t: 4, mv: -70.0 },
+            ],
+          },
+        },
+        explanation: isVi
+          ? 'Bơm Na+/K+ khôi phục nồng độ ion ban đầu về -70 mV. Nơ-ron hoàn tất một chu kỳ phát xung và sẵn sàng tiếp nhận kích thích tiếp theo.'
+          : 'Active pumps restore resting equilibrium (-70 mV). Neuron completes firing cycle and is primed for subsequent synaptic inputs.',
+        invariant: isVi
+          ? 'Chu trình điện thế nơ-ron sinh học hoàn tất. Tương ứng với một lần nơ-ron nhân tạo firing.'
+          : 'Biological neural cycle complete. Direct biological analogue of artificial activation firing.',
+      });
+
+      const total = steps.length;
+      return steps.map((s, idx) => ({ ...s, step: idx + 1, totalSteps: total }));
+    },
+  },
+
+  {
     id: 'single-neuron',
     title: 'The Artificial Neuron (Perceptron)',
     category: 'Deep Learning & Neural Networks',
