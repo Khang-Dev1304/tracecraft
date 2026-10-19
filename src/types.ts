@@ -120,6 +120,7 @@ export interface AlgorithmPreset {
   timeComplexity: string;
   spaceComplexity: string;
   defaultInput: string;
+  inputVariants?: { label: string; value: string }[];
   tags: string[];
   pythonCode: string;
   code: string; // for display in code pane

@@ -37,6 +37,12 @@ export const ALGORITHM_PRESETS: AlgorithmPreset[] = [
     spaceComplexity: 'O(1) parameters',
     tags: ['Supervised', 'Regression', 'Gradient Descent', 'MSE Loss', 'NumPy'],
     defaultInput: '(1, 2.2), (2, 2.8), (3, 4.5), (4, 4.9), (5, 6.2)',
+    inputVariants: [
+      { label: 'Standard', value: '(1, 2.2), (2, 2.8), (3, 4.5), (4, 4.9), (5, 6.2)' },
+      { label: 'Noisy', value: '(1, 1.4), (2, 3.8), (3, 3.1), (4, 5.9), (5, 5.2)' },
+      { label: 'Outlier', value: '(1, 2.0), (2, 2.5), (3, 3.0), (4, 3.5), (5, 8.5)' },
+      { label: 'Steep', value: '(1, 0.5), (2, 2.4), (3, 4.2), (4, 6.1), (5, 8.0)' },
+    ],
     pythonCode: `import numpy as np
 
 def linear_regression(X, y, lr=0.06, epochs=8):
@@ -277,6 +283,12 @@ def linear_regression(X, y, lr=0.06, epochs=8):
     spaceComplexity: 'O(∑ d_l) activations',
     tags: ['Neural Network', 'MLP', 'ReLU', 'Forward Pass', 'PyTorch'],
     defaultInput: 'x1: 0.8, x2: 0.4',
+    inputVariants: [
+      { label: 'Standard', value: 'x1: 0.8, x2: 0.4' },
+      { label: 'High Drive', value: 'x1: 1.5, x2: 1.2' },
+      { label: 'Negative In', value: 'x1: -0.6, x2: 0.8' },
+      { label: 'Zero In', value: 'x1: 0.0, x2: 0.0' },
+    ],
     pythonCode: `import torch
 import torch.nn as nn
 
@@ -402,9 +414,9 @@ def forward_mlp(x, W1, b1, W2, b2):
             {
               name: 'Hidden Layer (Activated h₁)',
               nodes: [
-                { label: 'h₁ (ReLU)', value: 1.12 },
-                { label: 'h₂ (ReLU)', value: 0.0 }, // clamped by ReLU!
-                { label: 'h₃ (ReLU)', value: 0.84 },
+                { label: 'h₁', value: 1.12, activation: 'ReLU' },
+                { label: 'h₂', value: 0.0, activation: 'ReLU' },
+                { label: 'h₃', value: 0.84, activation: 'ReLU' },
               ],
             },
             {
@@ -443,8 +455,8 @@ def forward_mlp(x, W1, b1, W2, b2):
               ],
             },
             {
-              name: 'Output Layer (ŷ)',
-              nodes: [{ label: 'ŷ (Sigmoid)', value: 0.87 }],
+              name: 'Output Layer',
+              nodes: [{ label: 'ŷ', value: 0.87, activation: 'Sigmoid' }],
             },
           ],
         },
@@ -493,6 +505,11 @@ def forward_mlp(x, W1, b1, W2, b2):
     spaceComplexity: 'O(N · d) KV-Cache',
     tags: ['Transformer', 'Attention', 'Softmax', 'LLMs', 'PyTorch'],
     defaultInput: 'The, quick, brown, fox, jumps',
+    inputVariants: [
+      { label: 'Standard', value: 'The, quick, brown, fox, jumps' },
+      { label: 'Short Prompt', value: 'AI, models, learn, patterns' },
+      { label: 'Code Tokens', value: 'def, forward, layer, loss' },
+    ],
     pythonCode: `import torch
 import torch.nn.functional as F
 

@@ -35,7 +35,7 @@ export const RightPanels: React.FC<RightPanelsProps> = ({
 }) => {
   const isDark = theme === 'studio';
   const lines = preset.code.split('\n');
-
+  const variants = preset.inputVariants && preset.inputVariants.length > 0 ? preset.inputVariants : DATA_PRESETS;
   // Generate random data
   const handleRandomize = () => {
     if (preset.visualType === 'regression-plot') {
@@ -139,12 +139,12 @@ export const RightPanels: React.FC<RightPanelsProps> = ({
             Preset Variant
           </span>
           <div className="grid grid-cols-2 gap-1.5">
-            {DATA_PRESETS.map((p) => (
+            {variants.map((p) => (
               <button
                 key={p.label}
                 onClick={() => onChangeInput(p.value)}
                 className={`px-2 py-1.5 rounded-xl text-xs font-semibold border transition-all text-center ${
-                  inputStr.includes(p.value.slice(0, 10))
+                  inputStr.includes(p.value.slice(0, 8))
                     ? isDark
                       ? 'bg-cyan-950 text-cyan-300 border-cyan-700 shadow-xs'
                       : 'bg-slate-900 text-white border-slate-900 shadow-xs'

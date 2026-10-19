@@ -642,40 +642,162 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         {/* 2. NEURAL NETWORK FORWARD PASS (MLP & Activation Layers)   */}
         {/* ========================================================= */}
         {layers && layers.length > 0 && (
-          <div className="w-full max-w-3xl flex items-center justify-around py-4">
-            {layers.map((layer) => (
-              <div key={layer.name} className="flex flex-col items-center gap-4">
-                <span className="text-xs font-mono font-bold opacity-70">
-                  {layer.name}
-                </span>
+          <div className="w-full h-full relative flex items-center justify-center max-w-3xl max-h-[350px]">
+            <svg
+              viewBox="0 0 740 360"
+              preserveAspectRatio="xMidYMid meet"
+              className="w-full h-full select-none"
+            >
+              {/* Layer Titles */}
+              <text x="140" y="35" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-sans text-xs font-bold uppercase tracking-wider">
+                Input Layer
+              </text>
+              <text x="370" y="35" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-sans text-xs font-bold uppercase tracking-wider">
+                Hidden Layer (ReLU)
+              </text>
+              <text x="600" y="35" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-sans text-xs font-bold uppercase tracking-wider">
+                Output Layer (Sigmoid)
+              </text>
 
-                <div className="flex flex-col gap-4">
-                  {layer.nodes.map((node) => {
-                    const isActive = node.value > 0;
+              {/* Layer 1 to Layer 2 Synaptic Connection Lines (6 lines) */}
+              {[130, 230].map((y1, i) =>
+                [90, 180, 270].map((y2, j) => {
+                  const isLayerActive = step.line >= 4;
+                  return (
+                    <line
+                      key={`syn-1-${i}-${j}`}
+                      x1={140}
+                      y1={y1}
+                      x2={370}
+                      y2={y2}
+                      stroke={isLayerActive ? (isDark ? '#06b6d4' : '#0284c7') : (isDark ? '#334155' : '#e2e8f0')}
+                      strokeWidth={isLayerActive ? 2.2 : 1.2}
+                      strokeDasharray={isLayerActive ? '6 4' : undefined}
+                      className={isLayerActive ? 'animate-pulse' : undefined}
+                      opacity={isLayerActive ? 0.9 : 0.4}
+                    />
+                  );
+                })
+              )}
 
-                    return (
-                      <div
-                        key={node.label}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl font-mono text-xs border transition-all ${
-                          isDark
-                            ? isActive
-                              ? 'bg-gradient-to-r from-indigo-600/40 to-cyan-500/40 text-cyan-200 border-cyan-400 shadow-lg shadow-cyan-500/20 font-bold'
-                              : 'bg-slate-800/80 text-slate-400 border-slate-700'
-                            : isActive
-                              ? 'bg-blue-50 text-blue-800 border-blue-400 font-bold shadow-xs'
-                              : 'bg-white text-slate-500 border-slate-200'
-                        }`}
-                      >
-                        <span className="w-6 h-6 rounded-full flex items-center justify-center font-bold bg-black/5 dark:bg-white/10">
-                          {node.label}
-                        </span>
-                        <span>{node.value}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+              {/* Layer 2 to Layer 3 Synaptic Connection Lines (3 lines) */}
+              {[90, 180, 270].map((y2, j) => {
+                const isOutputActive = step.line >= 8;
+                return (
+                  <line
+                    key={`syn-2-${j}`}
+                    x1={370}
+                    y1={y2}
+                    x2={600}
+                    y2={180}
+                    stroke={isOutputActive ? (isDark ? '#10b981' : '#059669') : (isDark ? '#334155' : '#e2e8f0')}
+                    strokeWidth={isOutputActive ? 2.5 : 1.2}
+                    strokeDasharray={isOutputActive ? '6 4' : undefined}
+                    className={isOutputActive ? 'animate-pulse' : undefined}
+                    opacity={isOutputActive ? 0.9 : 0.4}
+                  />
+                );
+              })}
+
+              {/* Input Nodes (2 nodes at X = 140) */}
+              {layers[0]?.nodes.map((node, idx) => {
+                const ny = idx === 0 ? 130 : 230;
+                return (
+                  <g key={`in-${node.label}`}>
+                    <circle
+                      cx={140}
+                      cy={ny}
+                      r={24}
+                      fill={isDark ? '#1e293b' : '#e0f2fe'}
+                      stroke={isDark ? '#06b6d4' : '#0284c7'}
+                      strokeWidth={2}
+                      className="drop-shadow-sm"
+                    />
+                    <text
+                      x={140}
+                      y={ny + 5}
+                      textAnchor="middle"
+                      fill={isDark ? '#e2e8f0' : '#0369a1'}
+                      className="font-display font-bold text-base"
+                    >
+                      {node.label}
+                    </text>
+                    {/* Value Pill Below */}
+                    <rect x={110} y={ny + 32} width={60} height={20} rx={10} fill={isDark ? '#0f172a' : '#ffffff'} stroke={isDark ? '#334155' : '#cbd5e1'} strokeWidth={1} />
+                    <text x={140} y={ny + 46} textAnchor="middle" fill={isDark ? '#38bdf8' : '#0284c7'} className="font-mono text-xs font-bold">
+                      {node.value}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Hidden Layer Nodes (3 nodes at X = 370) */}
+              {layers[1]?.nodes.map((node, idx) => {
+                const ny = idx === 0 ? 90 : idx === 1 ? 180 : 270;
+                const isClamped = node.value === 0 && step.line >= 6;
+                const isActive = node.value > 0;
+                return (
+                  <g key={`hid-${node.label}`}>
+                    <circle
+                      cx={370}
+                      cy={ny}
+                      r={25}
+                      fill={isClamped ? (isDark ? '#271c1c' : '#fee2e2') : isActive ? (isDark ? '#1e293b' : '#e0f2fe') : (isDark ? '#0f172a' : '#f8fafc')}
+                      stroke={isClamped ? '#ef4444' : isActive ? (isDark ? '#06b6d4' : '#0284c7') : (isDark ? '#334155' : '#cbd5e1')}
+                      strokeWidth={2.2}
+                      className="drop-shadow-sm transition-all"
+                    />
+                    <text
+                      x={370}
+                      y={ny + 5}
+                      textAnchor="middle"
+                      fill={isClamped ? '#ef4444' : (isDark ? '#e2e8f0' : '#0369a1')}
+                      className="font-display font-bold text-base"
+                    >
+                      {node.label}
+                    </text>
+                    {/* Value Pill Below */}
+                    <rect x={320} y={ny + 32} width={100} height={20} rx={10} fill={isDark ? '#0f172a' : '#ffffff'} stroke={isClamped ? '#f87171' : (isDark ? '#334155' : '#cbd5e1')} strokeWidth={1} />
+                    <text x={370} y={ny + 46} textAnchor="middle" fill={isClamped ? '#ef4444' : (isDark ? '#38bdf8' : '#0284c7')} className="font-mono text-[11px] font-bold">
+                      {isClamped ? '0.0 (Clamped)' : `${node.value}`}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Output Node (1 node at X = 600) */}
+              {layers[2]?.nodes.map((node) => {
+                const ny = 180;
+                const isComputed = node.value > 0;
+                return (
+                  <g key={`out-${node.label}`}>
+                    <circle
+                      cx={600}
+                      cy={ny}
+                      r={28}
+                      fill={isComputed ? (isDark ? '#064e3b' : '#dcfce7') : (isDark ? '#0f172a' : '#f8fafc')}
+                      stroke={isComputed ? (isDark ? '#10b981' : '#16a34a') : (isDark ? '#334155' : '#cbd5e1')}
+                      strokeWidth={2.5}
+                      className="drop-shadow-md transition-all"
+                    />
+                    <text
+                      x={600}
+                      y={ny + 6}
+                      textAnchor="middle"
+                      fill={isComputed ? (isDark ? '#6ee7b7' : '#15803d') : (isDark ? '#94a3b8' : '#64748b')}
+                      className="font-display font-bold text-lg"
+                    >
+                      {node.label}
+                    </text>
+                    {/* Value Pill Below */}
+                    <rect x={545} y={ny + 36} width={110} height={22} rx={11} fill={isDark ? '#0f172a' : '#ffffff'} stroke={isComputed ? '#86efac' : (isDark ? '#334155' : '#cbd5e1')} strokeWidth={1} />
+                    <text x={600} y={ny + 51} textAnchor="middle" fill={isComputed ? '#16a34a' : (isDark ? '#94a3b8' : '#64748b')} className="font-mono text-xs font-bold">
+                      {isComputed ? `ŷ = ${node.value}` : 'Pending'}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
           </div>
         )}
 
