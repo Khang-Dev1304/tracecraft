@@ -631,167 +631,228 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         {/* ========================================================= */}
         {/* 2. NEURAL NETWORK FORWARD PASS (MLP & Activation Layers)   */}
         {/* ========================================================= */}
-        {layers && layers.length > 0 && (
-          <div className={`w-full h-full relative flex items-center justify-center transition-all duration-300 ${
-            isExpanded ? 'max-w-5xl max-h-[560px]' : 'max-w-3xl max-h-[350px]'
-          }`}>
-            <svg
-              viewBox="0 0 740 360"
-              preserveAspectRatio="xMidYMid meet"
-              className="w-full h-full select-none"
-            >
-              {/* Layer Titles */}
-              <text x="140" y="35" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-sans text-xs font-bold uppercase tracking-wider">
-                Input Layer
-              </text>
-              <text x="370" y="35" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-sans text-xs font-bold uppercase tracking-wider">
-                Hidden Layer (ReLU)
-              </text>
-              <text x="600" y="35" textAnchor="middle" fill={isDark ? '#94a3b8' : '#475569'} className="font-sans text-xs font-bold uppercase tracking-wider">
-                Output Layer (Sigmoid)
-              </text>
+        {layers && layers.length > 0 && (() => {
+          const numLayers = layers.length;
+          const marginX = numLayers >= 4 ? 90 : 130;
+          const getLayerX = (lIdx: number) =>
+            numLayers === 1
+              ? 370
+              : marginX + (lIdx / (numLayers - 1)) * (740 - 2 * marginX);
 
-              {/* Layer 1 to Layer 2 Synaptic Connection Lines (6 lines) */}
-              {[130, 230].map((y1, i) =>
-                [90, 180, 270].map((y2, j) => {
-                  const isLayerActive = step.line >= 4;
+          const getNodeY = (nIdx: number, total: number) => {
+            if (total === 1) return 195;
+            const spacing = Math.min(85, Math.max(48, 230 / (total - 1)));
+            const startY = 195 - ((total - 1) * spacing) / 2;
+            return startY + nIdx * spacing;
+          };
+
+          return (
+            <div className={`w-full h-full relative flex items-center justify-center transition-all duration-300 ${
+              isExpanded ? 'max-w-6xl max-h-[580px]' : 'max-w-4xl max-h-[360px]'
+            }`}>
+              <svg
+                viewBox="0 0 740 370"
+                preserveAspectRatio="xMidYMid meet"
+                className="w-full h-full select-none"
+              >
+                {/* 1. Dynamic Layer Titles */}
+                {layers.map((layer, lIdx) => {
+                  const lx = getLayerX(lIdx);
                   return (
-                    <line
-                      key={`syn-1-${i}-${j}`}
-                      x1={140}
-                      y1={y1}
-                      x2={370}
-                      y2={y2}
-                      stroke={isLayerActive ? (isDark ? '#06b6d4' : '#0284c7') : (isDark ? '#334155' : '#e2e8f0')}
-                      strokeWidth={isLayerActive ? 2.2 : 1.2}
-                      strokeDasharray={isLayerActive ? '6 4' : undefined}
-                      className={isLayerActive ? 'animate-pulse' : undefined}
-                      opacity={isLayerActive ? 0.9 : 0.4}
-                    />
+                    <g key={`lheader-${lIdx}`}>
+                      <text
+                        x={lx}
+                        y={28}
+                        textAnchor="middle"
+                        fill={isDark ? '#94a3b8' : '#475569'}
+                        className="font-sans text-[11px] sm:text-xs font-bold uppercase tracking-wider select-none"
+                      >
+                        {layer.name}
+                      </text>
+                      <text
+                        x={lx}
+                        y={43}
+                        textAnchor="middle"
+                        fill={isDark ? '#64748b' : '#94a3b8'}
+                        className="font-mono text-[10px] font-medium select-none"
+                      >
+                        {layer.nodes.length} {layer.nodes.length === 1 ? 'node' : 'nodes'}
+                      </text>
+                    </g>
                   );
-                })
-              )}
+                })}
 
-              {/* Layer 2 to Layer 3 Synaptic Connection Lines (3 lines) */}
-              {[90, 180, 270].map((y2, j) => {
-                const isOutputActive = step.line >= 8;
-                return (
-                  <line
-                    key={`syn-2-${j}`}
-                    x1={370}
-                    y1={y2}
-                    x2={600}
-                    y2={180}
-                    stroke={isOutputActive ? (isDark ? '#10b981' : '#059669') : (isDark ? '#334155' : '#e2e8f0')}
-                    strokeWidth={isOutputActive ? 2.5 : 1.2}
-                    strokeDasharray={isOutputActive ? '6 4' : undefined}
-                    className={isOutputActive ? 'animate-pulse' : undefined}
-                    opacity={isOutputActive ? 0.9 : 0.4}
-                  />
-                );
-              })}
+                {/* 2. Dynamic Synaptic Connections between layer L and L+1 */}
+                {layers.slice(0, numLayers - 1).map((currLayer, lIdx) => {
+                  const nextLayer = layers[lIdx + 1];
+                  const x1 = getLayerX(lIdx);
+                  const x2 = getLayerX(lIdx + 1);
+                  const isConnectionActive = step.line >= 4 + lIdx * 2;
+                  return currLayer.nodes.map((_, i) => {
+                    const y1 = getNodeY(i, currLayer.nodes.length);
+                    return nextLayer.nodes.map((nextN, j) => {
+                      const y2 = getNodeY(j, nextLayer.nodes.length);
+                      const isTargetActive = isConnectionActive && (nextN.value !== 0 || nextN.activation !== undefined);
+                      return (
+                        <line
+                          key={`syn-${lIdx}-${i}-${j}`}
+                          x1={x1}
+                          y1={y1}
+                          x2={x2}
+                          y2={y2}
+                          stroke={
+                            isTargetActive
+                              ? (lIdx === numLayers - 2
+                                  ? (isDark ? '#10b981' : '#059669')
+                                  : (isDark ? '#06b6d4' : '#0284c7'))
+                              : (isDark ? '#334155' : '#e2e8f0')
+                          }
+                          strokeWidth={isTargetActive ? 2.2 : 1.1}
+                          strokeDasharray={isTargetActive ? '6 4' : undefined}
+                          className={isTargetActive ? 'animate-pulse' : undefined}
+                          opacity={isTargetActive ? 0.9 : 0.35}
+                        />
+                      );
+                    });
+                  });
+                })}
 
-              {/* Input Nodes (2 nodes at X = 140) */}
-              {layers[0]?.nodes.map((node, idx) => {
-                const ny = idx === 0 ? 130 : 230;
-                return (
-                  <g key={`in-${node.label}`}>
-                    <circle
-                      cx={140}
-                      cy={ny}
-                      r={24}
-                      fill={isDark ? '#1e293b' : '#e0f2fe'}
-                      stroke={isDark ? '#06b6d4' : '#0284c7'}
-                      strokeWidth={2}
-                      className="drop-shadow-sm"
-                    />
-                    <text
-                      x={140}
-                      y={ny + 5}
-                      textAnchor="middle"
-                      fill={isDark ? '#e2e8f0' : '#0369a1'}
-                      className="font-display font-bold text-base"
-                    >
-                      {node.label}
-                    </text>
-                    {/* Value Pill Below */}
-                    <rect x={110} y={ny + 32} width={60} height={20} rx={10} fill={isDark ? '#0f172a' : '#ffffff'} stroke={isDark ? '#334155' : '#cbd5e1'} strokeWidth={1} />
-                    <text x={140} y={ny + 46} textAnchor="middle" fill={isDark ? '#38bdf8' : '#0284c7'} className="font-mono text-xs font-bold">
-                      {node.value}
-                    </text>
-                  </g>
-                );
-              })}
+                {/* 3. Dynamic Nodes for each layer */}
+                {layers.map((layer, lIdx) => {
+                  const lx = getLayerX(lIdx);
+                  const isInput = lIdx === 0;
+                  const isOutput = lIdx === numLayers - 1;
+                  const total = layer.nodes.length;
+                  const r = total >= 4 ? 20 : 24;
 
-              {/* Hidden Layer Nodes (3 nodes at X = 370) */}
-              {layers[1]?.nodes.map((node, idx) => {
-                const ny = idx === 0 ? 90 : idx === 1 ? 180 : 270;
-                const isClamped = node.value === 0 && step.line >= 6;
-                const isActive = node.value > 0;
-                return (
-                  <g key={`hid-${node.label}`}>
-                    <circle
-                      cx={370}
-                      cy={ny}
-                      r={25}
-                      fill={isClamped ? (isDark ? '#271c1c' : '#fee2e2') : isActive ? (isDark ? '#1e293b' : '#e0f2fe') : (isDark ? '#0f172a' : '#f8fafc')}
-                      stroke={isClamped ? '#ef4444' : isActive ? (isDark ? '#06b6d4' : '#0284c7') : (isDark ? '#334155' : '#cbd5e1')}
-                      strokeWidth={2.2}
-                      className="drop-shadow-sm transition-all"
-                    />
-                    <text
-                      x={370}
-                      y={ny + 5}
-                      textAnchor="middle"
-                      fill={isClamped ? '#ef4444' : (isDark ? '#e2e8f0' : '#0369a1')}
-                      className="font-display font-bold text-base"
-                    >
-                      {node.label}
-                    </text>
-                    {/* Value Pill Below */}
-                    <rect x={320} y={ny + 32} width={100} height={20} rx={10} fill={isDark ? '#0f172a' : '#ffffff'} stroke={isClamped ? '#f87171' : (isDark ? '#334155' : '#cbd5e1')} strokeWidth={1} />
-                    <text x={370} y={ny + 46} textAnchor="middle" fill={isClamped ? '#ef4444' : (isDark ? '#38bdf8' : '#0284c7')} className="font-mono text-[11px] font-bold">
-                      {isClamped ? '0.0 (Clamped)' : `${node.value}`}
-                    </text>
-                  </g>
-                );
-              })}
+                  return layer.nodes.map((node, nIdx) => {
+                    const ny = getNodeY(nIdx, total);
+                    const isClamped = node.value === 0 && node.activation === 'ReLU';
+                    const isComputed = node.value !== 0 || node.activation !== undefined;
 
-              {/* Output Node (1 node at X = 600) */}
-              {layers[2]?.nodes.map((node) => {
-                const ny = 180;
-                const isComputed = node.value > 0;
-                return (
-                  <g key={`out-${node.label}`}>
-                    <circle
-                      cx={600}
-                      cy={ny}
-                      r={28}
-                      fill={isComputed ? (isDark ? '#064e3b' : '#dcfce7') : (isDark ? '#0f172a' : '#f8fafc')}
-                      stroke={isComputed ? (isDark ? '#10b981' : '#16a34a') : (isDark ? '#334155' : '#cbd5e1')}
-                      strokeWidth={2.5}
-                      className="drop-shadow-md transition-all"
-                    />
-                    <text
-                      x={600}
-                      y={ny + 6}
-                      textAnchor="middle"
-                      fill={isComputed ? (isDark ? '#6ee7b7' : '#15803d') : (isDark ? '#94a3b8' : '#64748b')}
-                      className="font-display font-bold text-lg"
-                    >
-                      {node.label}
-                    </text>
-                    {/* Value Pill Below */}
-                    <rect x={545} y={ny + 36} width={110} height={22} rx={11} fill={isDark ? '#0f172a' : '#ffffff'} stroke={isComputed ? '#86efac' : (isDark ? '#334155' : '#cbd5e1')} strokeWidth={1} />
-                    <text x={600} y={ny + 51} textAnchor="middle" fill={isComputed ? '#16a34a' : (isDark ? '#94a3b8' : '#64748b')} className="font-mono text-xs font-bold">
-                      {isComputed ? `ŷ = ${node.value}` : 'Pending'}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
-        )}
+                    const circleFill = isClamped
+                      ? (isDark ? '#271c1c' : '#fee2e2')
+                      : isOutput && isComputed
+                      ? (isDark ? '#064e3b' : '#dcfce7')
+                      : isComputed
+                      ? (isDark ? '#1e293b' : '#e0f2fe')
+                      : (isDark ? '#0f172a' : '#f8fafc');
+
+                    const circleStroke = isClamped
+                      ? '#ef4444'
+                      : isOutput && isComputed
+                      ? (isDark ? '#10b981' : '#16a34a')
+                      : isComputed
+                      ? (isDark ? '#06b6d4' : '#0284c7')
+                      : (isDark ? '#334155' : '#cbd5e1');
+
+                    const displayLabel = node.label.length > 5
+                      ? node.label.slice(0, 4) + '..'
+                      : node.label;
+
+                    return (
+                      <g key={`node-${lIdx}-${nIdx}`}>
+                        {/* Node Circle */}
+                        <circle
+                          cx={lx}
+                          cy={ny}
+                          r={r}
+                          fill={circleFill}
+                          stroke={circleStroke}
+                          strokeWidth={isOutput ? 2.5 : 2}
+                          className="drop-shadow-sm transition-all duration-300"
+                        />
+                        {/* Node Label inside circle */}
+                        <text
+                          x={lx}
+                          y={ny + (displayLabel.includes('🐶') || displayLabel.includes('🐱') ? 5 : 4)}
+                          textAnchor="middle"
+                          fill={
+                            isClamped
+                              ? '#ef4444'
+                              : isOutput && isComputed
+                              ? (isDark ? '#6ee7b7' : '#15803d')
+                              : (isDark ? '#e2e8f0' : '#0369a1')
+                          }
+                          className={`font-display font-bold select-none ${
+                            displayLabel.length <= 2 ? 'text-sm sm:text-base' : 'text-xs'
+                          }`}
+                        >
+                          {displayLabel}
+                        </text>
+
+                        {/* Feature name tag above/beside input node */}
+                        {isInput && node.activation && (
+                          <text
+                            x={numLayers >= 4 ? lx : lx - r - 8}
+                            y={numLayers >= 4 ? ny - r - 6 : ny + 4}
+                            textAnchor={numLayers >= 4 ? 'middle' : 'end'}
+                            fill={isDark ? '#38bdf8' : '#0284c7'}
+                            className="font-sans text-[10px] sm:text-[11px] font-bold select-none"
+                          >
+                            {node.activation}
+                          </text>
+                        )}
+
+                        {/* Output decision tag if output */}
+                        {isOutput && node.activation && (
+                          <text
+                            x={lx}
+                            y={ny - r - 8}
+                            textAnchor="middle"
+                            fill={isDark ? '#34d399' : '#059669'}
+                            className="font-sans text-xs font-bold select-none"
+                          >
+                            {node.activation}
+                          </text>
+                        )}
+
+                        {/* Value Pill Below */}
+                        <g>
+                          <rect
+                            x={lx - (isOutput ? 48 : 34)}
+                            y={ny + r + 4}
+                            width={isOutput ? 96 : 68}
+                            height={18}
+                            rx={9}
+                            fill={isDark ? '#0f172a' : '#ffffff'}
+                            stroke={
+                              isClamped
+                                ? '#f87171'
+                                : isOutput && isComputed
+                                ? '#86efac'
+                                : (isDark ? '#334155' : '#cbd5e1')
+                            }
+                            strokeWidth={1}
+                          />
+                          <text
+                            x={lx}
+                            y={ny + r + 16}
+                            textAnchor="middle"
+                            fill={
+                              isClamped
+                                ? '#ef4444'
+                                : isOutput && isComputed
+                                ? (isDark ? '#34d399' : '#16a34a')
+                                : (isDark ? '#38bdf8' : '#0284c7')
+                            }
+                            className="font-mono text-[10px] sm:text-[11px] font-bold select-none"
+                          >
+                            {isClamped
+                              ? '0.0 (ReLU)'
+                              : typeof node.value === 'number'
+                              ? node.value.toFixed(2)
+                              : node.value}
+                          </text>
+                        </g>
+                      </g>
+                    );
+                  });
+                })}
+              </svg>
+            </div>
+          );
+        })()}
 
         {/* ========================================================= */}
         {/* 2.5. SINGLE ARTIFICIAL NEURON (PERCEPTRON) VISUALIZER     */}

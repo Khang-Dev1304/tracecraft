@@ -1450,18 +1450,22 @@ def house_price_mlp(x, W1, b1, W2, b2):
       const z1 = b1.map((bi, j) => Number((x[0]*W1[0][j] + x[1]*W1[1][j] + x[2]*W1[2][j] + bi).toFixed(3)));
       const h1 = z1.map(z => Number(Math.max(0, z).toFixed(3)));
       const price = Number((h1.reduce((s, h, j) => s + h * W2[j], b2)).toFixed(3));
+      const inNodes = [
+        { label: 'x₁', value: area, activation: isVi ? 'Diện tích' : 'Area' },
+        { label: 'x₂', value: rooms, activation: isVi ? 'Phòng ngủ' : 'Rooms' },
+        { label: 'x₃', value: loc, activation: isVi ? 'Vị trí' : 'Location' },
+      ];
       const steps: TraceStep[] = [];
 
       steps.push({
         step: 0, totalSteps: 0, line: 1, action: 'init', targets: [],
         state: {
           layers: [
-            { name: isVi ? 'Đặc trưng Nhà (x)' : 'House Features (x)',
-              nodes: [{ label: 'Diện tích', value: area }, { label: 'Phòng ngủ', value: rooms }, { label: 'Vị trí', value: loc }] },
-            { name: isVi ? 'Tầng ẩn ReLU (4 nơ-ron)' : 'Hidden Layer ReLU (4 neurons)',
+            { name: isVi ? 'Đặc trưng Nhà (x)' : 'House Features (x)', nodes: inNodes },
+            { name: isVi ? 'Tầng ẩn ReLU' : 'Hidden Layer (ReLU)',
               nodes: [{ label: 'h₁', value: 0 }, { label: 'h₂', value: 0 }, { label: 'h₃', value: 0 }, { label: 'h₄', value: 0 }] },
-            { name: isVi ? 'Giá dự đoán (tỷ $)' : 'Predicted Price ($M)',
-              nodes: [{ label: 'price', value: 0 }] },
+            { name: isVi ? 'Giá dự đoán ($M)' : 'Predicted Price ($M)',
+              nodes: [{ label: 'ŷ', value: 0, activation: isVi ? 'Đang tính...' : 'Pending' }] },
           ],
         },
         explanation: isVi
@@ -1474,12 +1478,11 @@ def house_price_mlp(x, W1, b1, W2, b2):
         step: 0, totalSteps: 0, line: 4, action: 'compute', targets: [],
         state: {
           layers: [
-            { name: isVi ? 'Đặc trưng Nhà (x)' : 'House Features (x)',
-              nodes: [{ label: 'Diện tích', value: area }, { label: 'Phòng ngủ', value: rooms }, { label: 'Vị trí', value: loc }] },
+            { name: isVi ? 'Đặc trưng Nhà (x)' : 'House Features (x)', nodes: inNodes },
             { name: isVi ? 'Tầng ẩn — z₁ = W₁·x + b₁' : 'Hidden Layer — z₁ = W₁·x + b₁',
               nodes: [{ label: 'z₁', value: z1[0] }, { label: 'z₂', value: z1[1] }, { label: 'z₃', value: z1[2] }, { label: 'z₄', value: z1[3] }] },
-            { name: isVi ? 'Giá dự đoán' : 'Predicted Price ($M)',
-              nodes: [{ label: 'price', value: 0 }] },
+            { name: isVi ? 'Giá dự đoán ($M)' : 'Predicted Price ($M)',
+              nodes: [{ label: 'ŷ', value: 0, activation: isVi ? 'Đang tính...' : 'Pending' }] },
           ],
         },
         explanation: isVi
@@ -1492,12 +1495,11 @@ def house_price_mlp(x, W1, b1, W2, b2):
         step: 0, totalSteps: 0, line: 6, action: 'forward', targets: [],
         state: {
           layers: [
-            { name: isVi ? 'Đặc trưng Nhà (x)' : 'House Features (x)',
-              nodes: [{ label: 'Diện tích', value: area }, { label: 'Phòng ngủ', value: rooms }, { label: 'Vị trí', value: loc }] },
+            { name: isVi ? 'Đặc trưng Nhà (x)' : 'House Features (x)', nodes: inNodes },
             { name: isVi ? 'Tầng ẩn — h₁ = ReLU(z₁)' : 'Hidden Layer — h₁ = ReLU(z₁)',
               nodes: [{ label: 'h₁', value: h1[0], activation: 'ReLU' }, { label: 'h₂', value: h1[1], activation: 'ReLU' }, { label: 'h₃', value: h1[2], activation: 'ReLU' }, { label: 'h₄', value: h1[3], activation: 'ReLU' }] },
-            { name: isVi ? 'Giá dự đoán' : 'Predicted Price ($M)',
-              nodes: [{ label: 'price', value: 0 }] },
+            { name: isVi ? 'Giá dự đoán ($M)' : 'Predicted Price ($M)',
+              nodes: [{ label: 'ŷ', value: 0, activation: isVi ? 'Đang tính...' : 'Pending' }] },
           ],
         },
         explanation: isVi
@@ -1510,12 +1512,11 @@ def house_price_mlp(x, W1, b1, W2, b2):
         step: 0, totalSteps: 0, line: 8, action: 'done', targets: [],
         state: {
           layers: [
-            { name: isVi ? 'Đặc trưng Nhà (x)' : 'House Features (x)',
-              nodes: [{ label: 'Diện tích', value: area }, { label: 'Phòng ngủ', value: rooms }, { label: 'Vị trí', value: loc }] },
-            { name: isVi ? 'Tầng ẩn (Hoàn tất)' : 'Hidden Layer (Complete)',
+            { name: isVi ? 'Đặc trưng Nhà (x)' : 'House Features (x)', nodes: inNodes },
+            { name: isVi ? 'Tầng ẩn (Hoàn tất)' : 'Hidden Layer (Done)',
               nodes: [{ label: 'h₁', value: h1[0] }, { label: 'h₂', value: h1[1] }, { label: 'h₃', value: h1[2] }, { label: 'h₄', value: h1[3] }] },
-            { name: isVi ? `Giá = $${price.toFixed(2)}M` : `Price = $${price.toFixed(2)}M`,
-              nodes: [{ label: 'price', value: price }] },
+            { name: isVi ? 'Giá dự đoán ($M)' : 'Predicted Price ($M)',
+              nodes: [{ label: 'ŷ', value: price, activation: isVi ? `$${price.toFixed(2)}M` : `$${price.toFixed(2)}M` }] },
           ],
         },
         explanation: isVi
@@ -1655,20 +1656,24 @@ def dog_cat_mlp(x, W1,b1, W2,b2, W3,b3):
       const z3 = Number((h2.reduce((s,h,j)=>s+h*W3[j],b3)).toFixed(3));
       const pDog = Number((1/(1+Math.exp(-z3))).toFixed(3));
       const label = pDog > 0.5 ? (isVi ? 'CHÓ 🐶' : 'DOG 🐶') : (isVi ? 'MÈO 🐱' : 'CAT 🐱');
+      const inNodes = [
+        { label: 'x₁', value: tex, activation: isVi ? 'Kết cấu' : 'Texture' },
+        { label: 'x₂', value: bright, activation: isVi ? 'Độ sáng' : 'Brightness' },
+        { label: 'x₃', value: edges, activation: isVi ? 'Đường cạnh' : 'Edges' },
+      ];
       const steps: TraceStep[] = [];
 
       steps.push({
         step: 0, totalSteps: 0, line: 1, action: 'init', targets: [],
         state: {
           layers: [
-            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)',
-              nodes: [{ label: 'Kết cấu', value: tex }, { label: 'Độ sáng', value: bright }, { label: 'Cạnh', value: edges }] },
-            { name: isVi ? 'Tầng ẩn 1 (4 nơ-ron)' : 'Hidden Layer 1 (4n)',
+            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)', nodes: inNodes },
+            { name: isVi ? 'Tầng ẩn 1 (ReLU)' : 'Hidden Layer 1 (ReLU)',
               nodes: [{ label:'h1₁',value:0},{label:'h1₂',value:0},{label:'h1₃',value:0},{label:'h1₄',value:0}] },
-            { name: isVi ? 'Tầng ẩn 2 (4 nơ-ron)' : 'Hidden Layer 2 (4n)',
+            { name: isVi ? 'Tầng ẩn 2 (ReLU)' : 'Hidden Layer 2 (ReLU)',
               nodes: [{ label:'h2₁',value:0},{label:'h2₂',value:0},{label:'h2₃',value:0},{label:'h2₄',value:0}] },
-            { name: isVi ? 'Xác suất P(Chó)' : 'P(Dog)',
-              nodes: [{ label: 'P(Dog)', value: 0 }] },
+            { name: isVi ? 'Xác suất P(Chó)' : 'P(Dog) Output',
+              nodes: [{ label: 'ŷ', value: 0, activation: isVi ? 'Đang tính...' : 'Pending' }] },
           ],
         },
         explanation: isVi
@@ -1681,13 +1686,13 @@ def dog_cat_mlp(x, W1,b1, W2,b2, W3,b3):
         step: 0, totalSteps: 0, line: 4, action: 'compute', targets: [],
         state: {
           layers: [
-            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)',
-              nodes: [{ label: 'Kết cấu', value: tex }, { label: 'Độ sáng', value: bright }, { label: 'Cạnh', value: edges }] },
-            { name: isVi ? 'Tầng ẩn 1 — z₁ = W₁·x + b₁' : 'Hidden Layer 1 — z₁ = W₁·x + b₁',
+            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)', nodes: inNodes },
+            { name: isVi ? 'Tầng ẩn 1 — z₁' : 'Hidden Layer 1 — z₁',
               nodes: z1.map((v,i)=>({label:`z₁${i+1}`,value:v})) },
-            { name: isVi ? 'Tầng ẩn 2' : 'Hidden Layer 2',
+            { name: isVi ? 'Tầng ẩn 2 (ReLU)' : 'Hidden Layer 2 (ReLU)',
               nodes: [{label:'h2₁',value:0},{label:'h2₂',value:0},{label:'h2₃',value:0},{label:'h2₄',value:0}] },
-            { name: isVi ? 'Xác suất P(Chó)' : 'P(Dog)', nodes: [{label:'P(Dog)',value:0}] },
+            { name: isVi ? 'Xác suất P(Chó)' : 'P(Dog) Output',
+              nodes: [{ label: 'ŷ', value: 0, activation: isVi ? 'Đang tính...' : 'Pending' }] },
           ],
         },
         explanation: isVi
@@ -1700,13 +1705,13 @@ def dog_cat_mlp(x, W1,b1, W2,b2, W3,b3):
         step: 0, totalSteps: 0, line: 5, action: 'forward', targets: [],
         state: {
           layers: [
-            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)',
-              nodes: [{ label: 'Kết cấu', value: tex }, { label: 'Độ sáng', value: bright }, { label: 'Cạnh', value: edges }] },
+            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)', nodes: inNodes },
             { name: isVi ? 'Tầng ẩn 1 — h₁ = ReLU(z₁)' : 'Hidden Layer 1 — h₁ = ReLU(z₁)',
-              nodes: h1.map((v,i)=>({label:`h1₁${i+1>1?i+1:''}`,value:v,activation:'ReLU'})) },
-            { name: isVi ? 'Tầng ẩn 2 — z₂ = W₂·h₁ + b₂' : 'Hidden Layer 2 — z₂ = W₂·h₁ + b₂',
+              nodes: h1.map((v,i)=>({label:`h1${i+1}`,value:v,activation:'ReLU'})) },
+            { name: isVi ? 'Tầng ẩn 2 — z₂' : 'Hidden Layer 2 — z₂',
               nodes: z2.map((v,i)=>({label:`z₂${i+1}`,value:v})) },
-            { name: isVi ? 'Xác suất P(Chó)' : 'P(Dog)', nodes: [{label:'P(Dog)',value:0}] },
+            { name: isVi ? 'Xác suất P(Chó)' : 'P(Dog) Output',
+              nodes: [{ label: 'ŷ', value: 0, activation: isVi ? 'Đang tính...' : 'Pending' }] },
           ],
         },
         explanation: isVi
@@ -1719,13 +1724,13 @@ def dog_cat_mlp(x, W1,b1, W2,b2, W3,b3):
         step: 0, totalSteps: 0, line: 7, action: 'compute', targets: [],
         state: {
           layers: [
-            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)',
-              nodes: [{ label: 'Kết cấu', value: tex }, { label: 'Độ sáng', value: bright }, { label: 'Cạnh', value: edges }] },
+            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)', nodes: inNodes },
             { name: isVi ? 'Tầng ẩn 1 (Hoàn tất)' : 'Hidden Layer 1 (Done)',
-              nodes: h1.map((v,i)=>({label:`h1₁${i+1>1?i+1:''}`,value:v})) },
+              nodes: h1.map((v,i)=>({label:`h1${i+1}`,value:v})) },
             { name: isVi ? 'Tầng ẩn 2 — h₂ = ReLU(z₂)' : 'Hidden Layer 2 — h₂ = ReLU(z₂)',
-              nodes: h2.map((v,i)=>({label:`h2₁${i+1>1?i+1:''}`,value:v,activation:'ReLU'})) },
-            { name: isVi ? 'Xác suất P(Chó)' : 'P(Dog)', nodes: [{label:'P(Dog)',value:0}] },
+              nodes: h2.map((v,i)=>({label:`h2${i+1}`,value:v,activation:'ReLU'})) },
+            { name: isVi ? 'Xác suất P(Chó)' : 'P(Dog) Output',
+              nodes: [{ label: 'ŷ', value: 0, activation: isVi ? 'Đang tính...' : 'Pending' }] },
           ],
         },
         explanation: isVi
@@ -1738,14 +1743,13 @@ def dog_cat_mlp(x, W1,b1, W2,b2, W3,b3):
         step: 0, totalSteps: 0, line: 9, action: 'done', targets: [],
         state: {
           layers: [
-            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)',
-              nodes: [{ label: 'Kết cấu', value: tex }, { label: 'Độ sáng', value: bright }, { label: 'Cạnh', value: edges }] },
+            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)', nodes: inNodes },
             { name: isVi ? 'Tầng ẩn 1' : 'Hidden Layer 1',
-              nodes: h1.map((v,i)=>({label:`h1₁${i+1>1?i+1:''}`,value:v})) },
+              nodes: h1.map((v,i)=>({label:`h1${i+1}`,value:v})) },
             { name: isVi ? 'Tầng ẩn 2' : 'Hidden Layer 2',
-              nodes: h2.map((v,i)=>({label:`h2₁${i+1>1?i+1:''}`,value:v})) },
-            { name: `P(Dog) = ${pDog.toFixed(3)} → ${label}`,
-              nodes: [{ label: label, value: pDog, activation: 'Sigmoid' }] },
+              nodes: h2.map((v,i)=>({label:`h2${i+1}`,value:v})) },
+            { name: isVi ? 'Kết quả Phân loại' : 'Classification Result',
+              nodes: [{ label: pDog > 0.5 ? '🐶' : '🐱', value: pDog, activation: label }] },
           ],
         },
         explanation: isVi
