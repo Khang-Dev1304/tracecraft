@@ -7,8 +7,8 @@ import {
   CheckCircle2, 
   Radio
 } from 'lucide-react';
-import type { ThemeMode, TraceStep, Language, MnistDigitProb } from '../types';
-
+import type { ThemeMode, TraceStep, Language } from '../types';
+import { inferRealTrainedMnist } from '../algorithms/mnist_engine';
 interface MnistStageProps {
   theme: ThemeMode;
   step: TraceStep;
@@ -109,160 +109,8 @@ export function generateCanonicalDigitGrid(digit: number): number[][] {
 }
 
 // Compute real MNIST logits & Softmax probabilities from 28x28 grid
-export function inferMnist(grid: number[][]): {
-  logits: number[];
-  probabilities: MnistDigitProb[];
-  predictedDigit: number;
-  confidence: number;
-  hiddenActivations: number[];
-  sampledInputs: { idx: number; val: number }[];
-} {
-  let totalMass = 0;
-  for (let r = 0; r < 28; r++) {
-    for (let c = 0; c < 28; c++) totalMass += grid[r][c];
-  }
-
-  // Extract 8 representative active input nodes for the visual graph
-  const flat = grid.flat();
-  const activeIndices: { idx: number; val: number }[] = [];
-  for (let i = 0; i < flat.length; i++) {
-    if (flat[i] > 0.05) {
-      activeIndices.push({ idx: i, val: flat[i] });
-    }
-  }
-  // Pick up to 8 evenly spaced active pixels, or pad with sample indices
-  activeIndices.sort((a, b) => b.val - a.val);
-  const sampledInputs: { idx: number; val: number }[] = [];
-  for (let i = 0; i < 8; i++) {
-    if (i < activeIndices.length) {
-      sampledInputs.push(activeIndices[i]);
-    } else {
-      sampledInputs.push({ idx: 100 + i * 40, val: 0.0 });
-    }
-  }
-  sampledInputs.sort((a, b) => a.idx - b.idx);
-
-  if (totalMass < 2) {
-    // Blank canvas
-    const evenProb = 0.1;
-    const probs: MnistDigitProb[] = Array.from({ length: 10 }, (_, d) => ({
-      digit: d,
-      prob: evenProb,
-      logit: 0,
-    }));
-    return {
-      logits: Array(10).fill(0),
-      probabilities: probs,
-      predictedDigit: 0,
-      confidence: evenProb,
-      hiddenActivations: Array(16).fill(0),
-      sampledInputs,
-    };
-  }
-
-  // Calculate geometric feature metrics
-  let topMass = 0;
-  let botMass = 0;
-  let leftMass = 0;
-  let rightMass = 0;
-  let centerMass = 0;
-  let colWeights = Array(28).fill(0);
-  let rowWeights = Array(28).fill(0);
-
-  for (let r = 0; r < 28; r++) {
-    for (let c = 0; c < 28; c++) {
-      const v = grid[r][c];
-      if (r < 14) topMass += v;
-      else botMass += v;
-      if (c < 14) leftMass += v;
-      else rightMass += v;
-      if (r >= 10 && r <= 17 && c >= 10 && c <= 17) centerMass += v;
-      colWeights[c] += v;
-      rowWeights[r] += v;
-    }
-  }
-
-  const topFrac = topMass / totalMass;
-  const botFrac = botMass / totalMass;
-  const leftFrac = leftMass / totalMass;
-  const rightFrac = rightMass / totalMass;
-  const centerHoleFrac = centerMass / totalMass;
-
-  let colMean = 0;
-  for (let c = 0; c < 28; c++) colMean += c * (colWeights[c] / totalMass);
-  let colVar = 0;
-  for (let c = 0; c < 28; c++) colVar += Math.pow(c - colMean, 2) * (colWeights[c] / totalMass);
-
-  // Compute correlation similarity with each canonical digit template
-  const rawScores: number[] = Array(10).fill(0);
-  for (let d = 0; d <= 9; d++) {
-    const template = generateCanonicalDigitGrid(d);
-    let dot = 0;
-    let normT = 0;
-    for (let r = 0; r < 28; r++) {
-      for (let c = 0; c < 28; c++) {
-        dot += grid[r][c] * template[r][c];
-        normT += template[r][c] * template[r][c];
-      }
-    }
-    const cosineSim = normT > 0 ? dot / Math.sqrt(totalMass * normT) : 0;
-    rawScores[d] = cosineSim * 12.0;
-  }
-
-  // Fine-tune based on high-level stroke invariants
-  if (colVar < 6.5) rawScores[1] += 5.5; // Thin vertical stroke
-  if (centerHoleFrac < 0.08 && Math.abs(topFrac - botFrac) < 0.15 && Math.abs(leftFrac - rightFrac) < 0.15) rawScores[0] += 4.0; // Hollow loop
-  if (topFrac > 0.65 && rightFrac > 0.55) rawScores[7] += 3.5; // Top-heavy diagonal
-  if (centerHoleFrac > 0.22) rawScores[8] += 2.5;
-
-  // 16 Hidden ReLU Feature Detectors
-  const hiddenActivations: number[] = [
-    Math.max(0, topFrac * 1.5 - 0.2), // h1: Top bar
-    Math.max(0, botFrac * 1.5 - 0.2), // h2: Bottom base
-    Math.max(0, 3.5 / (colVar + 1.0)), // h3: Vertical stem
-    Math.max(0, 1.0 - centerHoleFrac * 3.0), // h4: Center loop
-    Math.max(0, botFrac > 0.6 ? 1.2 : 0), // h5: Bottom loop
-    Math.max(0, centerHoleFrac > 0.18 ? 1.0 : 0), // h6: Waist pinch
-    Math.max(0, (topFrac - botFrac) * 2.0), // h7: Top heavy
-    Math.max(0, (botFrac - topFrac) * 2.0), // h8: Bottom heavy
-    Math.max(0, leftFrac > 0.55 ? 1.0 : 0), // h9: Left curve
-    Math.max(0, rightFrac > 0.55 ? 1.0 : 0), // h10: Right curve
-    Math.max(0, (rightFrac - leftFrac) * 1.8), // h11: Right tilt
-    Math.max(0, rawScores[7] > 5 ? 1.4 : 0), // h12: Diagonal 7 slash
-    Math.max(0, rawScores[0] > 5 ? 1.3 : 0), // h13: Oval ring
-    Math.max(0, rawScores[8] > 5 ? 1.2 : 0), // h14: Dual loop
-    Math.max(0, rawScores[3] > 5 ? 1.1 : 0), // h15: 3-arcs
-    Math.max(0, Math.min(1.0, totalMass / 60)), // h16: Overall density
-  ].map((v) => Number(v.toFixed(2)));
-
-  // Softmax computation
-  const maxScore = Math.max(...rawScores);
-  const expScores = rawScores.map((s) => Math.exp(Math.min(20, Math.max(-20, s - maxScore))));
-  const sumExp = expScores.reduce((a, b) => a + b, 0);
-  const probs: MnistDigitProb[] = expScores.map((exp, d) => ({
-    digit: d,
-    prob: Number((exp / sumExp).toFixed(4)),
-    logit: Number(rawScores[d].toFixed(2)),
-  }));
-
-  // Best prediction
-  let bestDigit = 0;
-  let maxP = -1;
-  probs.forEach((p) => {
-    if (p.prob > maxP) {
-      maxP = p.prob;
-      bestDigit = p.digit;
-    }
-  });
-
-  return {
-    logits: rawScores.map((s) => Number(s.toFixed(2))),
-    probabilities: probs,
-    predictedDigit: bestDigit,
-    confidence: maxP,
-    hiddenActivations,
-    sampledInputs,
-  };
+export function inferMnist(grid: number[][]) {
+  return inferRealTrainedMnist(grid);
 }
 
 export const MnistStage: React.FC<MnistStageProps> = ({
@@ -489,7 +337,7 @@ export const MnistStage: React.FC<MnistStageProps> = ({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-cyan-400 text-xs font-bold font-mono">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>MNIST 784→16→10</span>
+            <span>PyTorch 97.6% Trained Model</span>
           </div>
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 dark:text-emerald-400 text-[10px] font-mono font-bold animate-pulse">
             <Radio className="w-3 h-3" />
