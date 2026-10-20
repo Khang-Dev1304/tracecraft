@@ -14,6 +14,7 @@ import {
 import type { ThemeMode, TraceStep, Language } from '../types';
 import { MathFormula } from './MathFormula';
 import { getLocalizedText } from '../i18n/translations';
+import { MnistStage } from './MnistStage';
 interface VisualStageProps {
   theme: ThemeMode;
   step: TraceStep;
@@ -131,7 +132,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   const kernel = step.state.kernel;
   const featureMap = step.state.featureMap;
   const kernelPos = (step.state.kernelPos as { r: number; c: number } | undefined) || { r: 0, c: 0 };
-
+  const mnistState = step.state.mnistState;
   const smoothKernelR = useSmoothValue(kernelPos.r, 420);
   const smoothKernelC = useSmoothValue(kernelPos.c, 420);
   // Raw values from trace
@@ -853,6 +854,19 @@ export const VisualStage: React.FC<VisualStageProps> = ({
             </div>
           );
         })()}
+
+        {/* ========================================================= */}
+        {/* 2.4. MNIST INTERACTIVE HANDWRITTEN DIGIT CLASSIFIER       */}
+        {/* ========================================================= */}
+        {mnistState && (
+          <MnistStage
+            theme={theme}
+            step={step}
+            language={language}
+            onChangeInput={onChangeInput}
+            isMaximized={isExpanded}
+          />
+        )}
 
         {/* ========================================================= */}
         {/* 2.5. SINGLE ARTIFICIAL NEURON (PERCEPTRON) VISUALIZER     */}

@@ -1,5 +1,5 @@
 import type { AlgorithmPreset, TraceStep, Language } from '../types';
-
+import { generateCanonicalDigitGrid, inferMnist } from '../components/MnistStage';
 export const ALGORITHM_PRESETS: AlgorithmPreset[] = [
   // ==========================================
   // Category 1: Classical Machine Learning
@@ -1762,6 +1762,290 @@ def dog_cat_mlp(x, W1,b1, W2,b2, W3,b3):
       return steps.map((s, idx) => ({ ...s, step: idx + 1, totalSteps: total }));
     },
   },
+
+  {
+    id: 'mnist-digit-recognition',
+    title: '07. MNIST Handwritten Digit Recognition (Interactive MLP)',
+    category: 'Deep Learning & Neural Networks',
+    difficulty: 'Intermediate',
+    badge: 'Multiclass Softmax',
+    visualType: 'mnist-interactive',
+    formula: 'P(y = k \\mid \\mathbf{x}) = \\frac{e^{z_k}}{\\sum_{j=0}^{9} e^{z_j}}, \\quad \\mathbf{z} = W_2 \\cdot \\text{ReLU}(W_1 \\mathbf{x} + b_1) + b_2',
+    summary: 'Recognizes handwritten digits (0–9) from 28×28 grayscale images into 10 Softmax probabilities with an interactive drawing canvas.',
+    description: 'The iconic MNIST benchmark: unrolls 28×28 pixel matrices into 784-dimensional vectors, processes through hidden ReLU feature detectors, and produces 10 output class logits normalized by Softmax. Includes an interactive canvas where you can draw digits freely.',
+    inputVariants: [
+      { label: 'Digit 7 (Seven)', value: 'digit: 7' },
+      { label: 'Digit 0 (Zero)', value: 'digit: 0' },
+      { label: 'Digit 3 (Three)', value: 'digit: 3' },
+      { label: 'Digit 8 (Eight)', value: 'digit: 8' },
+      { label: 'Digit 1 (One)', value: 'digit: 1' },
+      { label: 'Digit 4 (Four)', value: 'digit: 4' },
+    ],
+    vi: {
+      title: '07. Nhận diện Chữ số Viết tay MNIST (Tương tác Vẽ số)',
+      category: 'Deep Learning & Mạng Nơ-ron',
+      badge: 'Phân loại 10 Lớp Softmax',
+      summary: 'Nhận diện chữ số viết tay (0–9) từ ảnh 28×28 thành 10 xác suất Softmax kèm bảng vẽ tương tác trực tiếp.',
+      description: 'Bài toán kinh điển MNIST: chuyển bức vẽ 28×28 điểm ảnh thành vector 784 chiều, lan truyền qua các nơ-ron ẩn ReLU để nhận diện nét vẽ và tính 10 xác suất Softmax. Tích hợp bảng vẽ trực tiếp để người dùng tự do vẽ số bằng chuột hoặc cảm ứng.',
+      variants: [
+        { label: 'Số 7 (Bảy)', value: 'digit: 7' },
+        { label: 'Số 0 (Không)', value: 'digit: 0' },
+        { label: 'Số 3 (Ba)', value: 'digit: 3' },
+        { label: 'Số 8 (Tám)', value: 'digit: 8' },
+        { label: 'Số 1 (Một)', value: 'digit: 1' },
+        { label: 'Số 4 (Bốn)', value: 'digit: 4' },
+      ],
+      sections: [
+        {
+          title: '1. Bài toán Chuẩn MNIST & Vector hóa Ảnh 2D thành 784 Chiều',
+          content: 'Bộ dữ liệu MNIST là "Hello World" của thị giác máy tính. Mỗi bức ảnh xám kích thước 28×28 chứa 784 điểm ảnh với cường độ từ 0 (nền đen) đến 1 (nét vẽ trắng). Để đưa vào mạng nơ-ron truyền thẳng (MLP), ta "duỗi phẳng" (flatten) ma trận 2D thành một vector 1D 784 chiều x ∈ ℝ^784.',
+          formula: '\\mathbf{x} = \\text{vec}(I_{28 \\times 28}) = [x_1, x_2, \\dots, x_{784}]^T \\in [0, 1]^{784}',
+          keyTakeaway: 'Mỗi phần tử trong vector 784 chiều tương ứng với độ sáng của đúng một điểm ảnh trên bức vẽ 28×28.',
+        },
+        {
+          title: '2. Tầng ẩn ReLU: Nhận diện Nét Hình học Nguyên thủy',
+          content: '784 đặc trưng đầu vào được phóng chiếu qua ma trận trọng số W₁ và kích hoạt bằng hàm ReLU. Mỗi nơ-ron ẩn học cách nhận diện một đặc trưng hình học cục bộ: nơ-ron phát hiện nét cong tròn khép kín (số 0, 8, 9), nơ-ron phát hiện nét thẳng đứng (số 1, 4), hoặc nét gạch ngang (số 2, 7, 5).',
+          formula: '\\mathbf{h} = \\text{ReLU}(W_1 \\mathbf{x} + b_1) = \\max(0, W_1 \\mathbf{x} + b_1)',
+          keyTakeaway: 'ReLU triệt tiêu các nơ-ron không phát hiện được nét tương ứng về 0, tạo tính thưa thớt (sparsity) giúp mạng học hiệu quả.',
+        },
+        {
+          title: '3. Hàm Softmax: Phân phối Xác suất Đa lớp cho 10 Chữ số',
+          content: 'Khác với phân loại nhị phân (chó vs mèo) dùng hàm Sigmoid cho 1 nơ-ron, phân loại 10 lớp sinh ra 10 điểm số thô (logits) z_k. Hàm Softmax lấy số mũ e^(z_k) để đảm bảo giá trị dương, rồi chia cho tổng lũy thừa của cả 10 số, tạo thành phân phối xác suất có tổng bằng 1.0 (100%).',
+          formula: 'P(y = k \\mid \\mathbf{x}) = \\frac{e^{z_k}}{\\sum_{j=0}^{9} e^{z_j}}, \\quad \\sum_{k=0}^{9} P(y=k) = 1.0',
+          keyTakeaway: 'Softmax khuếch đại nơ-ron có điểm cao nhất, tạo ra một người chiến thắng rõ ràng với độ tin cậy vượt trội.',
+        },
+        {
+          title: '4. Hàm Mất mát Categorical Cross-Entropy',
+          content: 'Khi huấn luyện với nhãn đúng one-hot y_true, mô hình tối ưu hàm mất mát Categorical Cross-Entropy: L = -log(P(y_true)). Nếu nhãn thật là số 7, hàm mất mát sẽ tiệm cận 0 khi P(7) đạt 100%. Mọi sai sót đều sinh gradient truyền ngược qua 784 trọng số để tinh chỉnh mô hình.',
+          formula: 'L_{\\text{CE}} = -\\sum_{k=0}^{9} y_k \\log(\\hat{y}_k) = -\\log(P(y_{\\text{true}}))',
+          keyTakeaway: 'Cross-Entropy phạt rất nặng khi mô hình tự tin sai nhãn, thúc đẩy độ chính xác cao trên toàn bộ 10 chữ số.',
+        },
+      ],
+    },
+    sections: [
+      {
+        title: '1. The MNIST Benchmark & 2D Image Vectorization (784 Pixels)',
+        content: 'MNIST is the quintessential "Hello World" of computer vision. A 28×28 grayscale image contains 784 pixels with brightness from 0 (background) to 1 (stroke). To feed this into a Dense Neural Network (MLP), we unroll the 2D grid row-by-row into a 784-dimensional vector x ∈ ℝ^784.',
+        formula: '\\mathbf{x} = \\text{vec}(I_{28 \\times 28}) = [x_1, x_2, \\dots, x_{784}]^T \\in [0, 1]^{784}',
+        keyTakeaway: 'Each entry in the 784 vector represents the grayscale intensity of exactly one pixel coordinate.',
+      },
+      {
+        title: '2. Hidden Layer Feature Extraction with ReLU',
+        content: 'The 784 inputs are projected into hidden neurons via z_1 = W_1 * x + b_1 and activated by ReLU. Each hidden neuron acts as a learned stroke detector: some activate on closed loops (digits 0, 8, 9), some on vertical straight stems (digit 1), and others on horizontal cross-bars (digits 2, 7).',
+        formula: '\\mathbf{h} = \\text{ReLU}(W_1 \\mathbf{x} + b_1) = \\max(0, W_1 \\mathbf{x} + b_1)',
+        keyTakeaway: 'ReLU clamps inactive stroke detectors to 0, promoting sparsity and robust feature isolation.',
+      },
+      {
+        title: '3. Softmax Function: Converting Raw Logits into 10-Class Probabilities',
+        content: 'Unlike binary classification (which uses Sigmoid for a single output), 10-class MNIST produces 10 raw scores (logits) z_k. Softmax exponentiates each score (ensuring positive values) and divides by the total sum, producing a normalized probability distribution where all 10 probabilities sum to exactly 1.0 (100%).',
+        formula: 'P(y = k \\mid \\mathbf{x}) = \\frac{e^{z_k}}{\\sum_{j=0}^{9} e^{z_j}}, \\quad \\sum_{k=0}^{9} P(y=k) = 1.0',
+        keyTakeaway: 'Softmax exponentiation magnifies the highest scoring digit, creating a distinct, confident prediction winner.',
+      },
+      {
+        title: '4. Categorical Cross-Entropy Loss for Multiclass Classification',
+        content: 'During supervised training with one-hot targets, the model minimizes Categorical Cross-Entropy: L = -log(P(y_true)). If the ground truth is digit 7, loss approaches zero when P(7) approaches 100%. Gradients propagate back through all 784 input weights simultaneously.',
+        formula: 'L_{\\text{CE}} = -\\sum_{k=0}^{9} y_k \\log(\\hat{y}_k) = -\\log(P(y_{\\text{true}}))',
+        keyTakeaway: 'Categorical Cross-Entropy heavily penalizes confident incorrect classifications, driving high accuracy.',
+      },
+    ],
+    timeComplexity: 'O(784 · d_h + d_h · 10)',
+    spaceComplexity: 'O(784 + d_h + 10) activations',
+    tags: ['MNIST', 'Computer Vision', 'Softmax', 'Multiclass', 'Interactive Drawing', 'PyTorch'],
+    defaultInput: 'digit: 7',
+    pythonCode: `import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class MNISTNet(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # 784 inputs (28x28) -> 64 hidden -> 10 class logits
+        self.fc1 = nn.Linear(784, 64)
+        self.fc2 = nn.Linear(64, 10)
+
+    def forward(self, x):
+        # 1. Flatten 2D image (B, 1, 28, 28) -> (B, 784)
+        x = x.view(-1, 784)
+        # 2. Hidden Layer + ReLU
+        h = F.relu(self.fc1(x))
+        # 3. Output Logits (10 classes: digits 0-9)
+        logits = self.fc2(h)
+        # 4. Softmax Probabilities
+        probs = F.softmax(logits, dim=-1)
+        return probs
+
+model = MNISTNet()
+x_img = torch.randn(1, 1, 28, 28)
+output_probs = model(x_img)
+predicted = torch.argmax(output_probs, dim=-1).item()
+print(f"Predicted digit: {predicted}")`,
+    code: `import numpy as np
+
+def mnist_forward(image_28x28, W1, b1, W2, b2):
+    # 1. Flatten 2D image into 784D vector
+    x = image_28x28.flatten()
+    # 2. Hidden Layer linear projection + ReLU
+    h = np.maximum(0, np.dot(x, W1) + b1)
+    # 3. Output logits (10 classes)
+    z = np.dot(h, W2) + b2
+    # 4. Softmax probability distribution
+    exp_z = np.exp(z - np.max(z))
+    probs = exp_z / np.sum(exp_z)
+    pred_digit = np.argmax(probs)
+    return pred_digit, probs`,
+    generateTraces: (inputStr?: string, lang: Language = 'en'): TraceStep[] => {
+      const isVi = lang === 'vi';
+      let digit = 7;
+      if (inputStr) {
+        const match = inputStr.match(/digit:\s*(\d)/i);
+        if (match) {
+          digit = parseInt(match[1], 10);
+        }
+      }
+      const grid = generateCanonicalDigitGrid(digit);
+      const inference = inferMnist(grid);
+      const flattenedSample = grid.flat().slice(100, 220);
+      const hiddenLayer = Array.from({ length: 16 }, (_, idx) =>
+        ((idx * 7 + digit * 3) % 5 !== 0) ? Number((0.2 + ((idx * 31 + digit * 17) % 80) / 100).toFixed(2)) : 0
+      );
+
+      const steps: TraceStep[] = [];
+
+      // Step 1: Input Drawing Matrix (28x28)
+      steps.push({
+        step: 0,
+        totalSteps: 0,
+        line: 3,
+        action: 'init',
+        targets: [],
+        state: {
+          mnistState: {
+            grid,
+            flattenedSample,
+            hiddenLayer,
+            probabilities: inference.probabilities,
+            predictedDigit: inference.predictedDigit,
+            confidence: inference.confidence,
+            activePhase: 'draw',
+          },
+        },
+        explanation: isVi
+          ? `Bức vẽ 28×28 điểm ảnh khởi tạo với 784 giá trị độ sáng x_{r, c} ∈ [0, 1]. Người dùng có thể vẽ trực tiếp hoặc chọn mẫu số (hiện tại: Số ${digit}).`
+          : `28×28 grayscale drawing initialized with 784 pixel intensities x_{r, c} ∈ [0, 1]. Draw freely or select a preset (currently: Digit ${digit}).`,
+        invariant: isVi
+          ? 'Mỗi pixel chuẩn hóa trong đoạn [0, 1]. Kích thước ảnh chuẩn MNIST: 28×28 = 784 pixels.'
+          : 'Each pixel intensity normalized in [0, 1]. Canonical MNIST size: 28×28 = 784 pixels.',
+      });
+
+      // Step 2: Vector Flattening
+      steps.push({
+        step: 0,
+        totalSteps: 0,
+        line: 5,
+        action: 'compute',
+        targets: [],
+        state: {
+          mnistState: {
+            grid,
+            flattenedSample,
+            hiddenLayer,
+            probabilities: inference.probabilities,
+            predictedDigit: inference.predictedDigit,
+            confidence: inference.confidence,
+            activePhase: 'flatten',
+          },
+        },
+        explanation: isVi
+          ? 'Duỗi phẳng ma trận 2D (28×28) thành vector 1D 784 chiều: x = vec(I) ∈ ℝ⁷⁸⁴. Chuẩn bị cho phép nhân ma trận trọng số.'
+          : 'Flattening 2D spatial image (28×28) into a 1D vector of 784 features: x = vec(I) ∈ ℝ⁷⁸⁴. Ready for matrix multiplication.',
+        invariant: isVi
+          ? 'Phép duỗi phẳng bảo toàn toàn bộ 784 giá trị điểm ảnh theo thứ tự hàng.'
+          : 'Vector unrolling preserves all 784 pixel intensities in row-major order.',
+      });
+
+      // Step 3: Hidden Layer ReLU Features
+      steps.push({
+        step: 0,
+        totalSteps: 0,
+        line: 7,
+        action: 'forward',
+        targets: [],
+        state: {
+          mnistState: {
+            grid,
+            flattenedSample,
+            hiddenLayer,
+            probabilities: inference.probabilities,
+            predictedDigit: inference.predictedDigit,
+            confidence: inference.confidence,
+            activePhase: 'hidden',
+          },
+        },
+        explanation: isVi
+          ? 'Lan truyền tiến qua tầng ẩn W₁·x + b₁ và kích hoạt bằng ReLU. Các nơ-ron phát hiện nét cong, nét thẳng và vòng khép kín kích hoạt mạnh mẽ.'
+          : 'Forward pass through hidden layer W₁·x + b₁ activated by ReLU. Feature detectors for curves, loops, and straight stems fire.',
+        invariant: isVi
+          ? 'ReLU(z) = max(0, z) loại bỏ các giá trị âm, kích hoạt các nét đặc trưng hình học tương ứng.'
+          : 'ReLU(z) = max(0, z) clamps negative activations to zero, isolating active stroke features.',
+      });
+
+      // Step 4: Output Layer Logits
+      steps.push({
+        step: 0,
+        totalSteps: 0,
+        line: 9,
+        action: 'compute',
+        targets: [],
+        state: {
+          mnistState: {
+            grid,
+            flattenedSample,
+            hiddenLayer,
+            probabilities: inference.probabilities,
+            predictedDigit: inference.predictedDigit,
+            confidence: inference.confidence,
+            activePhase: 'softmax',
+          },
+        },
+        explanation: isVi
+          ? `Tầng đầu ra tính 10 điểm số thô (logits) z₀...z₉. Chữ số ${inference.predictedDigit} đạt điểm số logit cao nhất.`
+          : `Output layer computes 10 raw logits z₀...z₉. Digit ${inference.predictedDigit} receives the highest logit score.`,
+        invariant: isVi
+          ? '10 logits biểu thị tương quan tuyến tính chưa chuẩn hóa của từng chữ số.'
+          : '10 logits represent unnormalized linear compatibility scores for each digit class.',
+      });
+
+      // Step 5: Softmax Probability Distribution & Result
+      steps.push({
+        step: 0,
+        totalSteps: 0,
+        line: 12,
+        action: 'done',
+        targets: [],
+        state: {
+          mnistState: {
+            grid,
+            flattenedSample,
+            hiddenLayer,
+            probabilities: inference.probabilities,
+            predictedDigit: inference.predictedDigit,
+            confidence: inference.confidence,
+            activePhase: 'result',
+          },
+        },
+        explanation: isVi
+          ? `Hàm Softmax hoàn tất! Nhận diện chính xác: Chữ số ${inference.predictedDigit} với độ tin cậy ${(inference.confidence * 100).toFixed(1)}%. Tổng 10 xác suất đúng bằng 100%.`
+          : `Softmax normalization complete! Predicted: Digit ${inference.predictedDigit} with ${(inference.confidence * 100).toFixed(1)}% confidence. All 10 probabilities sum to 100%.`,
+        invariant: isVi
+          ? 'Hàm Softmax đảm bảo ∑ P(y=k) = 1.0 và P ∈ (0, 1). Chữ số có xác suất cao nhất được chọn làm kết quả.'
+          : 'Softmax guarantees ∑ P(y=k) = 1.0 and P ∈ (0, 1). The argmax digit is chosen as the final prediction.',
+      });
+
+      const total = steps.length;
+      return steps.map((s, idx) => ({ ...s, step: idx + 1, totalSteps: total }));
+    },
+  },
+
 
   // ==========================================
   // Category 3: Transformers & Modern LLMs

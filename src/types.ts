@@ -22,6 +22,7 @@ export type VisualType =
   | 'modern-neuron'
   | 'attention-matrix'
   | 'cnn-convolution'
+  | 'mnist-interactive'
   | 'array-bars';
 
 export type StepAction =
@@ -84,6 +85,23 @@ export interface ModernNeuronState {
   outputVal: number;
   gradientVal: number; // da/dz
 }
+
+export interface MnistDigitProb {
+  digit: number;
+  prob: number;
+  logit: number;
+}
+
+export interface MnistState {
+  grid: number[][];
+  flattenedSample: number[];
+  hiddenLayer: number[];
+  probabilities: MnistDigitProb[];
+  predictedDigit: number;
+  confidence: number;
+  activePhase: 'draw' | 'flatten' | 'hidden' | 'softmax' | 'result';
+}
+
 export type PrimitiveStateValue =
   | string
   | number
@@ -100,8 +118,8 @@ export type PrimitiveStateValue =
   | SingleNeuronState
   | ModernNeuronState
   | BioNeuronState
-  | { token: string; prob: number }[];
-
+  | { token: string; prob: number }[]
+  | MnistState;
 export interface StepState {
   epoch?: number;
   loss?: number;
@@ -124,6 +142,7 @@ export interface StepState {
   neuronState?: SingleNeuronState;
   modernNeuronState?: ModernNeuronState;
   bioNeuronState?: BioNeuronState;
+  mnistState?: MnistState;
   [key: string]: PrimitiveStateValue;
 }
 
