@@ -1327,6 +1327,438 @@ def conv2d(image, kernel, bias=0.0):
     },
   },
 
+  {
+    id: 'house-price-mlp',
+    title: '05. House Price Prediction with Neural Network',
+    category: 'Deep Learning & Neural Networks',
+    difficulty: 'Intermediate',
+    badge: 'Regression MLP',
+    visualType: 'neural-network',
+    formula: '\\hat{price} = W_2 \\cdot \\text{ReLU}(W_1 \\mathbf{x} + b_1) + b_2',
+    summary: 'Predicts house prices from area, bedrooms, and location score using a 3→4→1 ReLU MLP regression network.',
+    description: 'A practical regression MLP maps three normalized house features (area m², bedrooms, location quality score) through a hidden ReLU layer of 4 neurons to produce a continuous price prediction in millions USD. Demonstrates how MLPs replace linear regression for non-linear real-estate patterns.',
+    inputVariants: [
+      { label: 'Suburban (80m², 2BR, 0.7)', value: 'area: 0.80, rooms: 0.40, loc: 0.70' },
+      { label: 'City Center (120m², 3BR, 0.95)', value: 'area: 1.00, rooms: 0.75, loc: 0.95' },
+      { label: 'Rural (60m², 2BR, 0.30)', value: 'area: 0.60, rooms: 0.40, loc: 0.30' },
+      { label: 'Luxury (200m², 5BR, 1.0)', value: 'area: 1.00, rooms: 1.00, loc: 1.00' },
+    ],
+    vi: {
+      title: '05. Dự đoán Giá Nhà bằng Neural Network',
+      category: 'Deep Learning & Mạng Nơ-ron',
+      badge: 'Regression MLP',
+      summary: 'Dự đoán giá nhà từ diện tích, số phòng ngủ và điểm vị trí bằng mạng MLP hồi quy 3→4→1 với ReLU.',
+      description: 'MLP hồi quy thực tế ánh xạ 3 đặc trưng nhà (diện tích m², số phòng ngủ, điểm chất lượng vị trí) qua một hidden layer ReLU 4 nơ-ron để dự đoán giá liên tục tính bằng tỷ đồng. Minh chứng cách MLP vượt qua hồi quy tuyến tính trong các bài toán bất động sản phi tuyến.',
+      variants: [
+        { label: 'Ngoại ô (80m², 2PN, 0.7)', value: 'area: 0.80, rooms: 0.40, loc: 0.70' },
+        { label: 'Trung tâm (120m², 3PN, 0.95)', value: 'area: 1.00, rooms: 0.75, loc: 0.95' },
+        { label: 'Vùng quê (60m², 2PN, 0.30)', value: 'area: 0.60, rooms: 0.40, loc: 0.30' },
+        { label: 'Cao cấp (200m², 5PN, 1.0)', value: 'area: 1.00, rooms: 1.00, loc: 1.00' },
+      ],
+      sections: [
+        {
+          title: '1. Tại sao MLP tốt hơn Hồi quy Tuyến tính cho Bất động sản?',
+          content: 'Giá nhà phụ thuộc vào các tương tác phi tuyến phức tạp: vị trí đắt đỏ x diện tích lớn x tầng cao → giá tăng theo hàm mũ, không tuyến tính. Hồi quy tuyến tính y = wx + b buộc phải mô hình hóa tất cả bằng một siêu phẳng phẳng. Hidden ReLU layers của MLP giúp học các ngưỡng phi tuyến như "vị trí > 0.8 AND diện tích > 0.9 → giá tăng đột biến".',
+          formula: '\\text{ReLU}(z) = \\max(0, z) \\quad \\Rightarrow \\quad \\text{học ngưỡng phi tuyến}',
+          keyTakeaway: 'MLP với hidden layers là "Universal Approximator": có thể xấp xỉ bất kỳ hàm số liên tục nào, kể cả đường cong giá bất động sản.',
+        },
+        {
+          title: '2. Chuẩn hóa đặc trưng (Feature Normalization) trước khi đưa vào MLP',
+          content: 'Diện tích tính bằng m² (60–300), số phòng (1–6), và điểm vị trí (0–1) có thang đo hoàn toàn khác nhau. Nếu không chuẩn hóa, gradient descent sẽ bị thiên vị nặng về đặc trưng có giá trị lớn (diện tích). Min-Max normalization đưa tất cả về [0, 1].',
+          formula: 'x_{\\text{norm}} = \\frac{x - x_{\\min}}{x_{\\max} - x_{\\min}}',
+          keyTakeaway: 'Batch Normalization trong deep learning hiện đại thực hiện bước chuẩn hóa này ngay bên trong từng layer.',
+        },
+        {
+          title: '3. Hàm Mất mát MSE cho Bài toán Hồi quy',
+          content: 'Khác với bài toán phân loại dùng Binary Cross-Entropy, hồi quy giá nhà dùng Mean Squared Error (MSE): tính trung bình bình phương khoảng cách giữa giá dự đoán và giá thực tế. Backpropagation cực tiểu hóa MSE theo toàn bộ tham số W₁, b₁, W₂, b₂.',
+          formula: 'L_{MSE} = \\frac{1}{N} \\sum_{i=1}^N (\\hat{y}_i - y_i)^2',
+          keyTakeaway: 'MSE phạt nặng sai số lớn do bình phương, thúc đẩy mô hình học cẩn thận với các nhà có giá đặc biệt.',
+        },
+      ],
+    },
+    sections: [
+      {
+        title: '1. Why MLP Beats Linear Regression for Real Estate',
+        content: 'House prices depend on complex non-linear interactions: premium location × large area × high floor → price increases exponentially, not linearly. Linear regression y = wx + b forces all of this into a flat hyperplane. MLP hidden layers learn non-linear thresholds like "location > 0.8 AND area > 0.9 → price spikes".',
+        formula: '\\text{ReLU}(z) = \\max(0, z) \\quad \\Rightarrow \\quad \\text{non-linear threshold learning}',
+        keyTakeaway: 'MLP is the Universal Approximator: it can approximate any continuous function — including the complex curves of real estate prices.',
+      },
+      {
+        title: '2. Feature Normalization Before Feeding into MLP',
+        content: 'Area in m² (60–300), bedrooms (1–6), and location score (0–1) are on completely different scales. Without normalization, gradient descent is heavily biased toward the highest-magnitude feature. Min-Max normalization maps everything to [0, 1].',
+        formula: 'x_{\\text{norm}} = \\frac{x - x_{\\min}}{x_{\\max} - x_{\\min}}',
+        keyTakeaway: 'Modern deep learning handles this with Batch Normalization layers inside the network itself.',
+      },
+      {
+        title: '3. MSE Loss Function for Regression',
+        content: 'Unlike classification (Binary Cross-Entropy), house price regression uses Mean Squared Error (MSE): the average squared distance between predicted and actual price. Backpropagation minimizes MSE over all parameters W₁, b₁, W₂, b₂.',
+        formula: 'L_{MSE} = \\frac{1}{N} \\sum_{i=1}^N (\\hat{y}_i - y_i)^2',
+        keyTakeaway: 'MSE heavily penalizes large errors via squaring, driving the model to be precise on outlier-priced houses.',
+      },
+    ],
+    timeComplexity: 'O(d_in · d_h + d_h · d_out)',
+    spaceComplexity: 'O(d_h) hidden activations',
+    tags: ['Neural Network', 'MLP', 'Regression', 'ReLU', 'House Price', 'PyTorch'],
+    defaultInput: 'area: 0.80, rooms: 0.40, loc: 0.70',
+    pythonCode: `import torch
+import torch.nn as nn
+
+class HousePriceNet(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # 3 features → 4 ReLU hidden → 1 price output
+        self.net = nn.Sequential(
+            nn.Linear(3, 4),
+            nn.ReLU(),
+            nn.Linear(4, 1)
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+# Inputs: [area_norm, rooms_norm, location_score]
+x = torch.tensor([[0.80, 0.40, 0.70]])
+model = HousePriceNet()
+price = model(x)
+print(f"Predicted price: \${price.item():.2f}M")`,
+    code: `import numpy as np
+
+def house_price_mlp(x, W1, b1, W2, b2):
+    # 1. Hidden: Linear + ReLU
+    z1 = np.dot(x, W1) + b1
+    h1 = np.maximum(0, z1)    # ReLU
+    # 2. Output: Linear (regression)
+    z2 = np.dot(h1, W2) + b2
+    return z2                  # price in $M`,
+    generateTraces: (inputStr?: string, lang: Language = 'en'): TraceStep[] => {
+      const isVi = lang === 'vi';
+      let area = 0.80, rooms = 0.40, loc = 0.70;
+      if (inputStr) {
+        const ma = inputStr.match(/area:\s*(-?[0-9.]+)/i);
+        const mr = inputStr.match(/rooms:\s*(-?[0-9.]+)/i);
+        const ml = inputStr.match(/loc:\s*(-?[0-9.]+)/i);
+        if (ma) area = Number(ma[1]);
+        if (mr) rooms = Number(mr[1]);
+        if (ml) loc = Number(ml[1]);
+      }
+      // Fixed weights for repeatable educational demo
+      const W1 = [[0.6, 0.3, -0.2, 0.8], [0.4, 0.7, 0.5, -0.3], [0.9, 0.2, 0.6, 0.4]];
+      const b1 = [-0.1, 0.2, -0.3, 0.1];
+      const W2 = [0.5, 0.4, 0.3, 0.6];
+      const b2 = 0.15;
+      const x = [area, rooms, loc];
+      const z1 = b1.map((bi, j) => Number((x[0]*W1[0][j] + x[1]*W1[1][j] + x[2]*W1[2][j] + bi).toFixed(3)));
+      const h1 = z1.map(z => Number(Math.max(0, z).toFixed(3)));
+      const price = Number((h1.reduce((s, h, j) => s + h * W2[j], b2)).toFixed(3));
+      const steps: TraceStep[] = [];
+
+      steps.push({
+        step: 0, totalSteps: 0, line: 1, action: 'init', targets: [],
+        state: {
+          layers: [
+            { name: isVi ? 'Đặc trưng Nhà (x)' : 'House Features (x)',
+              nodes: [{ label: 'Diện tích', value: area }, { label: 'Phòng ngủ', value: rooms }, { label: 'Vị trí', value: loc }] },
+            { name: isVi ? 'Tầng ẩn ReLU (4 nơ-ron)' : 'Hidden Layer ReLU (4 neurons)',
+              nodes: [{ label: 'h₁', value: 0 }, { label: 'h₂', value: 0 }, { label: 'h₃', value: 0 }, { label: 'h₄', value: 0 }] },
+            { name: isVi ? 'Giá dự đoán (tỷ $)' : 'Predicted Price ($M)',
+              nodes: [{ label: 'price', value: 0 }] },
+          ],
+        },
+        explanation: isVi
+          ? `Đầu vào: Diện tích = ${area.toFixed(2)}, Phòng ngủ = ${rooms.toFixed(2)}, Vị trí = ${loc.toFixed(2)}. Sẵn sàng lan truyền tiến qua mạng hồi quy.`
+          : `Input: Area = ${area.toFixed(2)}, Rooms = ${rooms.toFixed(2)}, Location = ${loc.toFixed(2)}. Ready to forward propagate through regression network.`,
+        invariant: isVi ? 'Đặc trưng đầu vào đã chuẩn hóa trong [0, 1] bằng Min-Max Normalization.' : 'Input features normalized to [0, 1] via Min-Max Normalization.',
+      });
+
+      steps.push({
+        step: 0, totalSteps: 0, line: 4, action: 'compute', targets: [],
+        state: {
+          layers: [
+            { name: isVi ? 'Đặc trưng Nhà (x)' : 'House Features (x)',
+              nodes: [{ label: 'Diện tích', value: area }, { label: 'Phòng ngủ', value: rooms }, { label: 'Vị trí', value: loc }] },
+            { name: isVi ? 'Tầng ẩn — z₁ = W₁·x + b₁' : 'Hidden Layer — z₁ = W₁·x + b₁',
+              nodes: [{ label: 'z₁', value: z1[0] }, { label: 'z₂', value: z1[1] }, { label: 'z₃', value: z1[2] }, { label: 'z₄', value: z1[3] }] },
+            { name: isVi ? 'Giá dự đoán' : 'Predicted Price ($M)',
+              nodes: [{ label: 'price', value: 0 }] },
+          ],
+        },
+        explanation: isVi
+          ? `Phép chiếu affine: z₁ = W₁·x + b₁ → [${z1.map(v => v.toFixed(2)).join(', ')}]. Một số giá trị âm sẽ bị ReLU triệt tiêu.`
+          : `Affine projection: z₁ = W₁·x + b₁ → [${z1.map(v => v.toFixed(2)).join(', ')}]. Negative values will be killed by ReLU.`,
+        invariant: isVi ? 'Tổ hợp tuyến tính z = Wx + b bảo toàn tính tuyến tính.' : 'Linear combination z = Wx + b preserves linearity.',
+      });
+
+      steps.push({
+        step: 0, totalSteps: 0, line: 6, action: 'forward', targets: [],
+        state: {
+          layers: [
+            { name: isVi ? 'Đặc trưng Nhà (x)' : 'House Features (x)',
+              nodes: [{ label: 'Diện tích', value: area }, { label: 'Phòng ngủ', value: rooms }, { label: 'Vị trí', value: loc }] },
+            { name: isVi ? 'Tầng ẩn — h₁ = ReLU(z₁)' : 'Hidden Layer — h₁ = ReLU(z₁)',
+              nodes: [{ label: 'h₁', value: h1[0], activation: 'ReLU' }, { label: 'h₂', value: h1[1], activation: 'ReLU' }, { label: 'h₃', value: h1[2], activation: 'ReLU' }, { label: 'h₄', value: h1[3], activation: 'ReLU' }] },
+            { name: isVi ? 'Giá dự đoán' : 'Predicted Price ($M)',
+              nodes: [{ label: 'price', value: 0 }] },
+          ],
+        },
+        explanation: isVi
+          ? `ReLU triệt tiêu giá trị âm: h₁ = max(0, z₁) → [${h1.map(v => v.toFixed(2)).join(', ')}]. Tính thưa thớt giúp mạng tập trung vào tín hiệu quan trọng nhất.`
+          : `ReLU kills negatives: h₁ = max(0, z₁) → [${h1.map(v => v.toFixed(2)).join(', ')}]. Sparsity focuses the network on the strongest feature signals.`,
+        invariant: isVi ? 'ReLU đảm bảo h₁ ∈ [0, ∞) — gradient luôn dương với nơ-ron đang kích hoạt.' : 'ReLU ensures h₁ ∈ [0, ∞) — gradient stays positive for active neurons.',
+      });
+
+      steps.push({
+        step: 0, totalSteps: 0, line: 8, action: 'done', targets: [],
+        state: {
+          layers: [
+            { name: isVi ? 'Đặc trưng Nhà (x)' : 'House Features (x)',
+              nodes: [{ label: 'Diện tích', value: area }, { label: 'Phòng ngủ', value: rooms }, { label: 'Vị trí', value: loc }] },
+            { name: isVi ? 'Tầng ẩn (Hoàn tất)' : 'Hidden Layer (Complete)',
+              nodes: [{ label: 'h₁', value: h1[0] }, { label: 'h₂', value: h1[1] }, { label: 'h₃', value: h1[2] }, { label: 'h₄', value: h1[3] }] },
+            { name: isVi ? `Giá = $${price.toFixed(2)}M` : `Price = $${price.toFixed(2)}M`,
+              nodes: [{ label: 'price', value: price }] },
+          ],
+        },
+        explanation: isVi
+          ? `Hoàn tất! Tầng đầu ra tuyến tính: giá = W₂·h₁ + b₂ = $${price.toFixed(2)}M. Không dùng Sigmoid vì đây là bài toán hồi quy giá trị liên tục.`
+          : `Done! Output linear projection: price = W₂·h₁ + b₂ = $${price.toFixed(2)}M. No Sigmoid — this is continuous-value regression, not classification.`,
+        invariant: isVi ? 'Tầng đầu ra hồi quy không có hàm kích hoạt (identity) để giá trị không bị giới hạn trong [0,1].' : 'Regression output has no activation (identity) — price is unbounded, unlike probability.',
+      });
+
+      const total = steps.length;
+      return steps.map((s, idx) => ({ ...s, step: idx + 1, totalSteps: total }));
+    },
+  },
+
+  {
+    id: 'dog-cat-mlp',
+    title: '06. Dog vs. Cat Classification (MLP Classifier)',
+    category: 'Deep Learning & Neural Networks',
+    difficulty: 'Intermediate',
+    badge: 'Binary Classification',
+    visualType: 'neural-network',
+    formula: 'P(\\text{Cat}) = \\sigma(W_2 \\cdot \\text{ReLU}(W_1 \\mathbf{x} + b_1) + b_2)',
+    summary: 'Classifies images as Dog or Cat from 3 visual features (texture, brightness, edge density) using a 3→4→4→1 deep MLP.',
+    description: 'A two-hidden-layer MLP binary classifier that takes normalized visual features extracted from animal images and outputs a class probability via Sigmoid. Demonstrates how stacking non-linear layers enables complex decision boundaries needed to separate cats from dogs.',
+    inputVariants: [
+      { label: 'Likely Cat (smooth, bright)', value: 'texture: 0.2, bright: 0.8, edges: 0.3' },
+      { label: 'Likely Dog (rough, dark)', value: 'texture: 0.8, bright: 0.4, edges: 0.9' },
+      { label: 'Ambiguous', value: 'texture: 0.5, bright: 0.5, edges: 0.5' },
+      { label: 'High Contrast Dog', value: 'texture: 0.9, bright: 0.3, edges: 1.0' },
+    ],
+    vi: {
+      title: '06. Phân loại Chó vs. Mèo bằng MLP',
+      category: 'Deep Learning & Mạng Nơ-ron',
+      badge: 'Phân loại Nhị phân',
+      summary: 'Phân loại ảnh là Chó hoặc Mèo từ 3 đặc trưng thị giác (kết cấu, độ sáng, mật độ cạnh) dùng MLP sâu 3→4→4→1.',
+      description: 'MLP phân loại nhị phân hai hidden layers nhận đặc trưng thị giác chuẩn hóa từ ảnh động vật và xuất xác suất lớp qua Sigmoid. Minh họa cách xếp chồng các lớp phi tuyến giúp học ranh giới quyết định phức tạp để phân biệt mèo và chó.',
+      variants: [
+        { label: 'Khả năng là Mèo (mịn, sáng)', value: 'texture: 0.2, bright: 0.8, edges: 0.3' },
+        { label: 'Khả năng là Chó (thô, tối)', value: 'texture: 0.8, bright: 0.4, edges: 0.9' },
+        { label: 'Mơ hồ (50/50)', value: 'texture: 0.5, bright: 0.5, edges: 0.5' },
+        { label: 'Chó tương phản cao', value: 'texture: 0.9, bright: 0.3, edges: 1.0' },
+      ],
+      sections: [
+        {
+          title: '1. Tại sao cần 2 Hidden Layers để Phân loại Chó/Mèo?',
+          content: 'Chó và mèo có hình dạng lông (texture), tư thế và nét mặt khác nhau, nhưng ranh giới phân loại là phi tuyến và phức tạp. Layer 1 học các đặc trưng nguyên thủy như "có mịn không?". Layer 2 học các tổ hợp cao hơn như "mịn + mắt tròn → mèo". Chỉ một layer ẩn không đủ sức học được sự kết hợp phức tạp này.',
+          formula: 'a^{[2]} = \\text{ReLU}(W^{[2]} \\cdot \\text{ReLU}(W^{[1]} x + b^{[1]}) + b^{[2]})',
+          keyTakeaway: 'Mỗi layer học đặc trưng ở độ trừu tượng ngày càng cao hơn — đây là bản chất của Deep Learning.',
+        },
+        {
+          title: '2. Hàm Sigmoid và Ý nghĩa Xác suất Lớp',
+          content: 'Tầng đầu ra không dùng ReLU mà dùng Sigmoid để ép đầu ra vào [0, 1]. Giá trị này được diễn giải là P(Chó) — xác suất hình ảnh thuộc lớp Chó. Quy tắc quyết định: nếu P(Chó) > 0.5 → "Chó", ngược lại → "Mèo".',
+          formula: '\\hat{y} = \\sigma(z) = \\frac{1}{1+e^{-z}} \\in (0, 1)',
+          keyTakeaway: 'Binary Cross-Entropy Loss: L = -[y·log(ŷ) + (1-y)·log(1-ŷ)] — phạt nặng khi mô hình tự tin sai.',
+        },
+        {
+          title: '3. Từ MLP đến Mạng CNN hiện đại (Bước tiếp theo)',
+          content: 'MLP này nhận đặc trưng thủ công (handcrafted). Mạng CNN hiện đại (ResNet, EfficientNet) tự động trích xuất đặc trưng từ pixel gốc qua hàng chục Conv layers. MLP vẫn là "đầu phân loại" (classification head) ở cuối mọi CNN hiện đại.',
+          keyTakeaway: 'MLP hiểu nguyên lý phân loại nhị phân. CNN chỉ thêm bước tự học đặc trưng từ pixel — cấu trúc quyết định vẫn là MLP Sigmoid này.',
+        },
+      ],
+    },
+    sections: [
+      {
+        title: '1. Why 2 Hidden Layers for Dog/Cat Classification?',
+        content: 'Dogs and cats differ in fur texture, posture, and facial structure — but the decision boundary is highly non-linear. Layer 1 learns primitive features like "is it smooth?". Layer 2 combines them: "smooth + round eyes → cat". A single hidden layer cannot capture such high-order combinations.',
+        formula: 'a^{[2]} = \\text{ReLU}(W^{[2]} \\cdot \\text{ReLU}(W^{[1]} x + b^{[1]}) + b^{[2]})',
+        keyTakeaway: 'Each layer learns features at an increasingly abstract level — this hierarchy is the essence of Deep Learning.',
+      },
+      {
+        title: '2. Sigmoid Output and Class Probability Interpretation',
+        content: 'The output layer uses Sigmoid (not ReLU) to squash the final logit into [0, 1]. This is interpreted as P(Dog). Decision rule: if P(Dog) > 0.5 → "Dog", else → "Cat".',
+        formula: '\\hat{y} = \\sigma(z) = \\frac{1}{1+e^{-z}} \\in (0, 1)',
+        keyTakeaway: 'Binary Cross-Entropy Loss penalizes confident wrong predictions the most — driving the model to be accurately calibrated.',
+      },
+      {
+        title: '3. From MLP to Modern CNN (The Next Step)',
+        content: 'This MLP takes handcrafted features. Modern CNNs (ResNet, EfficientNet) automatically extract features from raw pixels through dozens of Conv layers. The MLP Sigmoid head at the end remains the same — CNNs just add automatic feature extraction before it.',
+        keyTakeaway: 'Understanding this MLP is understanding the classification head of every modern vision model.',
+      },
+    ],
+    timeComplexity: 'O(d₁·d₂ + d₂·d₃ + d₃·1)',
+    spaceComplexity: 'O(d₂ + d₃) hidden activations',
+    tags: ['MLP', 'Binary Classification', 'Sigmoid', 'ReLU', 'Computer Vision', 'PyTorch'],
+    defaultInput: 'texture: 0.2, bright: 0.8, edges: 0.3',
+    pythonCode: `import torch
+import torch.nn as nn
+
+class DogCatMLP(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # 3 visual features → 4 → 4 → 1 (Sigmoid prob)
+        self.net = nn.Sequential(
+            nn.Linear(3, 4), nn.ReLU(),
+            nn.Linear(4, 4), nn.ReLU(),
+            nn.Linear(4, 1), nn.Sigmoid(),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+# Features: [texture_score, brightness, edge_density]
+x = torch.tensor([[0.2, 0.8, 0.3]])  # likely cat
+model = DogCatMLP()
+prob = model(x).item()
+label = "Dog" if prob > 0.5 else "Cat"
+print(f"P(Dog) = {prob:.3f} → Predicted: {label}")`,
+    code: `import numpy as np
+
+def dog_cat_mlp(x, W1,b1, W2,b2, W3,b3):
+    h1 = np.maximum(0, np.dot(x,W1) + b1)  # ReLU
+    h2 = np.maximum(0, np.dot(h1,W2) + b2) # ReLU
+    z3 = np.dot(h2, W3) + b3
+    y  = 1 / (1 + np.exp(-z3))             # Sigmoid
+    return y  # P(Dog)`,
+    generateTraces: (inputStr?: string, lang: Language = 'en'): TraceStep[] => {
+      const isVi = lang === 'vi';
+      let tex = 0.2, bright = 0.8, edges = 0.3;
+      if (inputStr) {
+        const mt = inputStr.match(/texture:\s*(-?[0-9.]+)/i);
+        const mb = inputStr.match(/bright:\s*(-?[0-9.]+)/i);
+        const me = inputStr.match(/edges:\s*(-?[0-9.]+)/i);
+        if (mt) tex = Number(mt[1]);
+        if (mb) bright = Number(mb[1]);
+        if (me) edges = Number(me[1]);
+      }
+      const x = [tex, bright, edges];
+      const W1 = [[0.7,-0.4,0.5,0.3],[-0.6,0.8,-0.3,0.5],[0.4,-0.2,0.9,-0.6]];
+      const b1 = [0.1,-0.2,0.3,-0.1];
+      const W2 = [[0.5,0.3,-0.4,0.6],[-0.3,0.7,0.5,-0.2],[0.4,-0.5,0.3,0.8],[-0.2,0.4,-0.6,0.3]];
+      const b2 = [-0.1,0.2,-0.3,0.1];
+      const W3 = [0.6,-0.8,0.7,-0.5];
+      const b3 = -0.2;
+      const z1 = b1.map((bi,j)=>Number((x[0]*W1[0][j]+x[1]*W1[1][j]+x[2]*W1[2][j]+bi).toFixed(3)));
+      const h1 = z1.map(z=>Number(Math.max(0,z).toFixed(3)));
+      const z2 = b2.map((bi,j)=>Number((h1[0]*W2[0][j]+h1[1]*W2[1][j]+h1[2]*W2[2][j]+h1[3]*W2[3][j]+bi).toFixed(3)));
+      const h2 = z2.map(z=>Number(Math.max(0,z).toFixed(3)));
+      const z3 = Number((h2.reduce((s,h,j)=>s+h*W3[j],b3)).toFixed(3));
+      const pDog = Number((1/(1+Math.exp(-z3))).toFixed(3));
+      const label = pDog > 0.5 ? (isVi ? 'CHÓ 🐶' : 'DOG 🐶') : (isVi ? 'MÈO 🐱' : 'CAT 🐱');
+      const steps: TraceStep[] = [];
+
+      steps.push({
+        step: 0, totalSteps: 0, line: 1, action: 'init', targets: [],
+        state: {
+          layers: [
+            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)',
+              nodes: [{ label: 'Kết cấu', value: tex }, { label: 'Độ sáng', value: bright }, { label: 'Cạnh', value: edges }] },
+            { name: isVi ? 'Tầng ẩn 1 (4 nơ-ron)' : 'Hidden Layer 1 (4n)',
+              nodes: [{ label:'h1₁',value:0},{label:'h1₂',value:0},{label:'h1₃',value:0},{label:'h1₄',value:0}] },
+            { name: isVi ? 'Tầng ẩn 2 (4 nơ-ron)' : 'Hidden Layer 2 (4n)',
+              nodes: [{ label:'h2₁',value:0},{label:'h2₂',value:0},{label:'h2₃',value:0},{label:'h2₄',value:0}] },
+            { name: isVi ? 'Xác suất P(Chó)' : 'P(Dog)',
+              nodes: [{ label: 'P(Dog)', value: 0 }] },
+          ],
+        },
+        explanation: isVi
+          ? `Đặc trưng ảnh: Kết cấu=${tex.toFixed(2)}, Độ sáng=${bright.toFixed(2)}, Cạnh=${edges.toFixed(2)}. Chuẩn bị lan truyền tiến qua mạng phân loại 2 hidden layers.`
+          : `Image features: Texture=${tex.toFixed(2)}, Brightness=${bright.toFixed(2)}, Edges=${edges.toFixed(2)}. Forwarding through 2-hidden-layer classifier.`,
+        invariant: isVi ? 'Đặc trưng chuẩn hóa ∈ [0,1]. Mạng có cấu trúc 3→4→4→1.' : 'Features normalized ∈ [0,1]. Network architecture: 3→4→4→1.',
+      });
+
+      steps.push({
+        step: 0, totalSteps: 0, line: 4, action: 'compute', targets: [],
+        state: {
+          layers: [
+            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)',
+              nodes: [{ label: 'Kết cấu', value: tex }, { label: 'Độ sáng', value: bright }, { label: 'Cạnh', value: edges }] },
+            { name: isVi ? 'Tầng ẩn 1 — z₁ = W₁·x + b₁' : 'Hidden Layer 1 — z₁ = W₁·x + b₁',
+              nodes: z1.map((v,i)=>({label:`z₁${i+1}`,value:v})) },
+            { name: isVi ? 'Tầng ẩn 2' : 'Hidden Layer 2',
+              nodes: [{label:'h2₁',value:0},{label:'h2₂',value:0},{label:'h2₃',value:0},{label:'h2₄',value:0}] },
+            { name: isVi ? 'Xác suất P(Chó)' : 'P(Dog)', nodes: [{label:'P(Dog)',value:0}] },
+          ],
+        },
+        explanation: isVi
+          ? `Tầng ẩn 1 tổ hợp tuyến tính: z₁ = W₁·x + b₁ → [${z1.map(v=>v.toFixed(2)).join(', ')}]. Phát hiện các đặc trưng nguyên thủy.`
+          : `Hidden Layer 1 linear combination: z₁ = W₁·x + b₁ → [${z1.map(v=>v.toFixed(2)).join(', ')}]. Detecting primitive features.`,
+        invariant: isVi ? 'Layer 1 học đặc trưng cấp thấp: cạnh, màu sắc, kết cấu.' : 'Layer 1 learns low-level features: edges, color, texture.',
+      });
+
+      steps.push({
+        step: 0, totalSteps: 0, line: 5, action: 'forward', targets: [],
+        state: {
+          layers: [
+            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)',
+              nodes: [{ label: 'Kết cấu', value: tex }, { label: 'Độ sáng', value: bright }, { label: 'Cạnh', value: edges }] },
+            { name: isVi ? 'Tầng ẩn 1 — h₁ = ReLU(z₁)' : 'Hidden Layer 1 — h₁ = ReLU(z₁)',
+              nodes: h1.map((v,i)=>({label:`h1₁${i+1>1?i+1:''}`,value:v,activation:'ReLU'})) },
+            { name: isVi ? 'Tầng ẩn 2 — z₂ = W₂·h₁ + b₂' : 'Hidden Layer 2 — z₂ = W₂·h₁ + b₂',
+              nodes: z2.map((v,i)=>({label:`z₂${i+1}`,value:v})) },
+            { name: isVi ? 'Xác suất P(Chó)' : 'P(Dog)', nodes: [{label:'P(Dog)',value:0}] },
+          ],
+        },
+        explanation: isVi
+          ? `ReLU(z₁) → h₁=[${h1.map(v=>v.toFixed(2)).join(', ')}]. Tầng ẩn 2 phóng chiếu: z₂=[${z2.map(v=>v.toFixed(2)).join(', ')}]. Học tổ hợp đặc trưng bậc cao.`
+          : `ReLU(z₁) → h₁=[${h1.map(v=>v.toFixed(2)).join(', ')}]. Layer 2 projection: z₂=[${z2.map(v=>v.toFixed(2)).join(', ')}]. Learning high-level feature combos.`,
+        invariant: isVi ? 'Layer 2 học đặc trưng bậc cao: "mịn + sáng → mèo", "thô + nhiều cạnh → chó".' : 'Layer 2 learns high-level: "smooth + bright → cat", "rough + many edges → dog".',
+      });
+
+      steps.push({
+        step: 0, totalSteps: 0, line: 7, action: 'compute', targets: [],
+        state: {
+          layers: [
+            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)',
+              nodes: [{ label: 'Kết cấu', value: tex }, { label: 'Độ sáng', value: bright }, { label: 'Cạnh', value: edges }] },
+            { name: isVi ? 'Tầng ẩn 1 (Hoàn tất)' : 'Hidden Layer 1 (Done)',
+              nodes: h1.map((v,i)=>({label:`h1₁${i+1>1?i+1:''}`,value:v})) },
+            { name: isVi ? 'Tầng ẩn 2 — h₂ = ReLU(z₂)' : 'Hidden Layer 2 — h₂ = ReLU(z₂)',
+              nodes: h2.map((v,i)=>({label:`h2₁${i+1>1?i+1:''}`,value:v,activation:'ReLU'})) },
+            { name: isVi ? 'Xác suất P(Chó)' : 'P(Dog)', nodes: [{label:'P(Dog)',value:0}] },
+          ],
+        },
+        explanation: isVi
+          ? `ReLU tầng 2: h₂=[${h2.map(v=>v.toFixed(2)).join(', ')}]. Đặc trưng bậc cao đã trích xuất, sẵn sàng cho tầng đầu ra Sigmoid.`
+          : `Layer 2 ReLU: h₂=[${h2.map(v=>v.toFixed(2)).join(', ')}]. High-level features extracted, ready for Sigmoid output.`,
+        invariant: isVi ? 'Mỗi hidden layer học một tầng trừu tượng mới.' : 'Each hidden layer learns a new level of abstraction.',
+      });
+
+      steps.push({
+        step: 0, totalSteps: 0, line: 9, action: 'done', targets: [],
+        state: {
+          layers: [
+            { name: isVi ? 'Đặc trưng Ảnh (x)' : 'Image Features (x)',
+              nodes: [{ label: 'Kết cấu', value: tex }, { label: 'Độ sáng', value: bright }, { label: 'Cạnh', value: edges }] },
+            { name: isVi ? 'Tầng ẩn 1' : 'Hidden Layer 1',
+              nodes: h1.map((v,i)=>({label:`h1₁${i+1>1?i+1:''}`,value:v})) },
+            { name: isVi ? 'Tầng ẩn 2' : 'Hidden Layer 2',
+              nodes: h2.map((v,i)=>({label:`h2₁${i+1>1?i+1:''}`,value:v})) },
+            { name: `P(Dog) = ${pDog.toFixed(3)} → ${label}`,
+              nodes: [{ label: label, value: pDog, activation: 'Sigmoid' }] },
+          ],
+        },
+        explanation: isVi
+          ? `Tầng đầu ra: z₃=${z3.toFixed(3)}, P(Chó) = σ(${z3.toFixed(3)}) = ${pDog.toFixed(3)}. Quyết định: ${label}${pDog > 0.5 ? ` (${(pDog*100).toFixed(1)}% tự tin)` : ` (${((1-pDog)*100).toFixed(1)}% là Mèo)`}.`
+          : `Output: z₃=${z3.toFixed(3)}, P(Dog) = σ(${z3.toFixed(3)}) = ${pDog.toFixed(3)}. Decision: ${label}${pDog > 0.5 ? ` (${(pDog*100).toFixed(1)}% confident)` : ` (${((1-pDog)*100).toFixed(1)}% Cat)`}.`,
+        invariant: isVi ? 'Sigmoid đảm bảo P(Chó) ∈ (0,1). Quy tắc: P > 0.5 → Chó, P ≤ 0.5 → Mèo.' : 'Sigmoid ensures P(Dog) ∈ (0,1). Decision rule: P > 0.5 → Dog, ≤ 0.5 → Cat.',
+      });
+
+      const total = steps.length;
+      return steps.map((s, idx) => ({ ...s, step: idx + 1, totalSteps: total }));
+    },
+  },
+
   // ==========================================
   // Category 3: Transformers & Modern LLMs
   // ==========================================
