@@ -70,7 +70,7 @@ export const App: React.FC = () => {
     if (typeof window !== 'undefined' && window.location.hash.startsWith('#visualizer')) {
       return 'visualizer';
     }
-    return 'visualizer'; // Directly opens the stunning studio by default, just like VizLearn!
+    return 'catalog'; // Main URL opens the homepage (CatalogView) by default!
   });
 
   const [selectedPreset, setSelectedPreset] = useState<AlgorithmPreset>(() => {
@@ -105,7 +105,8 @@ export const App: React.FC = () => {
             setIsPlaying(false);
           }
         }
-      } else if (hash === '#catalog') {
+      } else {
+        // Empty hash "" or "#catalog" opens the homepage catalog
         setAppRoute('catalog');
         setIsPlaying(false);
       }
