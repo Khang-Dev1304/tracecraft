@@ -96,11 +96,15 @@ export const VisualStage: React.FC<VisualStageProps> = ({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
+    if (mnistState) return;
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('canvas, button, input, .no-pan, [data-drawing="true"]')) {
+      return;
+    }
     setIsPanning(true);
     hasMovedRef.current = false;
     panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
   };
-
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isPanning) return;
     const dx = e.clientX - panStartRef.current.x;
@@ -370,22 +374,15 @@ export const VisualStage: React.FC<VisualStageProps> = ({
 
       {/* Main Stage Visual Content with Dynamic Mouse Pan & Wheel Zoom */}
       <div
-        onWheel={handleWheel}
+        onWheel={mnistState ? undefined : handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         className={`relative flex-1 w-full flex items-center justify-center my-1 overflow-hidden select-none ${
-          isPanning ? 'cursor-grabbing' : 'cursor-grab'
+          mnistState ? 'cursor-default' : isPanning ? 'cursor-grabbing' : 'cursor-grab'
         }`}
       >
-        {/* Mouse Drag & Scroll Hint */}
-        <div className="absolute bottom-2 left-4 z-10 hidden sm:flex items-center gap-1.5 text-[10px] font-mono opacity-40 pointer-events-none">
-          <span>🖱️ Drag to pan</span>
-          <span>•</span>
-          <span>⚲ Scroll wheel to zoom</span>
-        </div>
-
         <div
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
