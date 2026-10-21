@@ -1851,7 +1851,7 @@ def dog_cat_mlp(x, W1,b1, W2,b2, W3,b3):
     timeComplexity: 'O(784 · d_h + d_h · 10)',
     spaceComplexity: 'O(784 + d_h + 10) activations',
     tags: ['MNIST', 'Computer Vision', 'Softmax', 'Multiclass', 'Interactive Drawing', 'PyTorch'],
-    defaultInput: 'digit: 7',
+    defaultInput: 'digit: draw',
     pythonCode: `import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -1895,20 +1895,23 @@ def mnist_forward(image_28x28, W1, b1, W2, b2):
     return pred_digit, probs`,
     generateTraces: (inputStr?: string, lang: Language = 'en'): TraceStep[] => {
       const isVi = lang === 'vi';
-      let digit = 7;
+      let digit: number | null = null;
       if (inputStr) {
         const match = inputStr.match(/digit:\s*(\d)/i);
         if (match) {
           digit = parseInt(match[1], 10);
         }
       }
-      const grid = generateCanonicalDigitGrid(digit);
+      const grid = digit !== null
+        ? generateCanonicalDigitGrid(digit)
+        : Array.from({ length: 28 }, () => Array(28).fill(0));
       const inference = inferMnist(grid);
       const flattenedSample = grid.flat().slice(100, 220);
       const hiddenLayer = Array.from({ length: 16 }, (_, idx) =>
-        ((idx * 7 + digit * 3) % 5 !== 0) ? Number((0.2 + ((idx * 31 + digit * 17) % 80) / 100).toFixed(2)) : 0
+        (digit !== null && ((idx * 7 + digit * 3) % 5 !== 0))
+          ? Number((0.2 + ((idx * 31 + digit * 17) % 80) / 100).toFixed(2))
+          : 0
       );
-
       const steps: TraceStep[] = [];
 
       // Step 1: Input Drawing Matrix (28x28)
@@ -1930,11 +1933,19 @@ def mnist_forward(image_28x28, W1, b1, W2, b2):
           },
         },
         explanation: isVi
-          ? `Bức vẽ 28×28 điểm ảnh khởi tạo với 784 giá trị độ sáng x_{r, c} ∈ [0, 1]. Người dùng có thể vẽ trực tiếp hoặc chọn mẫu số (hiện tại: Số ${digit}).`
-          : `28×28 grayscale drawing initialized with 784 pixel intensities x_{r, c} ∈ [0, 1]. Draw freely or select a preset (currently: Digit ${digit}).`,
+          ? (digit !== null
+              ? `Bức vẽ chữ số mẫu ${digit} trên ma trận 28×28. Bạn có thể bấm Xóa để vẽ số của riêng mình.`
+              : 'Bảng vẽ trực tiếp 28×28 đã sẵn sàng. Hãy dùng chuột hoặc ngón tay vẽ thẳng chữ số (0 - 9) lên bảng đen!')
+          : (digit !== null
+              ? `Canonical sample digit ${digit} loaded on 28×28 matrix. Click Clear to draw your own custom digit.`
+              : 'Interactive 28×28 canvas ready. Draw any digit (0 - 9) directly onto the black input board!'),
         invariant: isVi
-          ? 'Mỗi pixel chuẩn hóa trong đoạn [0, 1]. Kích thước ảnh chuẩn MNIST: 28×28 = 784 pixels.'
-          : 'Each pixel intensity normalized in [0, 1]. Canonical MNIST size: 28×28 = 784 pixels.',
+          ? (digit !== null
+              ? 'Mỗi pixel chuẩn hóa trong đoạn [0, 1]. Kích thước ảnh chuẩn MNIST: 28×28 = 784 pixels.'
+              : 'Bảng vẽ khởi tạo trống, sẵn sàng nhận nét vẽ tay trực tiếp.')
+          : (digit !== null
+              ? 'Each pixel intensity normalized in [0, 1]. Canonical MNIST size: 28×28 = 784 pixels.'
+              : 'Canvas initialized blank, ready for direct freehand drawing.'),
       });
 
       // Step 2: Vector Flattening

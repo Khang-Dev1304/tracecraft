@@ -128,12 +128,13 @@ export const MnistStage: React.FC<MnistStageProps> = ({
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
   const [activeTool, setActiveTool] = useState<'pencil' | 'eraser'>('pencil');
-  const [selectedDigit, setSelectedDigit] = useState<number>(7);
-  const [gridState, setGridState] = useState<number[][]>(() => generateCanonicalDigitGrid(7));
+  const [selectedDigit, setSelectedDigit] = useState<number | null>(null);
+  const [hasDrawn, setHasDrawn] = useState<boolean>(false);
 
-  // Live real-time inference result state
-  const [liveResult, setLiveResult] = useState(() => inferMnist(generateCanonicalDigitGrid(7)));
-
+  // Live real-time inference result state from real trained 97.6% model
+  const [liveResult, setLiveResult] = useState(() =>
+    inferMnist(Array.from({ length: 28 }, () => Array(28).fill(0)))
+  );
   // Render 28x28 grid onto 224x224 canvas
   const renderGridToCanvas = useCallback((grid: number[][]) => {
     const canvas = canvasRef.current;
@@ -159,39 +160,66 @@ export const MnistStage: React.FC<MnistStageProps> = ({
     }
   }, []);
 
-  // Update canvas on initial mount or when step digit changes
+  // Update canvas on mount or when step changes
   useEffect(() => {
-    const digitMatch = step.state.mnistState?.predictedDigit ?? selectedDigit;
-    setSelectedDigit(digitMatch);
-    const newGrid = step.state.mnistState?.grid ?? generateCanonicalDigitGrid(digitMatch);
-    setGridState(newGrid);
-    setLiveResult(inferMnist(newGrid));
-    renderGridToCanvas(newGrid);
-  }, [step]);
+    const g = step.state.mnistState?.grid;
+    if (g) {
+      let isNonZero = false;
+      for (let r = 0; r < 28 && !isNonZero; r++) {
+        for (let c = 0; c < 28 && !isNonZero; c++) {
+          if (g[r][c] > 0.05) isNonZero = true;
+        }
+      }
+      if (isNonZero) {
+        setLiveResult(inferMnist(g));
+        renderGridToCanvas(g);
+        setHasDrawn(true);
+        setSelectedDigit(step.state.mnistState?.predictedDigit ?? null);
+        return;
+      }
+    }
 
+    // Default: clean blank canvas ready for direct drawing
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#0b0f19';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+    setHasDrawn(false);
+    setSelectedDigit(null);
+  }, [step, renderGridToCanvas]);
   // Handle Preset Digit selection
   const handleSelectPreset = (d: number) => {
     setSelectedDigit(d);
+    setHasDrawn(true);
     const newGrid = generateCanonicalDigitGrid(d);
-    setGridState(newGrid);
     setLiveResult(inferMnist(newGrid));
     renderGridToCanvas(newGrid);
     if (onChangeInput) {
       onChangeInput(`digit: ${d}`);
     }
   };
-
   // Clear Canvas
   const handleClear = () => {
     const emptyGrid: number[][] = Array.from({ length: 28 }, () => Array(28).fill(0));
-    setGridState(emptyGrid);
     setLiveResult(inferMnist(emptyGrid));
-    renderGridToCanvas(emptyGrid);
+    setSelectedDigit(null);
+    setHasDrawn(false);
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#0b0f19';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    }
     if (onChangeInput) {
-      onChangeInput('digit: 0');
+      onChangeInput('digit: draw');
     }
   };
-
   // Real-time Downsampling & Inference (Called on every single drawing stroke!)
   const processLiveInference = useCallback(() => {
     const canvas = canvasRef.current;
@@ -221,7 +249,6 @@ export const MnistStage: React.FC<MnistStageProps> = ({
       }
     }
 
-    setGridState(newGrid);
     const inf = inferMnist(newGrid);
     setLiveResult(inf);
     setSelectedDigit(inf.predictedDigit);
@@ -231,9 +258,9 @@ export const MnistStage: React.FC<MnistStageProps> = ({
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.stopPropagation();
     e.preventDefault();
+    setHasDrawn(true);
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     isDrawingRef.current = true;
-
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -402,6 +429,7 @@ export const MnistStage: React.FC<MnistStageProps> = ({
           </div>
 
           {/* Interactive Canvas (With Pointer Event Isolation) */}
+          {/* Interactive Canvas (Direct Freehand Drawing) */}
           <div className="relative p-1 rounded-2xl bg-slate-900 border-2 border-blue-500/50 shadow-inner">
             <canvas
               ref={canvasRef}
@@ -413,46 +441,47 @@ export const MnistStage: React.FC<MnistStageProps> = ({
               onPointerLeave={handlePointerUp}
               className="w-[200px] h-[200px] sm:w-[224px] sm:h-[224px] rounded-xl cursor-crosshair touch-none select-none"
             />
+            {/* Prompt watermark when canvas is blank */}
+            {!hasDrawn && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-3 opacity-70">
+                <Pencil className="w-7 h-7 text-cyan-400 mb-1.5 animate-bounce" />
+                <span className="text-xs font-mono font-bold text-slate-200">
+                  {isVi ? 'Vẽ trực tiếp lên đây' : 'Draw directly here'}
+                </span>
+                <span className="text-[10px] font-mono text-slate-400 mt-0.5">
+                  {isVi ? 'Dùng chuột hoặc cảm ứng (0 - 9)' : 'Mouse or touch (0 - 9)'}
+                </span>
+              </div>
+            )}
             <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/75 text-[10px] font-mono text-cyan-300 pointer-events-none">
-              28×28 Grayscale
+              28×28 Input
             </div>
           </div>
 
-          {/* Mini Downsampled 28x28 Grid Heatmap & Winner Badge */}
-          <div className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-900/60 border border-slate-800">
-            {/* 28x28 Matrix Preview */}
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] font-mono opacity-60 mb-1">
-                {isVi ? 'Ma trận 28×28' : 'Matrix 28×28'}
-              </span>
-              <div className="w-14 h-14 bg-black border border-cyan-500/30 rounded-md grid grid-cols-28 p-0.5 overflow-hidden">
-                {gridState.flat().map((v, i) => (
-                  <div
-                    key={i}
-                    style={{ backgroundColor: v > 0.05 ? `rgba(56, 189, 248, ${Math.min(1, v)})` : '#000' }}
-                    className="w-full h-full"
-                  />
-                ))}
+          {/* Real-time Status & Live Winner Card */}
+          <div className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900/70 border border-slate-800">
+            <div className="flex-1 pr-2">
+              <div className="text-[10px] font-mono uppercase text-emerald-400 font-bold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>{hasDrawn ? (isVi ? 'Dự đoán Real-time' : 'Live Prediction') : (isVi ? 'Trạng thái' : 'Status')}</span>
+              </div>
+              <div className="text-xl font-display font-black text-emerald-300">
+                {hasDrawn
+                  ? (isVi ? `Chữ số ${predicted}` : `Digit ${predicted}`)
+                  : (isVi ? 'Chờ vẽ số...' : 'Waiting for draw...')}
+              </div>
+              <div className="text-[10px] font-mono text-emerald-200/80">
+                {hasDrawn
+                  ? `${(confidence * 100).toFixed(1)}% ${isVi ? 'độ tin cậy' : 'confidence'}`
+                  : (isVi ? 'Hãy vẽ số vào bảng ở trên' : 'Draw any digit on pad above')}
               </div>
             </div>
-
-            {/* Winner Card */}
-            <div className="flex-1 pl-3 flex items-center justify-between">
-              <div>
-                <div className="text-[10px] font-mono uppercase text-emerald-400 font-bold flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  <span>{isVi ? 'Dự đoán' : 'Predicted'}</span>
-                </div>
-                <div className="text-xl font-display font-black text-emerald-300">
-                  {isVi ? `Số ${predicted}` : `Digit ${predicted}`}
-                </div>
-                <div className="text-[10px] font-mono text-emerald-200">
-                  {(confidence * 100).toFixed(1)}% {isVi ? 'tin cậy' : 'confidence'}
-                </div>
-              </div>
-              <div className="w-11 h-11 rounded-xl bg-emerald-500/20 border-2 border-emerald-400/60 flex items-center justify-center text-2xl font-display font-black text-emerald-300 shadow-md">
-                {predicted}
-              </div>
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-display font-black shadow-md transition-all ${
+              hasDrawn
+                ? 'bg-emerald-500/20 border-2 border-emerald-400/70 text-emerald-300 scale-105'
+                : 'bg-slate-800/40 border border-dashed border-slate-700 text-slate-500'
+            }`}>
+              {hasDrawn ? predicted : '—'}
             </div>
           </div>
         </div>
