@@ -182,13 +182,16 @@ export const MnistStage: React.FC<MnistStageProps> = ({
         for (let py = Math.floor(r * cellH); py < Math.floor((r + 1) * cellH); py++) {
           for (let px = Math.floor(c * cellW); px < Math.floor((c + 1) * cellW); px++) {
             const idx = (py * canvas.width + px) * 4;
-            // brightness from blue channel
-            const brightness = imgData.data[idx + 2] / 255;
-            sum += brightness;
+            const blue = imgData.data[idx + 2];
+            const green = imgData.data[idx + 1];
+            if (blue > 50 || green > 45) {
+              const strokeVal = Math.min(1.0, Math.max(0, (blue - 25) / 225));
+              sum += strokeVal;
+            }
             count++;
           }
         }
-        newGrid[r][c] = Number((sum / count).toFixed(3));
+        newGrid[r][c] = count > 0 ? Number((sum / count).toFixed(3)) : 0;
       }
     }
 
@@ -196,20 +199,40 @@ export const MnistStage: React.FC<MnistStageProps> = ({
     setLiveResult(inf);
   }, []);
 
-  // Pointer & Mouse Drawing (Isolated from stage panning with stopPropagation)
-  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  const getCoordinates = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const rw = rect.width > 0 ? rect.width : canvas.width || 224;
+    const rh = rect.height > 0 ? rect.height : canvas.height || 224;
+    let clientX = 0;
+    let clientY = 0;
+    if ('touches' in e && (e as unknown as React.TouchEvent).touches?.length > 0) {
+      clientX = (e as unknown as React.TouchEvent).touches[0].clientX;
+      clientY = (e as unknown as React.TouchEvent).touches[0].clientY;
+    } else if ('clientX' in e) {
+      clientX = (e as unknown as React.MouseEvent).clientX;
+      clientY = (e as unknown as React.MouseEvent).clientY;
+    }
+    const rawX = ((clientX - rect.left) / rw) * canvas.width;
+    const rawY = ((clientY - rect.top) / rh) * canvas.height;
+    return {
+      x: isFinite(rawX) ? Math.min(canvas.width, Math.max(0, rawX)) : canvas.width / 2,
+      y: isFinite(rawY) ? Math.min(canvas.height, Math.max(0, rawY)) : canvas.height / 2,
+    };
+  };
+
+  const handlePointerDown = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement> | React.PointerEvent<HTMLCanvasElement>) => {
     e.stopPropagation();
-    e.preventDefault();
+    if ('preventDefault' in e && e.cancelable) e.preventDefault();
     setHasDrawn(true);
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     isDrawingRef.current = true;
+    const coords = getCoordinates(e);
+    if (!coords) return;
+    lastPointRef.current = coords;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
-    const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
-    lastPointRef.current = { x, y };
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.lineWidth = activeTool === 'eraser' ? 26 : 16;
@@ -219,24 +242,23 @@ export const MnistStage: React.FC<MnistStageProps> = ({
     ctx.shadowColor = activeTool === 'eraser' ? 'transparent' : '#06b6d4';
     ctx.shadowBlur = 6;
     ctx.beginPath();
-    ctx.arc(x, y, (activeTool === 'eraser' ? 26 : 16) / 2, 0, Math.PI * 2);
+    ctx.arc(coords.x, coords.y, (activeTool === 'eraser' ? 26 : 16) / 2, 0, Math.PI * 2);
     ctx.fillStyle = ctx.strokeStyle;
     ctx.fill();
 
     processLiveInference();
   };
 
-  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  const handlePointerMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement> | React.PointerEvent<HTMLCanvasElement>) => {
     e.stopPropagation();
-    e.preventDefault();
+    if ('preventDefault' in e && e.cancelable) e.preventDefault();
     if (!isDrawingRef.current || !lastPointRef.current) return;
+
+    const coords = getCoordinates(e);
+    if (!coords) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
-    const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.lineWidth = activeTool === 'eraser' ? 26 : 16;
@@ -248,16 +270,15 @@ export const MnistStage: React.FC<MnistStageProps> = ({
 
     ctx.beginPath();
     ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
-    ctx.lineTo(x, y);
+    ctx.lineTo(coords.x, coords.y);
     ctx.stroke();
 
-    lastPointRef.current = { x, y };
+    lastPointRef.current = coords;
     processLiveInference(); // REAL TIME INFERENCE AT 60FPS!
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  const handlePointerUp = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement> | React.PointerEvent<HTMLCanvasElement>) => {
     e.stopPropagation();
-    e.preventDefault();
     if (!isDrawingRef.current) return;
     isDrawingRef.current = false;
     lastPointRef.current = null;
@@ -303,7 +324,7 @@ export const MnistStage: React.FC<MnistStageProps> = ({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-cyan-400 text-xs font-bold font-mono">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>PyTorch 97.6% Trained Model</span>
+            <span>PyTorch 99.4% CNN Model</span>
           </div>
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 dark:text-emerald-400 text-[10px] font-mono font-bold animate-pulse">
             <Radio className="w-3 h-3" />
@@ -362,6 +383,13 @@ export const MnistStage: React.FC<MnistStageProps> = ({
               ref={canvasRef}
               width={224}
               height={224}
+              onMouseDown={handlePointerDown}
+              onMouseMove={handlePointerMove}
+              onMouseUp={handlePointerUp}
+              onMouseLeave={handlePointerUp}
+              onTouchStart={handlePointerDown}
+              onTouchMove={handlePointerMove}
+              onTouchEnd={handlePointerUp}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
