@@ -1774,12 +1774,7 @@ def dog_cat_mlp(x, W1,b1, W2,b2, W3,b3):
     summary: 'Recognizes handwritten digits (0–9) from 28×28 grayscale images into 10 Softmax probabilities with an interactive drawing canvas.',
     description: 'The iconic MNIST benchmark: unrolls 28×28 pixel matrices into 784-dimensional vectors, processes through hidden ReLU feature detectors, and produces 10 output class logits normalized by Softmax. Includes an interactive canvas where you can draw digits freely.',
     inputVariants: [
-      { label: 'Digit 7 (Seven)', value: 'digit: 7' },
-      { label: 'Digit 0 (Zero)', value: 'digit: 0' },
-      { label: 'Digit 3 (Three)', value: 'digit: 3' },
-      { label: 'Digit 8 (Eight)', value: 'digit: 8' },
-      { label: 'Digit 1 (One)', value: 'digit: 1' },
-      { label: 'Digit 4 (Four)', value: 'digit: 4' },
+      { label: 'Bảng vẽ trực tiếp (Trống)', value: 'digit: draw' },
     ],
     vi: {
       title: '07. Nhận diện Chữ số Viết tay MNIST (Tương tác Vẽ số)',
@@ -1788,12 +1783,7 @@ def dog_cat_mlp(x, W1,b1, W2,b2, W3,b3):
       summary: 'Nhận diện chữ số viết tay (0–9) từ ảnh 28×28 thành 10 xác suất Softmax kèm bảng vẽ tương tác trực tiếp.',
       description: 'Bài toán kinh điển MNIST: chuyển bức vẽ 28×28 điểm ảnh thành vector 784 chiều, lan truyền qua các nơ-ron ẩn ReLU để nhận diện nét vẽ và tính 10 xác suất Softmax. Tích hợp bảng vẽ trực tiếp để người dùng tự do vẽ số bằng chuột hoặc cảm ứng.',
       variants: [
-        { label: 'Số 7 (Bảy)', value: 'digit: 7' },
-        { label: 'Số 0 (Không)', value: 'digit: 0' },
-        { label: 'Số 3 (Ba)', value: 'digit: 3' },
-        { label: 'Số 8 (Tám)', value: 'digit: 8' },
-        { label: 'Số 1 (Một)', value: 'digit: 1' },
-        { label: 'Số 4 (Bốn)', value: 'digit: 4' },
+        { label: 'Bảng vẽ trực tiếp (Trống)', value: 'digit: draw' },
       ],
       sections: [
         {

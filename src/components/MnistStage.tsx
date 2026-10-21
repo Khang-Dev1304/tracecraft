@@ -115,7 +115,7 @@ export function inferMnist(grid: number[][]) {
 
 export const MnistStage: React.FC<MnistStageProps> = ({
   theme,
-  step,
+  step: _step,
   language,
   onChangeInput,
   isMaximized,
@@ -128,58 +128,15 @@ export const MnistStage: React.FC<MnistStageProps> = ({
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
   const [activeTool, setActiveTool] = useState<'pencil' | 'eraser'>('pencil');
-  const [selectedDigit, setSelectedDigit] = useState<number | null>(null);
   const [hasDrawn, setHasDrawn] = useState<boolean>(false);
 
   // Live real-time inference result state from real trained 97.6% model
   const [liveResult, setLiveResult] = useState(() =>
     inferMnist(Array.from({ length: 28 }, () => Array(28).fill(0)))
   );
-  // Render 28x28 grid onto 224x224 canvas
-  const renderGridToCanvas = useCallback((grid: number[][]) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
 
-    ctx.fillStyle = '#0b0f19';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const cellW = canvas.width / 28;
-    const cellH = canvas.height / 28;
-
-    for (let r = 0; r < 28; r++) {
-      for (let c = 0; c < 28; c++) {
-        const v = grid[r][c];
-        if (v > 0.02) {
-          const alpha = Math.min(1.0, v);
-          ctx.fillStyle = `rgba(56, 189, 248, ${alpha * 0.95})`;
-          ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
-        }
-      }
-    }
-  }, []);
-
-  // Update canvas on mount or when step changes
+  // Initialize clean blank canvas on mount
   useEffect(() => {
-    const g = step.state.mnistState?.grid;
-    if (g) {
-      let isNonZero = false;
-      for (let r = 0; r < 28 && !isNonZero; r++) {
-        for (let c = 0; c < 28 && !isNonZero; c++) {
-          if (g[r][c] > 0.05) isNonZero = true;
-        }
-      }
-      if (isNonZero) {
-        setLiveResult(inferMnist(g));
-        renderGridToCanvas(g);
-        setHasDrawn(true);
-        setSelectedDigit(step.state.mnistState?.predictedDigit ?? null);
-        return;
-      }
-    }
-
-    // Default: clean blank canvas ready for direct drawing
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
@@ -188,25 +145,11 @@ export const MnistStage: React.FC<MnistStageProps> = ({
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
     }
-    setHasDrawn(false);
-    setSelectedDigit(null);
-  }, [step, renderGridToCanvas]);
-  // Handle Preset Digit selection
-  const handleSelectPreset = (d: number) => {
-    setSelectedDigit(d);
-    setHasDrawn(true);
-    const newGrid = generateCanonicalDigitGrid(d);
-    setLiveResult(inferMnist(newGrid));
-    renderGridToCanvas(newGrid);
-    if (onChangeInput) {
-      onChangeInput(`digit: ${d}`);
-    }
-  };
+  }, []);
   // Clear Canvas
   const handleClear = () => {
     const emptyGrid: number[][] = Array.from({ length: 28 }, () => Array(28).fill(0));
     setLiveResult(inferMnist(emptyGrid));
-    setSelectedDigit(null);
     setHasDrawn(false);
     const canvas = canvasRef.current;
     if (canvas) {
@@ -251,7 +194,6 @@ export const MnistStage: React.FC<MnistStageProps> = ({
 
     const inf = inferMnist(newGrid);
     setLiveResult(inf);
-    setSelectedDigit(inf.predictedDigit);
   }, []);
 
   // Pointer & Mouse Drawing (Isolated from stage panning with stopPropagation)
@@ -320,9 +262,6 @@ export const MnistStage: React.FC<MnistStageProps> = ({
     isDrawingRef.current = false;
     lastPointRef.current = null;
     processLiveInference();
-    if (onChangeInput) {
-      onChangeInput(`digit: ${liveResult.predictedDigit}`);
-    }
   };
 
   // Node and Column layout coordinates in SVG graph
@@ -372,27 +311,15 @@ export const MnistStage: React.FC<MnistStageProps> = ({
           </div>
         </div>
 
-        {/* Quick Digit Preset Chips */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
-          <span className="text-[11px] font-mono opacity-50 mr-1 hidden md:inline">
-            {isVi ? 'Mẫu chữ số:' : 'Presets:'}
-          </span>
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
-            <button
-              key={d}
-              onClick={() => handleSelectPreset(d)}
-              className={`w-7 h-7 rounded-lg font-mono font-bold text-xs transition-all ${
-                selectedDigit === d
-                  ? 'bg-blue-600 dark:bg-cyan-500 text-white shadow-md scale-105'
-                  : isDark
-                  ? 'bg-slate-800/80 hover:bg-slate-700 text-slate-300'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-              }`}
-            >
-              {d}
-            </button>
-          ))}
-        </div>
+        {/* Clear Button */}
+        <button
+          onClick={handleClear}
+          title={isVi ? 'Xóa bảng vẽ để vẽ số mới' : 'Clear canvas to draw a new digit'}
+          className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-mono font-semibold transition-colors"
+        >
+          <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+          <span>{isVi ? 'Xóa bảng vẽ (↺)' : 'Clear Pad (↺)'}</span>
+        </button>
       </div>
 
       {/* 2. Main Studio: Drawing Pad (Left) + FULL NEURAL NETWORK GRAPH (Right) */}
