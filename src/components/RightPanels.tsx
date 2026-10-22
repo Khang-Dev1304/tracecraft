@@ -144,23 +144,26 @@ export const RightPanels: React.FC<RightPanelsProps> = ({
             {t.presetVariant}
           </span>
           <div className="grid grid-cols-2 gap-1.5">
-            {variants.map((p) => (
-              <button
-                key={p.label}
-                onClick={() => onChangeInput(p.value)}
-                className={`px-2 py-1.5 rounded-xl text-xs font-semibold border transition-all text-center ${
-                  inputStr.includes(p.value.slice(0, 8))
-                    ? isDark
-                      ? 'bg-cyan-950 text-cyan-300 border-cyan-700 shadow-xs'
-                      : 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                    : isDark
-                      ? 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-700'
-                      : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
+            {variants.map((p) => {
+              const isSelected = inputStr.trim().replace(/\s+/g, '') === p.value.trim().replace(/\s+/g, '');
+              return (
+                <button
+                  key={p.label}
+                  onClick={() => onChangeInput(p.value)}
+                  className={`px-2 py-1.5 rounded-xl text-xs font-semibold border transition-all text-center ${
+                    isSelected
+                      ? isDark
+                        ? 'bg-cyan-950 text-cyan-300 border-cyan-700 shadow-xs'
+                        : 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                      : isDark
+                        ? 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-700'
+                        : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
