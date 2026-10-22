@@ -1,4 +1,4 @@
-import type { AlgorithmPreset, TraceStep, Language } from '../types';
+import type { AlgorithmPreset, TraceStep, Language, LogisticPoint } from '../types';
 import { generateCanonicalDigitGrid, inferMnist } from '../components/MnistStage';
 export const ALGORITHM_PRESETS: AlgorithmPreset[] = [
   // ==========================================
@@ -292,6 +292,412 @@ def linear_regression(X, y, lr=0.06, epochs=8):
         invariant: isVi
           ? '||∇L|| ≈ 0: Vector trọng số đã chạm đáy cực tiểu lồi.'
           : '||∇L|| ≈ 0: Parameter weights reside at local convex minimum.',
+      });
+
+      const total = steps.length;
+      return steps.map((s, idx) => ({ ...s, step: idx + 1, totalSteps: total }));
+    },
+  },
+  // ==========================================
+  // Lesson 02: Logistic Regression & Binary Classification
+  // ==========================================
+  {
+    id: 'logistic-regression',
+    title: '02. Logistic Regression & Binary Classification',
+    category: 'Classical Machine Learning',
+    difficulty: 'Beginner',
+    badge: 'Classification',
+    visualType: 'logistic-regression',
+    formula: 'P(y=1) = \\sigma(wx + b) = \\frac{1}{1 + e^{-(wx + b)}}, \\quad L = -\\frac{1}{N}\\sum_{i=1}^N \\left[y_i \\ln \\hat{y}_i + (1 - y_i) \\ln(1 - \\hat{y}_i)\\right]',
+    summary: 'Maps linear features into probabilities via the Sigmoid curve, optimizing Binary Cross-Entropy Loss to separate classes with a decision boundary.',
+    description: 'Logistic Regression is the foundational algorithm for binary classification. It passes a linear combination z = w*x + b through the non-linear Sigmoid function σ(z) to bound outputs between 0 and 1. Gradient Descent minimizes Log Loss (Binary Cross-Entropy) to find the optimal decision boundary x* = -b/w.',
+    sections: [
+      {
+        title: '1. The Logistic (Sigmoid) Function & Log-Odds',
+        content: 'Linear regression produces outputs from -infinity to +infinity, which makes it unsuitable for predicting probabilities. Logistic regression wraps the linear score z = w*x + b in the Sigmoid activation function σ(z) = 1 / (1 + e^-z), guaranteeing an output bounded strictly between 0 and 1. This originates from modeling the log-odds (logit) ln(p / (1 - p)) as a linear function of x.',
+        formula: '\\sigma(z) = \\frac{1}{1 + e^{-z}}, \\quad \\text{logit}(p) = \\ln\\left(\\frac{p}{1 - p}\\right) = w \\cdot x + b',
+        keyTakeaway: 'The Sigmoid function smoothly squashes any real number into a valid probability (0, 1).',
+      },
+      {
+        title: '2. Binary Cross-Entropy Loss (Log Loss)',
+        content: 'Using Mean Squared Error with Sigmoid causes non-convexity with many flat plateaus and local minima. Instead, we use Binary Cross-Entropy (BCE) derived from Maximum Likelihood Estimation. If y=1, loss is -ln(p); if y=0, loss is -ln(1-p). A confident wrong prediction (e.g. y=1 but p=0.01) incurs near-infinite penalty.',
+        formula: 'L_{\\text{BCE}}(w, b) = -\\frac{1}{N}\\sum_{i=1}^N \\Big[y_i \\ln(\\hat{y}_i) + (1 - y_i)\\ln(1 - \\hat{y}_i)\\Big]',
+        keyTakeaway: 'BCE is strictly convex for logistic regression, ensuring gradient descent reaches the global minimum.',
+      },
+      {
+        title: '3. Outlier Resistance: Logistic vs. Linear Regression',
+        content: 'In linear classification, a point with y=1 far to the right exerts excessive leverage, tilting the regression line and misclassifying borderline samples. In logistic regression, once z is large, σ(z) saturates near 1, causing (p - y) ≈ 0. Consequently, extreme positive outliers generate almost zero gradient and cannot distort the decision boundary.',
+        formula: '\\frac{\\partial L}{\\partial w} = \\frac{1}{N} \\sum_{i=1}^N (\\hat{y}_i - y_i) x_i, \\quad \\lim_{z \\to \\infty} (\\hat{y} - 1) = 0',
+        keyTakeaway: 'Sigmoid saturation shields logistic regression from being corrupted by distant outliers.',
+      },
+      {
+        title: '4. Decision Boundary & Confusion Matrix',
+        content: 'At default threshold τ = 0.5, the decision boundary is the point x* where σ(wx* + b) = 0.5 <=> wx* + b = 0 => x* = -b / w. Predictions are evaluated using the Confusion Matrix: True Positives (TP), True Negatives (TN), False Positives (FP), and False Negatives (FN).',
+        formula: 'x^* = -\\frac{b}{w}, \\quad \\text{Accuracy} = \\frac{TP + TN}{TP + TN + FP + FN}',
+        keyTakeaway: 'Adjusting threshold τ trades off False Positives (precision) against False Negatives (recall).',
+      },
+    ],
+    timeComplexity: 'O(epochs · N)',
+    spaceComplexity: 'O(1) parameters',
+    tags: ['Supervised', 'Classification', 'Sigmoid', 'BCE Loss', 'Log Loss', 'NumPy'],
+    defaultInput: '(1, 0), (2, 0), (3, 0), (4, 0), (6, 1), (7, 1), (8, 1), (9, 1)',
+    inputVariants: [
+      { label: 'Separable', value: '(1, 0), (2, 0), (3, 0), (4, 0), (6, 1), (7, 1), (8, 1), (9, 1)' },
+      { label: 'Noisy Overlap', value: '(1, 0), (2, 0), (3, 0), (4, 1), (5, 0), (6, 1), (7, 0), (8, 1), (9, 1)' },
+      { label: 'Outlier Robust', value: '(1, 0), (2, 0), (3, 0), (4, 0), (6, 1), (7, 1), (8, 1), (15, 1)' },
+      { label: 'Imbalanced', value: '(1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 1), (9, 1)' },
+    ],
+    vi: {
+      title: '02. Hồi quy Logistic & Phân loại Nhị phân',
+      category: 'Machine Learning Cổ điển',
+      badge: 'Phân loại Nhị phân',
+      summary: 'Ánh xạ đặc trưng tuyến tính thành xác suất qua đường cong Sigmoid, tối ưu hóa Binary Cross-Entropy Loss để tìm ranh giới quyết định.',
+      description: 'Hồi quy Logistic là thuật toán nền tảng cho các bài toán phân loại nhị phân. Mô hình đưa tổ hợp tuyến tính z = w*x + b qua hàm phi tuyến Sigmoid σ(z) để ép giá trị đầu ra nằm trong khoảng xác suất (0, 1). Thuật toán Gradient Descent cực tiểu hóa Log Loss (Binary Cross-Entropy) để xác định ranh giới quyết định tối ưu x* = -b/w.',
+      variants: [
+        { label: 'Dễ phân tách', value: '(1, 0), (2, 0), (3, 0), (4, 0), (6, 1), (7, 1), (8, 1), (9, 1)' },
+        { label: 'Nhiễu đan xen', value: '(1, 0), (2, 0), (3, 0), (4, 1), (5, 0), (6, 1), (7, 0), (8, 1), (9, 1)' },
+        { label: 'Kháng Ngoại lai', value: '(1, 0), (2, 0), (3, 0), (4, 0), (6, 1), (7, 1), (8, 1), (15, 1)' },
+        { label: 'Mất cân bằng', value: '(1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 1), (9, 1)' },
+      ],
+      sections: [
+        {
+          title: '1. Hàm Logistic (Sigmoid) & Tỷ lệ Log-Odds',
+          content: 'Hồi quy tuyến tính tạo ra giá trị từ -vô cùng đến +vô cùng, không thể đại diện cho xác suất. Hồi quy Logistic bọc giá trị logit z = w*x + b vào hàm kích hoạt Sigmoid σ(z) = 1 / (1 + e^-z), đảm bảo đầu ra luôn thuộc khoảng (0, 1). Về mặt toán học, điều này tương đương với mô hình hóa log-odds (logit) ln(p / (1 - p)) thành một hàm tuyến tính của x.',
+          formula: '\\sigma(z) = \\frac{1}{1 + e^{-z}}, \\quad \\text{logit}(p) = \\ln\\left(\\frac{p}{1 - p}\\right) = w \\cdot x + b',
+          keyTakeaway: 'Đường cong chữ S của Sigmoid ánh xạ mượt mà mọi điểm số thực thành một xác suất hợp lệ.',
+        },
+        {
+          title: '2. Hàm Mất mát Binary Cross-Entropy (Log Loss)',
+          content: 'Áp dụng hàm MSE cho Sigmoid tạo ra bề mặt phi lồi (non-convex) có nhiều vùng bằng phẳng và cực tiểu cục bộ. Hồi quy Logistic sử dụng hàm Binary Cross-Entropy (BCE) dẫn xuất từ nguyên lý Maximum Likelihood Estimation. Khi nhãn y=1, Loss là -ln(p); khi y=0, Loss là -ln(1-p). Dự đoán sai lệch với độ tự tin cao sẽ bị phạt số điểm mất mát vô cùng lớn.',
+          formula: 'L_{\\text{BCE}}(w, b) = -\\frac{1}{N}\\sum_{i=1}^N \\Big[y_i \\ln(\\hat{y}_i) + (1 - y_i)\\ln(1 - \\hat{y}_i)\\Big]',
+          keyTakeaway: 'Hàm BCE lồi nghiêm ngặt (strictly convex), đảm bảo Gradient Descent luôn tìm thấy cực tiểu toàn cục duy nhất.',
+        },
+        {
+          title: '3. Nghịch lý Ngoại lai: Hồi quy Logistic vs Tuyến tính',
+          content: 'Trong hồi quy tuyến tính, một điểm dữ liệu ngoại lai lệch xa về bên phải sẽ kéo độ dốc đường thẳng xuống, làm sai lệch ngưỡng phân loại của các điểm khác. Trong hồi quy Logistic, khi z lớn, σ(z) bão hòa tiệm cận 1 khiến (p - y) ≈ 0. Do đó, điểm ngoại lai tạo ra gradient gần như bằng 0 và không làm méo mó ranh giới quyết định.',
+          formula: '\\frac{\\partial L}{\\partial w} = \\frac{1}{N} \\sum_{i=1}^N (\\hat{y}_i - y_i) x_i, \\quad \\lim_{z \\to \\infty} (\\hat{y} - 1) = 0',
+          keyTakeaway: 'Đặc tính bão hòa ở hai đầu của Sigmoid giúp mô hình có khả năng kháng ngoại lai vượt trội so với hồi quy tuyến tính.',
+        },
+        {
+          title: '4. Ranh giới Quyết định & Ma trận Nhầm lẫn',
+          content: 'Với ngưỡng mặc định τ = 0.5, ranh giới quyết định là điểm x* mà tại đó σ(wx* + b) = 0.5 <=> wx* + b = 0 => x* = -b / w. Hiệu năng phân loại được đo lường qua Ma trận Nhầm lẫn: Dương tính Thật (TP), Âm tính Thật (TN), Dương tính Giả (FP), và Âm tính Giả (FN).',
+          formula: 'x^* = -\\frac{b}{w}, \\quad \\text{Accuracy} = \\frac{TP + TN}{TP + TN + FP + FN}',
+          keyTakeaway: 'Ranh giới x* phân chia không gian đặc trưng thành hai vùng dự đoán rõ ràng cho Lớp 0 và Lớp 1.',
+        },
+      ],
+    },
+    pythonCode: `import numpy as np
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-np.clip(z, -25, 25)))
+
+def logistic_regression(X, y, lr=0.15, epochs=7):
+    x_mean = np.mean(X)
+    w, b_c = 0.20, 0.00
+    N = len(X)
+    
+    for epoch in range(epochs):
+        # 1. Forward Pass: compute logits and Sigmoid probabilities
+        z = w * (X - x_mean) + b_c
+        p = sigmoid(z)
+        
+        # 2. Compute Binary Cross-Entropy Loss
+        eps = 1e-12
+        loss = -np.mean(y * np.log(p + eps) + (1 - y) * np.log(1 - p + eps))
+        
+        # 3. Compute Gradients via Chain Rule
+        grad_w = np.mean((p - y) * (X - x_mean))
+        grad_b = np.mean(p - y)
+        
+        # 4. Parameter Update via Gradient Descent
+        w -= lr * grad_w
+        b_c -= (lr * 2.0) * grad_b
+        
+    b = b_c - w * x_mean  # Convert to standard form z = w * x + b
+    boundary = -b / w     # Decision threshold at P=0.5
+    return w, b, boundary`,
+    code: `import numpy as np
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+def logistic_regression(X, y, lr=0.15, epochs=7):
+    w, b = 0.20, -1.00
+    N = len(X)
+    for epoch in range(epochs):
+        z = w * X + b                   # Compute logits
+        p = sigmoid(z)                  # Sigmoid probabilities
+        loss = -np.mean(y*np.log(p) + (1-y)*np.log(1-p)) # BCE Loss
+        grad_w = np.mean((p - y) * X)   # Weight gradient
+        grad_b = np.mean(p - y)         # Bias gradient
+        w -= lr * grad_w                # Update weight
+        b -= lr * grad_b                # Update bias
+    boundary = -b / w                   # Decision boundary x*
+    return w, b, boundary`,
+    generateTraces: (inputStr?: string, lang: Language = 'en'): TraceStep[] => {
+      const isVi = lang === 'vi';
+      let points: LogisticPoint[] = [
+        { x: 1, y: 0 },
+        { x: 2, y: 0 },
+        { x: 3, y: 0 },
+        { x: 4, y: 0 },
+        { x: 6, y: 1 },
+        { x: 7, y: 1 },
+        { x: 8, y: 1 },
+        { x: 9, y: 1 },
+      ];
+      if (inputStr) {
+        const matches = [...inputStr.matchAll(/\(?\s*([0-9.]+)\s*[,:]\s*([0-1])\s*\)?/g)];
+        if (matches.length >= 2) {
+          points = matches.map((m) => ({ x: Number(m[1]), y: (Number(m[2]) >= 0.5 ? 1 : 0) as 0 | 1 }));
+        }
+      }
+
+      const N = points.length;
+      const x_mean = points.reduce((acc, p) => acc + p.x, 0) / N;
+      const lr = 0.15;
+      let w = 0.20;
+      let b_c = 0.00;
+      const sigmoid = (zVal: number) => 1 / (1 + Math.exp(-Math.max(-25, Math.min(25, zVal))));
+
+      const steps: TraceStep[] = [];
+
+      const calcState = (curW: number, curBc: number) => {
+        const w_real = Number(curW.toFixed(3));
+        const b_real = Number((curBc - curW * x_mean).toFixed(3));
+        const bound = curW !== 0 ? -b_real / w_real : 0;
+        
+        let tp = 0, tn = 0, fp = 0, fn = 0;
+        const currentPoints: LogisticPoint[] = points.map((p) => {
+          const z = curW * (p.x - x_mean) + curBc;
+          const prob = Number(sigmoid(z).toFixed(4));
+          const eps = 1e-12;
+          const sampleLoss = Number((-(p.y * Math.log(prob + eps) + (1 - p.y) * Math.log(1 - prob + eps))).toFixed(4));
+          const predLabel: 0 | 1 = prob >= 0.5 ? 1 : 0;
+          if (p.y === 1 && predLabel === 1) tp++;
+          else if (p.y === 0 && predLabel === 0) tn++;
+          else if (p.y === 0 && predLabel === 1) fp++;
+          else if (p.y === 1 && predLabel === 0) fn++;
+          return {
+            x: p.x,
+            y: p.y,
+            prob,
+            loss: sampleLoss,
+            predLabel,
+          };
+        });
+
+        const totalLoss = Number((currentPoints.reduce((acc, p) => acc + (p.loss ?? 0), 0) / N).toFixed(4));
+        const accuracy = Number((((tp + tn) / N) * 100).toFixed(1));
+
+        return {
+          w_real,
+          b_real,
+          bound: Number(bound.toFixed(2)),
+          currentPoints,
+          totalLoss,
+          accuracy,
+          confusionMatrix: { tp, tn, fp, fn },
+        };
+      };
+
+      // Step 0: Init
+      const initState = calcState(w, b_c);
+      steps.push({
+        step: 0,
+        totalSteps: 0,
+        line: 8,
+        action: 'init',
+        targets: [],
+        state: {
+          epoch: 0,
+          weight: initState.w_real,
+          bias: initState.b_real,
+          learningRate: lr,
+          loss: initState.totalLoss,
+          logisticState: {
+            points: initState.currentPoints,
+            weight: initState.w_real,
+            bias: initState.b_real,
+            learningRate: lr,
+            epoch: 0,
+            totalEpochs: 7,
+            loss: initState.totalLoss,
+            threshold: 0.5,
+            decisionBoundary: initState.bound,
+            accuracy: initState.accuracy,
+            confusionMatrix: initState.confusionMatrix,
+          },
+        },
+        explanation: isVi
+          ? `Khởi tạo trọng số ban đầu: w = ${initState.w_real}, b = ${initState.b_real}. Ranh giới ban đầu x* = ${initState.bound}. Binary Cross-Entropy Loss: ${initState.totalLoss}, Độ chính xác: ${initState.accuracy}%.`
+          : `Initialized weights at w = ${initState.w_real}, b = ${initState.b_real}. Initial decision boundary x* = ${initState.bound}. BCE Loss: ${initState.totalLoss}, Accuracy: ${initState.accuracy}%.`,
+        invariant: isVi
+          ? 'Đường cong Sigmoid chưa huấn luyện. Bước lặp Gradient Descent ban đầu: epoch = 0.'
+          : 'Untrained Sigmoid curve. Starting Gradient Descent counter: epoch = 0.',
+      });
+
+      // 7 Epochs of Gradient Descent
+      for (let epoch = 1; epoch <= 7; epoch++) {
+        const fwd = calcState(w, b_c);
+
+        // Step 1: Forward Pass
+        steps.push({
+          step: steps.length,
+          totalSteps: 0,
+          line: 12,
+          action: 'forward',
+          targets: [],
+          state: {
+            epoch,
+            weight: fwd.w_real,
+            bias: fwd.b_real,
+            loss: fwd.totalLoss,
+            logisticState: {
+              points: fwd.currentPoints,
+              weight: fwd.w_real,
+              bias: fwd.b_real,
+              learningRate: lr,
+              epoch,
+              totalEpochs: 7,
+              loss: fwd.totalLoss,
+              threshold: 0.5,
+              decisionBoundary: fwd.bound,
+              accuracy: fwd.accuracy,
+              confusionMatrix: fwd.confusionMatrix,
+            },
+          },
+          explanation: isVi
+            ? `Epoch #${epoch}: Forward pass tính z = ${fwd.w_real}x + (${fwd.b_real}) và xác suất P(y=1) = σ(z). Ranh giới x* = ${fwd.bound}. Độ chính xác: ${fwd.accuracy}%.`
+            : `Epoch #${epoch}: Forward pass calculated logits z = ${fwd.w_real}x + (${fwd.b_real}) and Sigmoid probabilities P(y=1) = σ(z). Boundary x* = ${fwd.bound}. Accuracy: ${fwd.accuracy}%.`,
+          invariant: isVi
+            ? 'Hàm Sigmoid ánh xạ toàn bộ giá trị số thực z vào khoảng xác suất hợp lệ (0, 1).'
+            : 'Sigmoid squashes real values into valid probability range (0, 1).',
+        });
+
+        // Compute Gradients
+        const gradW = Number((fwd.currentPoints.reduce((acc, p) => acc + (p.prob! - p.y) * (p.x - x_mean), 0) / N).toFixed(4));
+        const gradB = Number((fwd.currentPoints.reduce((acc, p) => acc + (p.prob! - p.y), 0) / N).toFixed(4));
+
+        // Step 2: Loss & Backward
+        steps.push({
+          step: steps.length,
+          totalSteps: 0,
+          line: 20,
+          action: 'backward',
+          targets: [],
+          state: {
+            epoch,
+            weight: fwd.w_real,
+            bias: fwd.b_real,
+            gradW,
+            gradB,
+            loss: fwd.totalLoss,
+            logisticState: {
+              points: fwd.currentPoints,
+              weight: fwd.w_real,
+              bias: fwd.b_real,
+              learningRate: lr,
+              epoch,
+              totalEpochs: 7,
+              loss: fwd.totalLoss,
+              threshold: 0.5,
+              decisionBoundary: fwd.bound,
+              accuracy: fwd.accuracy,
+              confusionMatrix: fwd.confusionMatrix,
+              gradW,
+              gradB,
+            },
+          },
+          explanation: isVi
+            ? `Tính đạo hàm BCE theo Chain Rule: ∂L/∂w = ${gradW}, ∂L/∂b = ${gradB}. Đi ngược hướng gradient để giảm Log Loss.`
+            : `Gradients via chain rule: ∂L/∂w = ${gradW}, ∂L/∂b = ${gradB}. Steepest descent direction identified.`,
+          invariant: isVi
+            ? 'Đạo hàm của hàm Binary Cross-Entropy kết hợp Sigmoid có dạng đối xứng thanh lịch: (p - y) * x.'
+            : 'Sigmoid BCE gradient has elegant symmetric form (p - y) * x.',
+        });
+
+        // Step 3: Update Weights
+        const oldW = fwd.w_real;
+        const oldB = fwd.b_real;
+        const oldLoss = fwd.totalLoss;
+
+        w -= lr * gradW;
+        b_c -= (lr * 2.0) * gradB;
+
+        const updated = calcState(w, b_c);
+        steps.push({
+          step: steps.length,
+          totalSteps: 0,
+          line: 24,
+          action: 'update',
+          targets: [],
+          state: {
+            epoch,
+            weight: updated.w_real,
+            bias: updated.b_real,
+            loss: updated.totalLoss,
+            logisticState: {
+              points: updated.currentPoints,
+              weight: updated.w_real,
+              bias: updated.b_real,
+              learningRate: lr,
+              epoch,
+              totalEpochs: 7,
+              loss: updated.totalLoss,
+              threshold: 0.5,
+              decisionBoundary: updated.bound,
+              accuracy: updated.accuracy,
+              confusionMatrix: updated.confusionMatrix,
+            },
+          },
+          explanation: isVi
+            ? `Cập nhật tham số: w = ${updated.w_real}, b = ${updated.b_real}. BCE Loss giảm xuống còn ${updated.totalLoss}. Ranh giới x* = ${updated.bound}.`
+            : `Updated parameters: w = ${updated.w_real}, b = ${updated.b_real}. Loss reduced to ${updated.totalLoss}. Decision boundary shifted to x* = ${updated.bound}.`,
+          invariant: isVi
+            ? 'Hàm mất mát BCE lồi nghiêm ngặt, đảm bảo mỗi bước cập nhật đều tiến gần đến cực tiểu toàn cục.'
+            : 'Strict convexity of BCE guarantees descent towards the unique global minimum.',
+          variableDiff: {
+            w: { before: oldW, after: updated.w_real },
+            b: { before: oldB, after: updated.b_real },
+            loss: { before: oldLoss, after: updated.totalLoss },
+          },
+        });
+      }
+
+      // Final Step: Converged
+      const finalState = calcState(w, b_c);
+      steps.push({
+        step: steps.length,
+        totalSteps: 0,
+        line: 28,
+        action: 'converged',
+        targets: [],
+        state: {
+          epoch: 8,
+          weight: finalState.w_real,
+          bias: finalState.b_real,
+          loss: finalState.totalLoss,
+          logisticState: {
+            points: finalState.currentPoints,
+            weight: finalState.w_real,
+            bias: finalState.b_real,
+            learningRate: lr,
+            epoch: 8,
+            totalEpochs: 7,
+            loss: finalState.totalLoss,
+            threshold: 0.5,
+            decisionBoundary: finalState.bound,
+            accuracy: finalState.accuracy,
+            confusionMatrix: finalState.confusionMatrix,
+          },
+        },
+        explanation: isVi
+          ? `Mô hình Hồi quy Logistic đã hội tụ! Ranh giới quyết định tối ưu: x* = ${finalState.bound}. Độ chính xác đạt ${finalState.accuracy}%, BCE Loss = ${finalState.totalLoss}.`
+          : `Logistic Regression converged! Optimal decision boundary x* = ${finalState.bound}. Accuracy reached ${finalState.accuracy}%, BCE Loss = ${finalState.totalLoss}.`,
+        invariant: isVi
+          ? '||∇L|| ≈ 0: Ranh giới x* đã phân tách tối ưu không gian đặc trưng giữa hai lớp.'
+          : '||∇L|| ≈ 0: Parameter weights have arrived at optimal decision boundary.',
       });
 
       const total = steps.length;

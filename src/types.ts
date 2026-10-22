@@ -17,6 +17,7 @@ export type DifficultyLevel = 'Beginner' | 'Intermediate' | 'Advanced';
 
 export type VisualType =
   | 'regression-plot'
+  | 'logistic-regression'
   | 'neural-network'
   | 'single-neuron'
   | 'modern-neuron'
@@ -102,6 +103,37 @@ export interface MnistState {
   activePhase: 'draw' | 'flatten' | 'hidden' | 'softmax' | 'result';
 }
 
+export interface LogisticPoint {
+  x: number;
+  y: 0 | 1;
+  prob?: number;
+  loss?: number;
+  predLabel?: 0 | 1;
+}
+
+export interface LogisticConfusionMatrix {
+  tp: number;
+  tn: number;
+  fp: number;
+  fn: number;
+}
+
+export interface LogisticState {
+  points: LogisticPoint[];
+  weight: number;
+  bias: number;
+  learningRate: number;
+  epoch: number;
+  totalEpochs: number;
+  loss: number;
+  threshold: number;
+  decisionBoundary: number;
+  accuracy: number;
+  confusionMatrix: LogisticConfusionMatrix;
+  gradW?: number;
+  gradB?: number;
+}
+
 export type PrimitiveStateValue =
   | string
   | number
@@ -119,7 +151,9 @@ export type PrimitiveStateValue =
   | ModernNeuronState
   | BioNeuronState
   | { token: string; prob: number }[]
-  | MnistState;
+  | MnistState
+  | LogisticState
+  | LogisticPoint[];
 export interface StepState {
   epoch?: number;
   loss?: number;
@@ -143,6 +177,7 @@ export interface StepState {
   modernNeuronState?: ModernNeuronState;
   bioNeuronState?: BioNeuronState;
   mnistState?: MnistState;
+  logisticState?: LogisticState;
   [key: string]: PrimitiveStateValue;
 }
 

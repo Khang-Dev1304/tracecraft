@@ -15,6 +15,7 @@ import type { ThemeMode, TraceStep, Language } from '../types';
 import { MathFormula } from './MathFormula';
 import { getLocalizedText } from '../i18n/translations';
 import { MnistStage } from './MnistStage';
+import { LogisticStage } from './LogisticStage';
 interface VisualStageProps {
   theme: ThemeMode;
   step: TraceStep;
@@ -137,6 +138,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
   const featureMap = step.state.featureMap;
   const kernelPos = (step.state.kernelPos as { r: number; c: number } | undefined) || { r: 0, c: 0 };
   const mnistState = step.state.mnistState;
+  const logisticState = step.state.logisticState;
   const smoothKernelR = useSmoothValue(kernelPos.r, 420);
   const smoothKernelC = useSmoothValue(kernelPos.c, 420);
   // Raw values from trace
@@ -242,7 +244,7 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         {/* Data Controls & Graph Zoom Toolbar */}
         <div className="flex items-center gap-2">
           {/* Data Presets Selector (if Regression) */}
-          {points && onChangeInput && (
+          {points && !logisticState && onChangeInput && (
             <div className="hidden sm:flex items-center gap-1">
               <Database className="w-3.5 h-3.5 opacity-60" />
               <div
@@ -391,9 +393,22 @@ export const VisualStage: React.FC<VisualStageProps> = ({
           className="w-full h-full flex items-center justify-center transition-transform duration-75"
         >
         {/* ========================================================= */}
+        {/* 0. LOGISTIC REGRESSION (Sigmoid S-Curve, Boundary, BCE)   */}
+        {/* ========================================================= */}
+        {logisticState && (
+          <LogisticStage
+            theme={theme}
+            language={language}
+            logisticState={logisticState}
+            onChangeInput={onChangeInput}
+            isExpanded={isMaximized}
+          />
+        )}
+
+        {/* ========================================================= */}
         {/* 1. DYNAMIC REGRESSION PLOT (Auto-scaled, Clickable, Clean) */}
         {/* ========================================================= */}
-        {points && points.length > 0 && (
+        {points && points.length > 0 && !logisticState && (
           <div className="w-full h-full relative flex items-center justify-center">
             {/* Top Click-To-Add-Point Hint */}
             <div className="absolute top-1 left-4 z-10 flex items-center gap-1.5 text-[11px] opacity-60 font-sans pointer-events-none">
@@ -1851,7 +1866,12 @@ export const VisualStage: React.FC<VisualStageProps> = ({
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span>{t.activeInvariantModel}:</span>
-          {points ? (
+          {logisticState ? (
+            <MathFormula
+              math={`P(y=1) = \\sigma(${smoothW.toFixed(2)}x ${smoothB >= 0 ? '+' : ''}${smoothB.toFixed(2)})`}
+              className="ml-1 font-bold text-blue-600 dark:text-cyan-300"
+            />
+          ) : points ? (
             <MathFormula
               math={`y = ${smoothW.toFixed(2)}x + ${smoothB.toFixed(2)}`}
               className="ml-1 font-bold text-blue-600 dark:text-cyan-300"

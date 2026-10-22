@@ -49,6 +49,12 @@ export const RightPanels: React.FC<RightPanelsProps> = ({
         return `(${x}, ${y})`;
       });
       onChangeInput(randomPoints.join(', '));
+    } else if (preset.visualType === 'logistic-regression') {
+      const randomPoints = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((x) => {
+        const y: 0 | 1 = x <= 4 ? (Math.random() > 0.85 ? 1 : 0) : (Math.random() > 0.15 ? 1 : 0);
+        return `(${x}, ${y})`;
+      });
+      onChangeInput(randomPoints.join(', '));
     } else {
       const randomArr = Array.from({ length: 5 }, () => Math.floor(Math.random() * 50) + 1);
       onChangeInput(randomArr.join(', '));
